@@ -46,12 +46,14 @@ const Auth = () => {
       const { error } = await signIn(email, password);
       
       if (error) {
-        toast.error(error.message);
+        console.error('Login error:', error);
+        toast.error(error.message || 'Gagal login');
       } else {
         toast.success('Login berhasil');
-        navigate('/');
+        // The navigation is handled in the signIn function
       }
     } catch (error: any) {
+      console.error('Login exception:', error);
       toast.error(error.message || 'Gagal login');
     } finally {
       setIsLoading(false);
@@ -72,12 +74,14 @@ const Auth = () => {
       const { error } = await signUp(email, password, name);
       
       if (error) {
-        toast.error(error.message);
+        console.error('Signup error:', error);
+        toast.error(error.message || 'Gagal mendaftar');
       } else {
         toast.success('Pendaftaran berhasil. Cek email untuk verifikasi.');
         setActiveTab('login');
       }
     } catch (error: any) {
+      console.error('Signup exception:', error);
       toast.error(error.message || 'Gagal mendaftar');
     } finally {
       setIsLoading(false);
