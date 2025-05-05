@@ -1,24 +1,53 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { LogIn } from "lucide-react";
+import { Link } from "react-router-dom";
 import SummaryCards from "./SummaryCards";
 import ShipmentTable from "./ShipmentTable";
 import DataCharts from "./DataCharts";
 import ConstraintAnalysis from "./ConstraintAnalysis";
 import DataFilters from "./DataFilters";
-import ExportOptions from "./ExportOptions";
-import FileUploader from "./FileUploader";
 import { Shipment, ShipmentStatus, FilterOptions } from "@/lib/types";
-import { shipments as mockShipments, drivers } from "@/lib/mockData";
+import { getShipments } from "@/lib/shipmentService";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const DashboardLayout = () => {
-  const [shipments, setShipments] = React.useState<Shipment[]>(mockShipments);
-  const [filteredShipments, setFilteredShipments] = React.useState<Shipment[]>(mockShipments);
-  const [filterOptions, setFilterOptions] = React.useState<FilterOptions>({
+  const { toast } = useToast();
+  const { isAdmin } = useAuth();
+  const [shipments, setShipments] = useState<Shipment[]>([]);
+  const [filteredShipments, setFilteredShipments] = useState<Shipment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     dateRange: [null, null],
     status: "all",
     driver: "all",
   });
+
+  // Fetch shipments on component mount
+  useEffect(() => {
+    fetchShipments();
+  }, []);
+
+  const fetchShipments = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getShipments();
+      setShipments(data);
+      setFilteredShipments(data);
+    } catch (error) {
+      console.error("Error fetching shipments:", error);
+      toast({
+        title: "Error",
+        description: "Gagal memuat data pengiriman",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Function to handle filtering
   const handleFilter = (filters: FilterOptions) => {
@@ -50,12 +79,8 @@ const DashboardLayout = () => {
     setFilteredShipments(filtered);
   };
 
-  // Function to handle file upload
-  const handleFileUpload = (newShipments: Shipment[]) => {
-    const updatedShipments = [...shipments, ...newShipments];
-    setShipments(updatedShipments);
-    setFilteredShipments(updatedShipments);
-  };
+  // Extract all drivers for filter
+  const drivers = Array.from(new Set(shipments.map(s => s.supir))).filter(Boolean);
 
   // Count summary data
   const summary = {
@@ -70,11 +95,28 @@ const DashboardLayout = () => {
       <div className="min-h-screen bg-background">
         <div className="container mx-auto py-6 px-4 md:px-6">
           <div className="flex flex-col space-y-6">
-            <div className="flex flex-col space-y-2">
-              <h1 className="text-3xl font-bold text-navy-500">Dashboard Pengiriman</h1>
-              <p className="text-muted-foreground">
-                Pantau dan kelola data pengiriman dalam satu tempat
-              </p>
+            <div className="flex flex-row justify-between items-center">
+              <div className="flex flex-col space-y-2">
+                <h1 className="text-3xl font-bold text-navy-500">Dashboard Pengiriman</h1>
+                <p className="text-muted-foreground">
+                  Pantau dan kelola data pengiriman dalam satu tempat
+                </p>
+              </div>
+              
+              {isAdmin ? (
+                <Button variant="outline" asChild>
+                  <Link to="/admin">
+                    Admin Panel
+                  </Link>
+                </Button>
+              ) : (
+                <Button variant="outline" asChild>
+                  <Link to="/auth">
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Login
+                  </Link>
+                </Button>
+              )}
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -85,11 +127,7 @@ const DashboardLayout = () => {
               <div className="lg:col-span-4">
                 <div className="flex flex-col space-y-4">
                   <div className="flex flex-col md:flex-row gap-4 justify-between">
-                    <DataFilters onFilter={handleFilter} drivers={drivers.map(d => d.name)} />
-                    <div className="flex gap-4">
-                      <FileUploader onUpload={handleFileUpload} />
-                      <ExportOptions data={filteredShipments} />
-                    </div>
+                    <DataFilters onFilter={handleFilter} drivers={drivers} />
                   </div>
                 </div>
               </div>

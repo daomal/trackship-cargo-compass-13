@@ -5,6 +5,8 @@ import { Upload } from "lucide-react";
 import { Shipment } from "@/lib/types";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
+import { useAuth } from "@/contexts/AuthContext";
+import { batchImportShipments } from "@/lib/shipmentService";
 import {
   Dialog,
   DialogClose,
@@ -13,18 +15,22 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 
 interface FileUploaderProps {
-  onUpload: (shipments: Shipment[]) => void;
+  onUploadSuccess: () => void;
 }
 
-const FileUploader: React.FC<FileUploaderProps> = ({ onUpload }) => {
+const FileUploader: React.FC<FileUploaderProps> = ({ onUploadSuccess }) => {
+  const { isAdmin } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [previewData, setPreviewData] = useState<Shipment[]>([]);
+  const [previewData, setPreviewData] = useState<Omit<Shipment, 'id'>[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  if (!isAdmin) {
+    return null; // Only show for admins
+  }
 
   const processExcelFile = (file: File) => {
     const reader = new FileReader();
@@ -44,7 +50,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onUpload }) => {
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
         
         // Map Excel data to our Shipment interface
-        const shipments: Shipment[] = jsonData.map((row: any, index) => {
+        const shipments: Omit<Shipment, 'id'>[] = jsonData.map((row: any) => {
           // Convert Excel dates to string format if needed
           let tanggalKirim = row["Tanggal Kirim"];
           if (tanggalKirim && typeof tanggalKirim === "number") {
@@ -53,8 +59,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onUpload }) => {
           }
           
           return {
-            id: `imported-${index}`,
-            noSuratJalan: row["Nomor Surat Jalan"] || `UNKNOWN-${index}`,
+            noSuratJalan: row["Nomor Surat Jalan"] || `UNKNOWN-${Math.random().toString(36).substring(2, 7)}`,
             perusahaan: row["Nama Perusahaan"] || "Unknown Company",
             tujuan: row["Tujuan"] || "Unknown Destination",
             supir: row["Supir"] || "Unknown Driver",
@@ -92,10 +97,24 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onUpload }) => {
     }
   };
 
-  const handleConfirmUpload = () => {
-    onUpload(previewData);
-    setIsDialogOpen(false);
-    toast.success(`${previewData.length} data berhasil diupload`);
+  const handleConfirmUpload = async () => {
+    try {
+      setIsUploading(true);
+      await batchImportShipments(previewData);
+      setIsDialogOpen(false);
+      toast.success(`${previewData.length} data berhasil diupload`);
+      onUploadSuccess();
+      
+      // Clear the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (error) {
+      console.error("Error uploading data:", error);
+      toast.error("Gagal mengupload data. Silakan coba lagi.");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -157,7 +176,9 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onUpload }) => {
             <DialogClose asChild>
               <Button variant="outline">Batal</Button>
             </DialogClose>
-            <Button onClick={handleConfirmUpload}>Upload Data</Button>
+            <Button onClick={handleConfirmUpload} disabled={isUploading}>
+              {isUploading ? "Mengupload..." : "Upload Data"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
