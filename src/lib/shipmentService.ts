@@ -19,20 +19,31 @@ export const mapSupabaseShipment = (dbShipment: SupabaseShipment): Shipment => {
 };
 
 // Convert to Supabase format
-export const mapToSupabaseShipment = (shipment: Partial<Shipment>): Partial<SupabaseShipment> => {
-  const result: Partial<SupabaseShipment> = {};
+export const mapToSupabaseShipment = (shipment: Partial<Shipment>) => {
+  // Create object to hold Supabase-formatted values
+  const supabaseShipment: {
+    no_surat_jalan?: string;
+    perusahaan?: string;
+    tujuan?: string;
+    supir?: string;
+    tanggal_kirim?: string;
+    tanggal_tiba?: string | null;
+    status?: string;
+    kendala?: string | null;
+    qty?: number;
+  } = {};
   
-  if (shipment.noSuratJalan !== undefined) result.no_surat_jalan = shipment.noSuratJalan;
-  if (shipment.perusahaan !== undefined) result.perusahaan = shipment.perusahaan;
-  if (shipment.tujuan !== undefined) result.tujuan = shipment.tujuan;
-  if (shipment.supir !== undefined) result.supir = shipment.supir;
-  if (shipment.tanggalKirim !== undefined) result.tanggal_kirim = shipment.tanggalKirim;
-  if (shipment.tanggalTiba !== undefined) result.tanggal_tiba = shipment.tanggalTiba;
-  if (shipment.status !== undefined) result.status = shipment.status;
-  if (shipment.kendala !== undefined) result.kendala = shipment.kendala;
-  if (shipment.qty !== undefined) result.qty = shipment.qty;
+  if (shipment.noSuratJalan !== undefined) supabaseShipment.no_surat_jalan = shipment.noSuratJalan;
+  if (shipment.perusahaan !== undefined) supabaseShipment.perusahaan = shipment.perusahaan;
+  if (shipment.tujuan !== undefined) supabaseShipment.tujuan = shipment.tujuan;
+  if (shipment.supir !== undefined) supabaseShipment.supir = shipment.supir;
+  if (shipment.tanggalKirim !== undefined) supabaseShipment.tanggal_kirim = shipment.tanggalKirim;
+  if (shipment.tanggalTiba !== undefined) supabaseShipment.tanggal_tiba = shipment.tanggalTiba;
+  if (shipment.status !== undefined) supabaseShipment.status = shipment.status;
+  if (shipment.kendala !== undefined) supabaseShipment.kendala = shipment.kendala;
+  if (shipment.qty !== undefined) supabaseShipment.qty = shipment.qty;
   
-  return result;
+  return supabaseShipment;
 };
 
 // Get all shipments
@@ -71,9 +82,22 @@ export const getShipmentById = async (id: string): Promise<Shipment | null> => {
 
 // Create a new shipment
 export const createShipment = async (shipment: Omit<Shipment, 'id'>): Promise<Shipment> => {
+  // Create a properly formatted object for Supabase
+  const supabaseShipment = {
+    no_surat_jalan: shipment.noSuratJalan,
+    perusahaan: shipment.perusahaan,
+    tujuan: shipment.tujuan,
+    supir: shipment.supir,
+    tanggal_kirim: shipment.tanggalKirim,
+    tanggal_tiba: shipment.tanggalTiba,
+    status: shipment.status,
+    kendala: shipment.kendala,
+    qty: shipment.qty
+  };
+
   const { data, error } = await supabase
     .from('shipments')
-    .insert(mapToSupabaseShipment(shipment))
+    .insert(supabaseShipment)
     .select()
     .single();
 
@@ -87,9 +111,11 @@ export const createShipment = async (shipment: Omit<Shipment, 'id'>): Promise<Sh
 
 // Update an existing shipment
 export const updateShipment = async (id: string, shipment: Partial<Shipment>): Promise<Shipment> => {
+  const supabaseShipment = mapToSupabaseShipment(shipment);
+
   const { data, error } = await supabase
     .from('shipments')
-    .update(mapToSupabaseShipment(shipment))
+    .update(supabaseShipment)
     .eq('id', id)
     .select()
     .single();
@@ -134,7 +160,17 @@ export const getShipmentStatusHistory = async (shipmentId: string): Promise<Stat
 // Batch import shipments
 export const batchImportShipments = async (shipments: Omit<Shipment, 'id'>[]): Promise<Shipment[]> => {
   // Map each shipment to Supabase format
-  const supabaseShipments = shipments.map(mapToSupabaseShipment);
+  const supabaseShipments = shipments.map(shipment => ({
+    no_surat_jalan: shipment.noSuratJalan,
+    perusahaan: shipment.perusahaan,
+    tujuan: shipment.tujuan,
+    supir: shipment.supir,
+    tanggal_kirim: shipment.tanggalKirim,
+    tanggal_tiba: shipment.tanggalTiba,
+    status: shipment.status,
+    kendala: shipment.kendala,
+    qty: shipment.qty
+  }));
   
   const { data, error } = await supabase
     .from('shipments')
