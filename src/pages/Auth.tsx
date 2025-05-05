@@ -28,6 +28,7 @@ const Auth = () => {
   useEffect(() => {
     // Redirect if user is already logged in
     if (user) {
+      console.log("User already logged in, redirecting to home");
       navigate('/');
     }
   }, [user, navigate]);
@@ -43,14 +44,19 @@ const Auth = () => {
     setIsLoading(true);
     
     try {
-      const { error } = await signIn(email, password);
+      console.log("Submitting login form");
+      const { error, data } = await signIn(email, password);
       
       if (error) {
         console.error('Login error:', error);
         toast.error(error.message || 'Gagal login');
       } else {
         toast.success('Login berhasil');
-        // The navigation is handled in the signIn function
+        console.log("Login successful, navigating to home");
+        
+        if (data?.user) {
+          navigate('/');
+        }
       }
     } catch (error: any) {
       console.error('Login exception:', error);
@@ -71,6 +77,7 @@ const Auth = () => {
     setIsLoading(true);
     
     try {
+      console.log("Submitting signup form");
       const { error } = await signUp(email, password, name);
       
       if (error) {
