@@ -9,135 +9,16 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      profiles: {
-        Row: {
-          created_at: string
-          id: string
-          name: string | null
-          role: Database["public"]["Enums"]["user_role"]
-        }
-        Insert: {
-          created_at?: string
-          id: string
-          name?: string | null
-          role?: Database["public"]["Enums"]["user_role"]
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string | null
-          role?: Database["public"]["Enums"]["user_role"]
-        }
-        Relationships: []
-      }
-      shipments: {
-        Row: {
-          created_at: string
-          id: string
-          kendala: string | null
-          no_surat_jalan: string
-          perusahaan: string
-          qty: number
-          status: string
-          supir: string
-          tanggal_kirim: string
-          tanggal_tiba: string | null
-          tujuan: string
-          updated_at: string
-          updated_by: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          kendala?: string | null
-          no_surat_jalan: string
-          perusahaan: string
-          qty?: number
-          status: string
-          supir: string
-          tanggal_kirim: string
-          tanggal_tiba?: string | null
-          tujuan: string
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          kendala?: string | null
-          no_surat_jalan?: string
-          perusahaan?: string
-          qty?: number
-          status?: string
-          supir?: string
-          tanggal_kirim?: string
-          tanggal_tiba?: string | null
-          tujuan?: string
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Relationships: []
-      }
-      status_history: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          id: string
-          new_status: string
-          notes: string | null
-          previous_status: string
-          shipment_id: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          new_status: string
-          notes?: string | null
-          previous_status: string
-          shipment_id: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          new_status?: string
-          notes?: string | null
-          previous_status?: string
-          shipment_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "status_history_shipment_id_fkey"
-            columns: ["shipment_id"]
-            isOneToOne: false
-            referencedRelation: "shipments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      get_company_summaries: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          company: string
-          total: number
-          delivered: number
-          pending: number
-          failed: number
-        }[]
-      }
-      is_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
-      user_role: "admin" | "user"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -252,8 +133,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      user_role: ["admin", "user"],
-    },
+    Enums: {},
   },
 } as const
