@@ -16,7 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const DashboardLayout = () => {
   const { toast } = useToast();
-  const { isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [filteredShipments, setFilteredShipments] = useState<Shipment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -103,12 +103,18 @@ const DashboardLayout = () => {
                 </p>
               </div>
               
-              {isAdmin ? (
-                <Button variant="outline" asChild>
-                  <Link to="/admin">
-                    Admin Panel
-                  </Link>
-                </Button>
+              {user ? (
+                isAdmin ? (
+                  <Button variant="default" asChild>
+                    <Link to="/admin">
+                      Admin Panel
+                    </Link>
+                  </Button>
+                ) : (
+                  <div className="text-sm text-muted-foreground">
+                    Selamat datang, {user.email}
+                  </div>
+                )
               ) : (
                 <Button variant="outline" asChild>
                   <Link to="/auth">

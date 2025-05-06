@@ -20,8 +20,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     if (!isLoading && !user) {
       console.log("User not authenticated, redirecting to auth page");
       navigate('/auth');
+    } else if (!isLoading && requiredRole === 'admin' && !isAdmin) {
+      console.log("User is not an admin, redirecting to home");
+      navigate('/');
     }
-  }, [user, isLoading, navigate]);
+  }, [user, isAdmin, isLoading, navigate, requiredRole]);
 
   if (isLoading) {
     return (

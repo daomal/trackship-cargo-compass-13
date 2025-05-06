@@ -81,6 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
+      console.log('User profile fetched:', data);
       setProfile(data as UserProfile);
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
@@ -100,6 +101,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!error && data?.user) {
         // Don't navigate here as it can cause issues with state updates
         // Navigation will happen in the Auth component
+        
+        // Fetch profile immediately after successful login
+        setTimeout(() => {
+          if (data.user) {
+            fetchUserProfile(data.user.id);
+          }
+        }, 0);
       }
 
       return { data, error };
@@ -134,12 +142,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
+      setUser(null);
+      setSession(null);
+      setProfile(null);
       navigate('/auth');
     } catch (error) {
       console.error('Sign out error:', error);
     }
   };
 
+  // Always check if the profile has admin role
   const isAdmin = profile?.role === 'admin';
 
   return (

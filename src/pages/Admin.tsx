@@ -24,7 +24,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useNavigate } from "react-router-dom";
 
 const Admin = () => {
-  const { isAdmin, signOut } = useAuth();
+  const { isAdmin, user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [shipments, setShipments] = useState<Shipment[]>([]);
@@ -37,17 +37,32 @@ const Admin = () => {
     driver: "all",
   });
 
+  // Improved effect to check admin access
   useEffect(() => {
-    // Redirect if not admin
-    if (!isAdmin) {
-      navigate('/');
+    if (!user) {
+      // If not logged in at all, redirect to auth page
+      toast({
+        title: "Akses ditolak",
+        description: "Silakan login terlebih dahulu",
+        variant: "destructive",
+      });
+      navigate('/auth');
+      return;
     }
-  }, [isAdmin, navigate]);
-
-  // Fetch shipments on component mount
-  useEffect(() => {
-    fetchShipments();
-  }, []);
+    
+    if (!isAdmin) {
+      // If logged in but not admin, redirect to home
+      toast({
+        title: "Akses ditolak",
+        description: "Anda tidak memiliki akses admin",
+        variant: "destructive",
+      });
+      navigate('/');
+    } else {
+      // Admin is logged in, fetch shipments
+      fetchShipments();
+    }
+  }, [isAdmin, user, navigate, toast]);
 
   const fetchShipments = async () => {
     setIsLoading(true);
@@ -107,7 +122,8 @@ const Admin = () => {
     pending: filteredShipments.filter(s => s.status === "tertunda").length,
     failed: filteredShipments.filter(s => s.status === "gagal").length
   };
-
+  
+  // If not admin or not logged in, this will return early due to the useEffect redirect
   return (
     <SidebarProvider>
       <div className="min-h-screen bg-background">
