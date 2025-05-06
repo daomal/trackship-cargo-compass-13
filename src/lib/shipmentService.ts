@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Shipment, SupabaseShipment, StatusHistoryItem } from '@/lib/types';
 
@@ -82,7 +81,6 @@ export const getShipmentById = async (id: string): Promise<Shipment | null> => {
 
 // Create a new shipment
 export const createShipment = async (shipment: Omit<Shipment, 'id'>): Promise<Shipment> => {
-  // Create a properly formatted object for Supabase
   const supabaseShipment = {
     no_surat_jalan: shipment.noSuratJalan,
     perusahaan: shipment.perusahaan,
@@ -159,7 +157,6 @@ export const getShipmentStatusHistory = async (shipmentId: string): Promise<Stat
 
 // Batch import shipments
 export const batchImportShipments = async (shipments: Omit<Shipment, 'id'>[]): Promise<Shipment[]> => {
-  // Map each shipment to Supabase format
   const supabaseShipments = shipments.map(shipment => ({
     no_surat_jalan: shipment.noSuratJalan,
     perusahaan: shipment.perusahaan,
@@ -188,7 +185,7 @@ export const batchImportShipments = async (shipments: Omit<Shipment, 'id'>[]): P
 // Get company summaries 
 export const getCompanySummaries = async () => {
   const { data, error } = await supabase
-    .rpc('get_company_summaries');
+    .rpc('get_company_summaries', {});
 
   if (error) {
     console.error('Error getting company summaries:', error);

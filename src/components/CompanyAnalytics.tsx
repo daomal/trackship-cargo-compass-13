@@ -1,4 +1,3 @@
-
 import React, { useMemo } from "react";
 import {
   Card,
@@ -230,7 +229,12 @@ const CompanyAnalytics: React.FC<CompanyAnalyticsProps> = ({ shipments }) => {
                           style: { textAnchor: 'middle' }
                         }}
                       />
-                      <Tooltip formatter={(value) => [`${value.toFixed(1)} hari`, 'Rata-rata']} />
+                      {/* FIX: Ensure number formatting is properly handled with a type check */}
+                      <Tooltip formatter={(value) => {
+                        // Check if value is a number before calling toFixed
+                        const numValue = typeof value === 'number' ? value.toFixed(1) : value;
+                        return [`${numValue} hari`, 'Rata-rata'];
+                      }} />
                       <Bar dataKey="averageDelay" name="Rata-rata Keterlambatan" fill="#8884d8" />
                     </BarChart>
                   </ResponsiveContainer>
