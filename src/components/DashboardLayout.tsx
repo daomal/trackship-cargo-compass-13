@@ -24,6 +24,7 @@ const DashboardLayout = () => {
     dateRange: [null, null],
     status: "all",
     driver: "all",
+    company: "all"
   });
 
   // Fetch shipments on component mount
@@ -75,12 +76,20 @@ const DashboardLayout = () => {
     if (filters.driver !== "all") {
       filtered = filtered.filter(shipment => shipment.supir === filters.driver);
     }
+
+    // Filter by company
+    if (filters.company && filters.company !== "all") {
+      filtered = filtered.filter(shipment => shipment.perusahaan === filters.company);
+    }
     
     setFilteredShipments(filtered);
   };
 
   // Extract all drivers for filter
   const drivers = Array.from(new Set(shipments.map(s => s.supir))).filter(Boolean);
+  
+  // Extract all companies for filter
+  const companies = Array.from(new Set(shipments.map(s => s.perusahaan))).filter(Boolean);
 
   // Count summary data
   const summary = {
@@ -133,7 +142,11 @@ const DashboardLayout = () => {
               <div className="lg:col-span-4">
                 <div className="flex flex-col space-y-4">
                   <div className="flex flex-col md:flex-row gap-4 justify-between">
-                    <DataFilters onFilter={handleFilter} drivers={drivers} />
+                    <DataFilters 
+                      onFilter={handleFilter} 
+                      drivers={drivers}
+                      companies={companies}
+                    />
                   </div>
                 </div>
               </div>

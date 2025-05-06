@@ -184,3 +184,16 @@ export const batchImportShipments = async (shipments: Omit<Shipment, 'id'>[]): P
 
   return (data as SupabaseShipment[]).map(mapSupabaseShipment);
 };
+
+// Get company summaries 
+export const getCompanySummaries = async () => {
+  const { data, error } = await supabase
+    .rpc('get_company_summaries');
+
+  if (error) {
+    console.error('Error getting company summaries:', error);
+    throw error;
+  }
+
+  return data;
+};

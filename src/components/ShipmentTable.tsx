@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Table,
@@ -35,11 +34,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { MoreHorizontal, Calendar, Edit, Trash2 } from "lucide-react";
+import { MoreHorizontal, Calendar, Edit, Trash2, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { Shipment, ShipmentStatus } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
-import { updateShipment, deleteShipment } from "@/lib/shipmentService";
+import { updateShipment, deleteShipment, getShipmentStatusHistory } from "@/lib/shipmentService";
 
 interface ShipmentTableProps {
   shipments: Shipment[];
@@ -54,10 +53,13 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const [currentShipment, setCurrentShipment] = useState<Shipment | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [kendala, setKendala] = useState("");
   const [newStatus, setNewStatus] = useState<ShipmentStatus>("tertunda");
+  const [statusHistory, setStatusHistory] = useState<any[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   
   // Calculate total pages
   const totalPages = Math.ceil(shipments.length / ITEMS_PER_PAGE);
@@ -98,7 +100,24 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
   const handleOpenStatusDialog = (shipment: Shipment) => {
     setCurrentShipment(shipment);
     setNewStatus(shipment.status);
+    setKendala(shipment.kendala || "");
     setIsStatusDialogOpen(true);
+  };
+  
+  const handleOpenHistoryDialog = async (shipment: Shipment) => {
+    setCurrentShipment(shipment);
+    setIsHistoryDialogOpen(true);
+    
+    try {
+      setIsLoadingHistory(true);
+      const history = await getShipmentStatusHistory(shipment.id);
+      setStatusHistory(history);
+    } catch (error) {
+      console.error("Error fetching status history:", error);
+      toast.error("Gagal memuat riwayat status");
+    } finally {
+      setIsLoadingHistory(false);
+    }
   };
 
   const handleUpdateStatus = async () => {
@@ -208,6 +227,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[100px]">No. Surat Jalan</TableHead>
+                  <TableHead>Perusahaan</TableHead>
                   <TableHead>Tujuan</TableHead>
                   <TableHead>Supir</TableHead>
                   <TableHead>Tanggal Kirim</TableHead>
@@ -220,7 +240,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
               <TableBody>
                 {paginatedShipments.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={isAdmin ? 8 : 7} className="text-center h-32">
+                    <TableCell colSpan={isAdmin ? 9 : 8} className="text-center h-32">
                       Tidak ada data pengiriman
                     </TableCell>
                   </TableRow>
@@ -230,6 +250,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                       <TableCell className="font-medium">
                         {shipment.noSuratJalan}
                       </TableCell>
+                      <TableCell>{shipment.perusahaan}</TableCell>
                       <TableCell>{shipment.tujuan}</TableCell>
                       <TableCell>{shipment.supir}</TableCell>
                       <TableCell>{shipment.tanggalKirim}</TableCell>
@@ -254,6 +275,10 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                               <DropdownMenuItem onClick={() => handleOpenStatusDialog(shipment)}>
                                 <Calendar className="mr-2 h-4 w-4" />
                                 Update Status
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleOpenHistoryDialog(shipment)}>
+                                <FileText className="mr-2 h-4 w-4" />
+                                Riwayat Status
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleOpenEditDialog(shipment)}>
                                 <Edit className="mr-2 h-4 w-4" />
@@ -361,6 +386,61 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
             </Button>
             <Button onClick={handleUpdateStatus} disabled={isLoading}>
               {isLoading ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Status History Dialog */}
+      <Dialog open={isHistoryDialogOpen} onOpenChange={setIsHistoryDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Riwayat Status Pengiriman</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="text-sm mb-2">
+              <strong>No. Surat Jalan:</strong> {currentShipment?.noSuratJalan}
+            </div>
+            <div className="text-sm mb-4">
+              <strong>Perusahaan:</strong> {currentShipment?.perusahaan}
+            </div>
+            
+            {isLoadingHistory ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+              </div>
+            ) : statusHistory.length > 0 ? (
+              <div className="border rounded-md overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tanggal</TableHead>
+                      <TableHead>Status Lama</TableHead>
+                      <TableHead>Status Baru</TableHead>
+                      <TableHead>Catatan</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {statusHistory.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>{new Date(item.created_at).toLocaleString()}</TableCell>
+                        <TableCell>{renderStatusBadge(item.previous_status as ShipmentStatus)}</TableCell>
+                        <TableCell>{renderStatusBadge(item.new_status as ShipmentStatus)}</TableCell>
+                        <TableCell>{item.notes || "-"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                Tidak ada riwayat status untuk pengiriman ini
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsHistoryDialogOpen(false)}>
+              Tutup
             </Button>
           </DialogFooter>
         </DialogContent>

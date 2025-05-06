@@ -23,6 +23,7 @@ export interface FilterOptions {
   dateRange: [Date | null, Date | null];
   status: ShipmentStatus | "all";
   driver: string | "all";
+  company?: string | "all";
 }
 
 export interface ConstraintItem {
@@ -61,4 +62,24 @@ export interface StatusHistoryItem {
   notes: string | null;
   created_at: string;
   created_by: string | null;
+}
+
+// Analytics interfaces
+export interface CompanyShipmentSummary {
+  company: string;
+  total: number;
+  delivered: number;
+  pending: number;
+  failed: number;
+}
+
+export interface DelayAnalytics {
+  company: string;
+  averageDelay: number; // in days
+  totalShipments: number;
+}
+
+export interface CommonConstraint {
+  issue: string;
+  count: number;
 }

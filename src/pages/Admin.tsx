@@ -22,6 +22,7 @@ import { getShipments } from "@/lib/shipmentService";
 import { Shipment, FilterOptions, ShipmentStatus } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
+import CompanyAnalytics from "@/components/CompanyAnalytics";
 
 const Admin = () => {
   const { isAdmin, user, signOut } = useAuth();
@@ -35,6 +36,7 @@ const Admin = () => {
     dateRange: [null, null],
     status: "all",
     driver: "all",
+    company: "all"
   });
 
   // Improved effect to check admin access
@@ -109,11 +111,19 @@ const Admin = () => {
       filtered = filtered.filter(shipment => shipment.supir === filters.driver);
     }
     
+    // Filter by company
+    if (filters.company && filters.company !== "all") {
+      filtered = filtered.filter(shipment => shipment.perusahaan === filters.company);
+    }
+    
     setFilteredShipments(filtered);
   };
 
   // Extract all drivers for filter and form
   const drivers = Array.from(new Set(shipments.map(s => s.supir))).filter(Boolean);
+  
+  // Extract all companies for filter
+  const companies = Array.from(new Set(shipments.map(s => s.perusahaan))).filter(Boolean);
 
   // Count summary data
   const summary = {
@@ -143,6 +153,7 @@ const Admin = () => {
               <TabsList className="mb-4">
                 <TabsTrigger value="manage">Kelola Data</TabsTrigger>
                 <TabsTrigger value="add">Tambah Data</TabsTrigger>
+                <TabsTrigger value="analytics">Analisis</TabsTrigger>
               </TabsList>
               
               <TabsContent value="manage">
@@ -166,7 +177,8 @@ const Admin = () => {
                       <div className="flex flex-col md:flex-row gap-4 justify-between mb-4">
                         <DataFilters 
                           onFilter={handleFilter} 
-                          drivers={drivers} 
+                          drivers={drivers}
+                          companies={companies}
                         />
                         <div className="flex gap-4">
                           <FileUploader onUploadSuccess={fetchShipments} />
@@ -205,6 +217,10 @@ const Admin = () => {
                     />
                   </CardContent>
                 </Card>
+              </TabsContent>
+              
+              <TabsContent value="analytics">
+                <CompanyAnalytics shipments={shipments} />
               </TabsContent>
             </Tabs>
           </div>
