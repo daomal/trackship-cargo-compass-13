@@ -121,6 +121,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_company_summaries: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          company: string
+          total: number
+          delivered: number
+          pending: number
+          failed: number
+        }[]
+      }
       is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
