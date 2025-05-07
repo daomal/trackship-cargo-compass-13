@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { UserProfile } from '@/lib/types';
+import { ensureUserInProfiles } from '@/utils/supabaseUtils';
 
 interface AuthContextProps {
   user: User | null;
@@ -43,6 +44,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Schedule the profile fetch to avoid recursive policy issues
           setTimeout(() => {
             fetchUserProfile(session.user.id);
+            // Ensure the user exists in the profiles table
+            ensureUserInProfiles();
           }, 0);
         } else {
           setProfile(null);
@@ -72,7 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, name, role, created_at')
         .eq('id', userId)
         .single();
 

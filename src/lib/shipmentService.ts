@@ -185,7 +185,6 @@ export const batchImportShipments = async (shipments: Omit<Shipment, 'id'>[]): P
 
 // Get company summaries 
 export const getCompanySummaries = async () => {
-  // Fix: Use properly typed RPC call with an empty object parameter
   const { data, error } = await supabase
     .rpc('get_company_summaries');
 
