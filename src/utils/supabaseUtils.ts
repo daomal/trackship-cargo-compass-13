@@ -88,6 +88,7 @@ export const registerUser = async (email: string, password: string, name: string
   data?: any;
 }> => {
   try {
+    console.log(`Registering user: ${email}`);
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -106,13 +107,19 @@ export const registerUser = async (email: string, password: string, name: string
 
     // Auto-create the profile
     if (data.user) {
-      await supabase.from('profiles').insert({
+      const { error: profileError } = await supabase.from('profiles').insert({
         id: data.user.id,
         name: name,
         role: 'user'
       });
+      
+      if (profileError) {
+        console.error('Error creating user profile:', profileError);
+      }
     }
 
+    console.log('Registration successful:', data);
+    
     return {
       success: true,
       message: 'Pendaftaran berhasil',
@@ -136,6 +143,8 @@ export const loginUser = async (email: string, password: string): Promise<{
   data?: any;
 }> => {
   try {
+    console.log(`Attempting login for: ${email}`);
+    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -143,11 +152,20 @@ export const loginUser = async (email: string, password: string): Promise<{
     
     if (error) {
       console.error('Login error:', error);
+      
+      // Memberikan pesan yang lebih spesifik
+      let errorMessage = 'Gagal login';
+      if (error.message.includes('Invalid login credentials')) {
+        errorMessage = 'Email atau password tidak valid. Silakan periksa kembali.';
+      }
+      
       return {
         success: false,
-        message: error.message || 'Gagal login'
+        message: errorMessage
       };
     }
+    
+    console.log('Login successful:', data.user?.email);
     
     return {
       success: true,
@@ -213,5 +231,34 @@ export const isUserAdmin = async (): Promise<boolean> => {
   } catch (error) {
     console.error('Error checking admin status:', error);
     return false;
+  }
+};
+
+/**
+ * Reset password user
+ */
+export const resetPassword = async (email: string): Promise<{
+  success: boolean;
+  message: string;
+}> => {
+  try {
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    
+    if (error) {
+      return {
+        success: false,
+        message: error.message || 'Gagal mengirim email reset password'
+      };
+    }
+    
+    return {
+      success: true,
+      message: 'Email reset password telah dikirim'
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.message || 'Gagal mengirim email reset password'
+    };
   }
 };

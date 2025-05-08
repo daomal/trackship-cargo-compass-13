@@ -14,6 +14,7 @@ export const supabase = createClient<ExtendedDatabase>(SUPABASE_URL, SUPABASE_PU
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
+    debug: true // Enable debug mode to see more detailed logs
   }
 });
 

@@ -43,12 +43,14 @@ const Auth = () => {
     }
     
     setIsLoading(true);
+    console.log(`Attempting to login with email: ${email}`);
     
     try {
       const result = await loginUser(email, password);
       
       if (!result.success) {
-        toast.error(result.message);
+        console.error('Login failed:', result.message);
+        toast.error(result.message || 'Gagal login. Pastikan email dan password benar.');
       } else {
         toast.success(result.message);
         navigate('/');
@@ -70,11 +72,13 @@ const Auth = () => {
     }
     
     setIsLoading(true);
+    console.log(`Attempting to register with email: ${email}`);
     
     try {
       const result = await registerUser(email, password, name);
       
       if (!result.success) {
+        console.error('Registration failed:', result.message);
         toast.error(result.message);
       } else {
         toast.success(result.message);
