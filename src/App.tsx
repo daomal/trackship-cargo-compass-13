@@ -12,6 +12,7 @@ import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import { useEffect } from "react";
 import { validateSupabaseConnection } from "./utils/supabaseUtils";
+import { toast } from "sonner";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ const App = () => {
         console.log('Supabase connection is valid');
       } else {
         console.error('Supabase connection is invalid');
+        toast.error('Koneksi dengan database gagal. Harap hubungi administrator.');
       }
     });
   }, []);

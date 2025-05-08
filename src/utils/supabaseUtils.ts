@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 /**
  * Validates the Supabase connection and types
@@ -74,6 +75,143 @@ export const ensureUserInProfiles = async (): Promise<boolean> => {
     return true;
   } catch (error) {
     console.error('Error ensuring user in profiles:', error);
+    return false;
+  }
+};
+
+/**
+ * Registers a new user with email and password
+ */
+export const registerUser = async (email: string, password: string, name: string): Promise<{
+  success: boolean;
+  message: string;
+  data?: any;
+}> => {
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { name }
+      }
+    });
+    
+    if (error) {
+      console.error('Registration error:', error);
+      return {
+        success: false,
+        message: error.message || 'Gagal mendaftar'
+      };
+    }
+
+    // Auto-create the profile
+    if (data.user) {
+      await supabase.from('profiles').insert({
+        id: data.user.id,
+        name: name,
+        role: 'user'
+      });
+    }
+
+    return {
+      success: true,
+      message: 'Pendaftaran berhasil',
+      data
+    };
+  } catch (error: any) {
+    console.error('Registration exception:', error);
+    return {
+      success: false,
+      message: error.message || 'Gagal mendaftar'
+    };
+  }
+};
+
+/**
+ * Login dengan email dan password
+ */
+export const loginUser = async (email: string, password: string): Promise<{
+  success: boolean;
+  message: string;
+  data?: any;
+}> => {
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+    
+    if (error) {
+      console.error('Login error:', error);
+      return {
+        success: false,
+        message: error.message || 'Gagal login'
+      };
+    }
+    
+    return {
+      success: true,
+      message: 'Login berhasil',
+      data
+    };
+  } catch (error: any) {
+    console.error('Login exception:', error);
+    return {
+      success: false,
+      message: error.message || 'Gagal login'
+    };
+  }
+};
+
+/**
+ * Logout user
+ */
+export const logoutUser = async (): Promise<{
+  success: boolean;
+  message: string;
+}> => {
+  try {
+    const { error } = await supabase.auth.signOut();
+    
+    if (error) {
+      return {
+        success: false,
+        message: error.message || 'Gagal logout'
+      };
+    }
+    
+    return {
+      success: true,
+      message: 'Logout berhasil'
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.message || 'Gagal logout'
+    };
+  }
+};
+
+/**
+ * Mendapatkan status admin dari user
+ */
+export const isUserAdmin = async (): Promise<boolean> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) return false;
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    
+    if (error || !data) return false;
+    
+    return data.role === 'admin';
+  } catch (error) {
+    console.error('Error checking admin status:', error);
     return false;
   }
 };

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { LogIn } from "lucide-react";
+import { LogIn, User, UserCog } from "lucide-react";
 import { Link } from "react-router-dom";
 import SummaryCards from "./SummaryCards";
 import ShipmentTable from "./ShipmentTable";
@@ -16,7 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const DashboardLayout = () => {
   const { toast } = useToast();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, signOut } = useAuth();
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [filteredShipments, setFilteredShipments] = useState<Shipment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -113,19 +113,30 @@ const DashboardLayout = () => {
               </div>
               
               {user ? (
-                isAdmin ? (
-                  <Button variant="default" asChild>
-                    <Link to="/admin">
-                      Admin Panel
-                    </Link>
-                  </Button>
-                ) : (
-                  <div className="text-sm text-muted-foreground">
-                    Selamat datang, {user.email}
+                <div className="flex items-center gap-4">
+                  <div className="text-sm text-muted-foreground flex items-center">
+                    <User className="w-4 h-4 mr-1" /> 
+                    {user.email}
                   </div>
-                )
+                  
+                  {isAdmin && (
+                    <Button variant="default" className="bg-blue-600 hover:bg-blue-700" asChild>
+                      <Link to="/admin">
+                        <UserCog className="mr-2 h-4 w-4" />
+                        Panel Admin
+                      </Link>
+                    </Button>
+                  )}
+                  
+                  <Button 
+                    variant="outline" 
+                    onClick={() => signOut()}
+                  >
+                    Logout
+                  </Button>
+                </div>
               ) : (
-                <Button variant="outline" asChild>
+                <Button variant="default" asChild>
                   <Link to="/auth">
                     <LogIn className="mr-2 h-4 w-4" />
                     Login

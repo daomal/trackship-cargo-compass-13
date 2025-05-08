@@ -16,3 +16,12 @@ export const supabase = createClient<ExtendedDatabase>(SUPABASE_URL, SUPABASE_PU
     autoRefreshToken: true,
   }
 });
+
+// Helper function untuk memeriksa apakah respons error dari supabase
+export const handleSupabaseError = (error: any) => {
+  if (error) {
+    console.error('Supabase error:', error);
+    return error.message || 'Terjadi kesalahan pada server';
+  }
+  return null;
+};

@@ -15,10 +15,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { registerUser, loginUser } from '@/utils/supabaseUtils';
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { user, signIn, signUp } = useAuth();
+  const { user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -44,19 +45,13 @@ const Auth = () => {
     setIsLoading(true);
     
     try {
-      console.log("Submitting login form");
-      const { error, data } = await signIn(email, password);
+      const result = await loginUser(email, password);
       
-      if (error) {
-        console.error('Login error:', error);
-        toast.error(error.message || 'Gagal login');
+      if (!result.success) {
+        toast.error(result.message);
       } else {
-        toast.success('Login berhasil');
-        console.log("Login successful, navigating to home");
-        
-        if (data?.user) {
-          navigate('/');
-        }
+        toast.success(result.message);
+        navigate('/');
       }
     } catch (error: any) {
       console.error('Login exception:', error);
@@ -77,15 +72,14 @@ const Auth = () => {
     setIsLoading(true);
     
     try {
-      console.log("Submitting signup form");
-      const { error } = await signUp(email, password, name);
+      const result = await registerUser(email, password, name);
       
-      if (error) {
-        console.error('Signup error:', error);
-        toast.error(error.message || 'Gagal mendaftar');
+      if (!result.success) {
+        toast.error(result.message);
       } else {
-        toast.success('Pendaftaran berhasil. Cek email untuk verifikasi.');
+        toast.success(result.message);
         setActiveTab('login');
+        toast.info('Silakan login dengan akun baru Anda');
       }
     } catch (error: any) {
       console.error('Signup exception:', error);
