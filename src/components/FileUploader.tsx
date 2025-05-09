@@ -65,6 +65,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onUploadSuccess }) => {
             supir: row["Supir"] || "Unknown Driver",
             tanggalKirim: tanggalKirim || new Date().toISOString().split("T")[0],
             tanggalTiba: null,
+            waktuTiba: null,
             status: "tertunda",
             kendala: null,
             qty: row["Jumlah Qty"] || 0

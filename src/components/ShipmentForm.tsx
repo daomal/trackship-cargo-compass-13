@@ -73,6 +73,7 @@ const ShipmentForm: React.FC<ShipmentFormProps> = ({ onShipmentCreated, drivers 
         supir: formData.supir,
         tanggalKirim: format(formData.tanggalKirim, "yyyy-MM-dd"),
         tanggalTiba: null,
+        waktuTiba: null,
         status: "tertunda",
         kendala: null,
         qty: formData.qty
