@@ -51,6 +51,12 @@ const DataFilters: React.FC<DataFiltersProps> = ({
     onFilter(filterOptions);
   }, [dateRange, status, driver, company, searchQuery, onFilter]);
 
+  // Handle search input with instant filtering
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    // No need to manually trigger filter as the useEffect will handle it
+  };
+
   const resetFilters = () => {
     setDateRange([null, null]);
     setStatus("all");
@@ -70,7 +76,7 @@ const DataFilters: React.FC<DataFiltersProps> = ({
             <Input
               placeholder="Cari berdasarkan No. SJ, perusahaan, tujuan..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={handleSearchChange}
               className="pl-8"
             />
           </div>

@@ -11,7 +11,7 @@ import {
 import { Download } from "lucide-react";
 import { Shipment } from "@/lib/types";
 import { toast } from "sonner";
-import jsPDF from "jspdf";
+import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
 interface ExportOptionsProps {

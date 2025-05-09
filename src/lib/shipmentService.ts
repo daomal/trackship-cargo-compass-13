@@ -89,7 +89,18 @@ export const createShipment = async (shipment: Omit<Shipment, 'id'>): Promise<Sh
 
   const { data, error } = await supabase
     .from('shipments')
-    .insert(supabaseShipment)
+    .insert({
+      no_surat_jalan: shipment.noSuratJalan,
+      perusahaan: shipment.perusahaan,
+      tujuan: shipment.tujuan,
+      supir: shipment.supir,
+      tanggal_kirim: shipment.tanggalKirim,
+      tanggal_tiba: shipment.tanggalTiba,
+      waktu_tiba: shipment.waktuTiba,
+      status: shipment.status,
+      kendala: shipment.kendala,
+      qty: shipment.qty
+    })
     .select()
     .single();
 
@@ -151,7 +162,18 @@ export const getShipmentStatusHistory = async (shipmentId: string): Promise<Stat
 
 // Batch import shipments
 export const batchImportShipments = async (shipments: Omit<Shipment, 'id'>[]): Promise<Shipment[]> => {
-  const supabaseShipments = shipments.map(shipment => mapToSupabaseShipment(shipment));
+  const supabaseShipments = shipments.map(shipment => ({
+    no_surat_jalan: shipment.noSuratJalan,
+    perusahaan: shipment.perusahaan,
+    tujuan: shipment.tujuan,
+    supir: shipment.supir,
+    tanggal_kirim: shipment.tanggalKirim,
+    tanggal_tiba: shipment.tanggalTiba,
+    waktu_tiba: shipment.waktuTiba,
+    status: shipment.status,
+    kendala: shipment.kendala,
+    qty: shipment.qty
+  }));
   
   const { data, error } = await supabase
     .from('shipments')

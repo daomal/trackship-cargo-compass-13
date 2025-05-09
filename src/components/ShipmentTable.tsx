@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Table,
@@ -67,6 +66,8 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
   const [currentTime, setCurrentTime] = useState<string>(
     new Date().toTimeString().substring(0, 5)
   );
+  const [driverEditId, setDriverEditId] = useState<string | null>(null);
+  const [editableDriverName, setEditableDriverName] = useState("");
   
   // Real-time updates
   useEffect(() => {
@@ -282,6 +283,54 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
     }
   };
 
+  // Function to handle in-place driver editing
+  const handleStartDriverEdit = (shipment: Shipment, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDriverEditId(shipment.id);
+    setEditableDriverName(shipment.supir);
+  };
+
+  const handleDriverNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditableDriverName(e.target.value);
+  };
+
+  const handleDriverNameSave = async () => {
+    if (!driverEditId || !editableDriverName.trim()) {
+      return;
+    }
+    
+    try {
+      await updateShipment(driverEditId, {
+        supir: editableDriverName
+      });
+      
+      toast.success("Nama supir berhasil diperbarui");
+      setDriverEditId(null);
+      
+      // Update data either through callback or local state
+      if (onShipmentUpdated) {
+        onShipmentUpdated();
+      } else {
+        // Update local data if no refresh callback provided
+        setLocalShipments(prev => 
+          prev.map(s => s.id === driverEditId ? {...s, supir: editableDriverName} : s)
+        );
+      }
+    } catch (error) {
+      console.error("Error updating driver name:", error);
+      toast.error("Gagal memperbarui nama supir");
+    }
+  };
+
+  const handleDriverNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleDriverNameSave();
+    } else if (e.key === 'Escape') {
+      setDriverEditId(null);
+    }
+  };
+
   return (
     <>
       <Card>
@@ -321,13 +370,26 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                       <TableCell>{shipment.tujuan}</TableCell>
                       <TableCell>
                         {isAdmin ? (
-                          <Button 
-                            variant="link" 
-                            className="p-0 h-auto text-blue-600 hover:text-blue-800"
-                            onClick={() => handleOpenEditDriverDialog(shipment)}
-                          >
-                            {shipment.supir}
-                          </Button>
+                          driverEditId === shipment.id ? (
+                            <div className="flex items-center gap-2">
+                              <Input 
+                                value={editableDriverName}
+                                onChange={handleDriverNameChange}
+                                onKeyDown={handleDriverNameKeyDown}
+                                onBlur={handleDriverNameSave}
+                                autoFocus
+                                className="py-1 h-8"
+                              />
+                            </div>
+                          ) : (
+                            <Button 
+                              variant="ghost" 
+                              className="p-0 h-auto text-blue-600 hover:text-blue-800 hover:underline"
+                              onClick={(e) => handleStartDriverEdit(shipment, e)}
+                            >
+                              {shipment.supir}
+                            </Button>
+                          )
                         ) : (
                           shipment.supir
                         )}
@@ -367,7 +429,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit Keterangan
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleOpenEditDriverDialog(shipment)}>
+                              <DropdownMenuItem onClick={(e) => {e.preventDefault(); handleStartDriverEdit(shipment, e);}}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit Supir
                               </DropdownMenuItem>

@@ -45,6 +45,7 @@ export type Database = {
           tujuan: string
           updated_at: string | null
           updated_by: string | null
+          waktu_tiba: string | null
         }
         Insert: {
           created_at?: string | null
@@ -60,6 +61,7 @@ export type Database = {
           tujuan: string
           updated_at?: string | null
           updated_by?: string | null
+          waktu_tiba?: string | null
         }
         Update: {
           created_at?: string | null
@@ -75,6 +77,7 @@ export type Database = {
           tujuan?: string
           updated_at?: string | null
           updated_by?: string | null
+          waktu_tiba?: string | null
         }
         Relationships: []
       }
