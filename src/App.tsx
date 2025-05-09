@@ -1,60 +1,51 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "@/components/ui/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import Index from "@/pages/Index";
+import Auth from "@/pages/Auth";
+import Admin from "@/pages/Admin";
+import NotFound from "@/pages/NotFound";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import Admin from "./pages/Admin";
-import NotFound from "./pages/NotFound";
-import { useEffect } from "react";
-import { validateSupabaseConnection } from "./utils/supabaseUtils";
-import { toast } from "sonner";
+import PublicData from "@/pages/PublicData";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      retry: 1,
+    },
+  },
+});
 
-const App = () => {
-  // Validate the Supabase connection when the app starts
-  useEffect(() => {
-    validateSupabaseConnection().then(isValid => {
-      if (isValid) {
-        console.log('Supabase connection is valid');
-      } else {
-        console.error('Supabase connection is invalid');
-        toast.error('Koneksi dengan database gagal. Harap hubungi administrator.');
-      }
-    });
-  }, []);
-
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
+      <ThemeProvider defaultTheme="light" storageKey="theme-preference">
+        <AuthProvider>
+          <Router>
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
-              <Route 
-                path="/admin" 
+              <Route path="/public-data" element={<PublicData />} />
+              <Route
+                path="/admin"
                 element={
                   <ProtectedRoute requiredRole="admin">
                     <Admin />
                   </ProtectedRoute>
-                } 
+                }
               />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
+          </Router>
+          <Toaster />
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
-};
+}
 
 export default App;

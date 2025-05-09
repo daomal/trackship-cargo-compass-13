@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   Table,
@@ -6,6 +7,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableFooter,
 } from "@/components/ui/table";
 import {
   Pagination,
@@ -91,6 +93,9 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, localShipments.length);
   const paginatedShipments = localShipments.slice(startIndex, endIndex);
+
+  // Calculate total quantity
+  const totalQuantity = localShipments.reduce((total, shipment) => total + shipment.qty, 0);
 
   // Helper function for status badge
   const renderStatusBadge = (status: ShipmentStatus) => {
@@ -350,13 +355,14 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                   <TableHead>Tanggal & Waktu Tiba</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Kendala</TableHead>
+                  <TableHead className="text-right">Qty</TableHead>
                   {isAdmin && <TableHead className="w-[60px]">Aksi</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedShipments.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={isAdmin ? 9 : 8} className="text-center h-32">
+                    <TableCell colSpan={isAdmin ? 10 : 9} className="text-center h-32">
                       Tidak ada data pengiriman
                     </TableCell>
                   </TableRow>
@@ -374,8 +380,14 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                             <div className="flex items-center gap-2">
                               <Input 
                                 value={editableDriverName}
-                                onChange={handleDriverNameChange}
-                                onKeyDown={handleDriverNameKeyDown}
+                                onChange={(e) => setEditableDriverName(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handleDriverNameSave();
+                                  } else if (e.key === 'Escape') {
+                                    setDriverEditId(null);
+                                  }
+                                }}
                                 onBlur={handleDriverNameSave}
                                 autoFocus
                                 className="py-1 h-8"
@@ -407,6 +419,9 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                       </TableCell>
                       <TableCell>
                         {shipment.kendala || "-"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {shipment.qty}
                       </TableCell>
                       {isAdmin && (
                         <TableCell>
@@ -445,6 +460,15 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                   ))
                 )}
               </TableBody>
+              <TableFooter>
+                <TableRow>
+                  <TableCell colSpan={isAdmin ? 8 : 8} className="text-right font-medium">
+                    Total Qty:
+                  </TableCell>
+                  <TableCell className="text-right font-medium">{totalQuantity}</TableCell>
+                  {isAdmin && <TableCell></TableCell>}
+                </TableRow>
+              </TableFooter>
             </Table>
           </div>
 

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { LogIn, User, UserCog } from "lucide-react";
+import { LogIn, User, UserCog, BarChart2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import SummaryCards from "./SummaryCards";
 import ShipmentTable from "./ShipmentTable";
@@ -112,37 +112,46 @@ const DashboardLayout = () => {
                 </p>
               </div>
               
-              {user ? (
-                <div className="flex items-center gap-4">
-                  <div className="text-sm text-muted-foreground flex items-center">
-                    <User className="w-4 h-4 mr-1" /> 
-                    {user.email}
-                  </div>
-                  
-                  {isAdmin && (
-                    <Button variant="default" className="bg-blue-600 hover:bg-blue-700" asChild>
-                      <Link to="/admin">
-                        <UserCog className="mr-2 h-4 w-4" />
-                        Panel Admin
-                      </Link>
-                    </Button>
-                  )}
-                  
-                  <Button 
-                    variant="outline" 
-                    onClick={() => signOut()}
-                  >
-                    Logout
-                  </Button>
-                </div>
-              ) : (
-                <Button variant="default" asChild>
-                  <Link to="/auth">
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Login
+              <div className="flex items-center gap-4">
+                <Button variant="outline" asChild>
+                  <Link to="/public-data">
+                    <BarChart2 className="mr-2 h-4 w-4" />
+                    Lihat Data Publik
                   </Link>
                 </Button>
-              )}
+                
+                {user ? (
+                  <div className="flex items-center gap-4">
+                    <div className="text-sm text-muted-foreground flex items-center">
+                      <User className="w-4 h-4 mr-1" /> 
+                      {user.email}
+                    </div>
+                    
+                    {isAdmin && (
+                      <Button variant="default" className="bg-blue-600 hover:bg-blue-700" asChild>
+                        <Link to="/admin">
+                          <UserCog className="mr-2 h-4 w-4" />
+                          Panel Admin
+                        </Link>
+                      </Button>
+                    )}
+                    
+                    <Button 
+                      variant="outline" 
+                      onClick={() => signOut()}
+                    >
+                      Logout
+                    </Button>
+                  </div>
+                ) : (
+                  <Button variant="default" asChild>
+                    <Link to="/auth">
+                      <LogIn className="mr-2 h-4 w-4" />
+                      Login
+                    </Link>
+                  </Button>
+                )}
+              </div>
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -163,7 +172,7 @@ const DashboardLayout = () => {
               </div>
               
               <div className="lg:col-span-4">
-                <ShipmentTable shipments={filteredShipments} />
+                <ShipmentTable shipments={filteredShipments} onShipmentUpdated={fetchShipments} />
               </div>
               
               <div className="lg:col-span-2">

@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { 
   DropdownMenu,
@@ -13,6 +13,7 @@ import { Shipment } from "@/lib/types";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import html2canvas from "html2canvas";
 
 interface ExportOptionsProps {
   data: Shipment[];
@@ -36,6 +37,7 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
         "Supir",
         "Tanggal Kirim",
         "Tanggal Tiba",
+        "Waktu Tiba",
         "Status",
         "Kendala",
         "Qty"
@@ -50,6 +52,7 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
           `"${shipment.supir}"`,
           `"${shipment.tanggalKirim}"`,
           `"${shipment.tanggalTiba || ""}"`,
+          `"${shipment.waktuTiba || ""}"`,
           `"${shipment.status}"`,
           `"${shipment.kendala || ""}"`,
           `${shipment.qty}`
@@ -93,9 +96,17 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
       // Add date
       doc.setFontSize(11);
       doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`, 14, 30);
+
+      // Add filter range if available
+      const urlParams = new URLSearchParams(window.location.search);
+      const startDate = urlParams.get('startDate');
+      const endDate = urlParams.get('endDate');
+      if (startDate && endDate) {
+        doc.text(`Periode: ${startDate} s/d ${endDate}`, 14, 38);
+      }
       
       // Prepare data for table
-      const tableColumn = ["No. SJ", "Perusahaan", "Tujuan", "Supir", "Tgl Kirim", "Tgl Tiba", "Status", "Kendala", "Qty"];
+      const tableColumn = ["No. SJ", "Perusahaan", "Tujuan", "Supir", "Tgl Kirim", "Tgl Tiba", "Waktu Tiba", "Status", "Kendala", "Qty"];
       const tableRows = data.map((shipment) => [
         shipment.noSuratJalan,
         shipment.perusahaan,
@@ -103,21 +114,31 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
         shipment.supir,
         shipment.tanggalKirim,
         shipment.tanggalTiba || "-",
+        shipment.waktuTiba || "-",
         shipment.status,
         shipment.kendala || "-",
         shipment.qty.toString()
       ]);
 
+      // Calculate total quantity
+      const totalQty = data.reduce((sum, item) => sum + item.qty, 0);
+
       // Create the table
       autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
-        startY: 35,
+        startY: 45,
         styles: { fontSize: 8, cellPadding: 1.5 },
         headStyles: { fillColor: [41, 128, 185], textColor: 255 },
         alternateRowStyles: { fillColor: [245, 245, 245] },
-        margin: { top: 35 }
+        margin: { top: 45 }
       });
+      
+      // Add total row
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      const finalY = (doc as any).lastAutoTable.finalY;
+      doc.text(`Total Qty: ${totalQty}`, 167, finalY + 10, { align: 'right' });
       
       // Save the PDF
       doc.save(`pengiriman_${getTodayFormatted()}.pdf`);
@@ -152,6 +173,7 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
         "Supir",
         "Tanggal Kirim",
         "Tanggal Tiba",
+        "Waktu Tiba",
         "Status",
         "Kendala",
         "Qty"
@@ -170,6 +192,7 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
             `"${shipment.supir}"`,
             `"${shipment.tanggalKirim}"`,
             `"${shipment.tanggalTiba || ""}"`,
+            `"${shipment.waktuTiba || ""}"`,
             `"${shipment.status}"`,
             `"${shipment.kendala || ""}"`,
             `${shipment.qty}`
@@ -231,7 +254,7 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
       doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`, 14, yPos);
       yPos += 10;
       
-      const tableColumn = ["No. SJ", "Tujuan", "Supir", "Tgl Kirim", "Tgl Tiba", "Status", "Kendala", "Qty"];
+      const tableColumn = ["No. SJ", "Tujuan", "Supir", "Tgl Kirim", "Tgl Tiba", "Waktu Tiba", "Status", "Kendala", "Qty"];
       
       // Create pages for each company
       Object.entries(groupedByCompany).forEach(([company, shipments], index) => {
@@ -251,10 +274,14 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
           shipment.supir,
           shipment.tanggalKirim,
           shipment.tanggalTiba || "-",
+          shipment.waktuTiba || "-",
           shipment.status,
           shipment.kendala || "-",
           shipment.qty.toString()
         ]);
+        
+        // Calculate total quantity for this company
+        const companyTotal = shipments.reduce((sum, shipment) => sum + shipment.qty, 0);
         
         // Create the table
         autoTable(doc, {
@@ -267,8 +294,14 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
           margin: { top: 35 }
         });
         
+        // Add total row for this company
+        yPos = (doc as any).lastAutoTable.finalY + 5;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.text(`Total Qty: ${companyTotal}`, 167, yPos, { align: 'right' });
+        
         // Update position for next company
-        yPos = (doc as any).lastAutoTable.finalY + 10;
+        yPos += 10;
       });
       
       // Save the PDF
@@ -293,11 +326,14 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
             total: 0,
             delivered: 0,
             pending: 0,
-            failed: 0
+            failed: 0,
+            totalQty: 0
           };
         }
         
         acc[company].total++;
+        acc[company].totalQty += shipment.qty;
+        
         if (shipment.status === "terkirim") {
           acc[company].delivered++;
         } else if (shipment.status === "tertunda") {
@@ -307,10 +343,10 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
         }
         
         return acc;
-      }, {} as Record<string, { name: string; total: number; delivered: number; pending: number; failed: number }>);
+      }, {} as Record<string, { name: string; total: number; delivered: number; pending: number; failed: number; totalQty: number }>);
       
       // Headers for the summary stats
-      const headers = ["Perusahaan", "Total", "Terkirim", "Tertunda", "Gagal"].join(",");
+      const headers = ["Perusahaan", "Total", "Terkirim", "Tertunda", "Gagal", "Total Qty"].join(",");
       
       // Convert stats to rows
       const statRows = Object.values(companyStats).map(stat => {
@@ -319,7 +355,8 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
           stat.total,
           stat.delivered,
           stat.pending,
-          stat.failed
+          stat.failed,
+          stat.totalQty
         ].join(",");
       });
       
@@ -359,11 +396,14 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
             total: 0,
             delivered: 0,
             pending: 0,
-            failed: 0
+            failed: 0,
+            totalQty: 0
           };
         }
         
         acc[company].total++;
+        acc[company].totalQty += shipment.qty;
+        
         if (shipment.status === "terkirim") {
           acc[company].delivered++;
         } else if (shipment.status === "tertunda") {
@@ -373,7 +413,7 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
         }
         
         return acc;
-      }, {} as Record<string, { name: string; total: number; delivered: number; pending: number; failed: number }>);
+      }, {} as Record<string, { name: string; total: number; delivered: number; pending: number; failed: number; totalQty: number }>);
       
       const doc = new jsPDF();
       
@@ -386,13 +426,14 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
       doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`, 14, 30);
       
       // Prepare data for table
-      const tableColumn = ["Perusahaan", "Total", "Terkirim", "Tertunda", "Gagal"];
+      const tableColumn = ["Perusahaan", "Total", "Terkirim", "Tertunda", "Gagal", "Total Qty"];
       const tableRows = Object.values(companyStats).map(stat => [
         stat.name,
         stat.total.toString(),
         stat.delivered.toString(),
         stat.pending.toString(),
-        stat.failed.toString()
+        stat.failed.toString(),
+        stat.totalQty.toString()
       ]);
       
       // Create the table
@@ -413,6 +454,194 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
     } catch (error) {
       console.error("Error exporting PDF statistics:", error);
       toast.error("Gagal mengunduh statistik PDF. Silakan coba lagi.");
+    }
+  };
+  
+  // Export complete report with charts as PDF
+  const exportCompleteReportPDF = async () => {
+    try {
+      toast.info("Sedang menyiapkan laporan lengkap...");
+      
+      // Get chart elements
+      const chartElements = document.querySelectorAll('.recharts-wrapper');
+      if (!chartElements.length) {
+        toast.error("Tidak dapat menemukan diagram untuk diekspor");
+        return;
+      }
+      
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = doc.internal.pageSize.getWidth();
+      
+      // Add title
+      doc.setFontSize(18);
+      doc.text("Laporan Lengkap Pengiriman", pageWidth / 2, 15, { align: 'center' });
+      
+      // Add date
+      doc.setFontSize(11);
+      doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`, pageWidth / 2, 22, { align: 'center' });
+
+      // Add filter range if available
+      const urlParams = new URLSearchParams(window.location.search);
+      const startDate = urlParams.get('startDate');
+      const endDate = urlParams.get('endDate');
+      if (startDate && endDate) {
+        doc.text(`Periode: ${startDate} s/d ${endDate}`, pageWidth / 2, 27, { align: 'center' });
+      }
+      
+      // Calculate summary data
+      const summary = {
+        total: data.length,
+        delivered: data.filter(s => s.status === "terkirim").length,
+        pending: data.filter(s => s.status === "tertunda").length,
+        failed: data.filter(s => s.status === "gagal").length,
+        totalQty: data.reduce((sum, s) => sum + s.qty, 0)
+      };
+      
+      // Add summary section
+      let yPos = 35;
+      doc.setFontSize(14);
+      doc.text("Ringkasan Data", 14, yPos);
+      yPos += 8;
+      
+      doc.setFontSize(10);
+      doc.text(`Total Pengiriman: ${summary.total}`, 14, yPos);
+      yPos += 6;
+      doc.text(`Terkirim: ${summary.delivered} (${summary.total > 0 ? Math.round((summary.delivered / summary.total) * 100) : 0}%)`, 14, yPos);
+      yPos += 6;
+      doc.text(`Tertunda: ${summary.pending} (${summary.total > 0 ? Math.round((summary.pending / summary.total) * 100) : 0}%)`, 14, yPos);
+      yPos += 6;
+      doc.text(`Gagal: ${summary.failed} (${summary.total > 0 ? Math.round((summary.failed / summary.total) * 100) : 0}%)`, 14, yPos);
+      yPos += 6;
+      doc.text(`Total Qty: ${summary.totalQty}`, 14, yPos);
+      yPos += 10;
+      
+      // Add charts section
+      doc.setFontSize(14);
+      doc.text("Visualisasi Data", 14, yPos);
+      yPos += 10;
+      
+      // Convert charts to images
+      let currentY = yPos;
+      let chartsAdded = 0;
+      
+      for (const chart of Array.from(chartElements)) {
+        try {
+          // If we've already added charts and need more space, add a new page
+          if (chartsAdded > 0 && currentY > 220) {
+            doc.addPage();
+            currentY = 20;
+          }
+          
+          const canvas = await html2canvas(chart as HTMLElement, {
+            scale: 2,
+            logging: false,
+            useCORS: true,
+            allowTaint: true
+          });
+          
+          // Calculate aspect ratio and scale to fit page width with some margin
+          const imgWidth = pageWidth - 20; // 10mm margin on each side
+          const imgHeight = canvas.height * imgWidth / canvas.width;
+          
+          const imgData = canvas.toDataURL('image/png');
+          doc.addImage(imgData, 'PNG', 10, currentY, imgWidth, imgHeight);
+          
+          currentY += imgHeight + 10;
+          chartsAdded++;
+        } catch (err) {
+          console.error("Error converting chart to image:", err);
+        }
+      }
+      
+      // Add shipment data table on a new page
+      doc.addPage();
+      doc.setFontSize(14);
+      doc.text("Data Pengiriman", 14, 15);
+      
+      // Prepare data for table
+      const tableColumn = ["No. SJ", "Perusahaan", "Tujuan", "Supir", "Tgl Kirim", "Status", "Qty"];
+      const tableRows = data.map((shipment) => [
+        shipment.noSuratJalan,
+        shipment.perusahaan,
+        shipment.tujuan,
+        shipment.supir,
+        shipment.tanggalKirim,
+        shipment.status,
+        shipment.qty.toString()
+      ]);
+      
+      // Create the table
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 20,
+        styles: { fontSize: 8, cellPadding: 1.5 },
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        margin: { top: 20 }
+      });
+      
+      // Add company statistics on a new page
+      doc.addPage();
+      doc.setFontSize(14);
+      doc.text("Statistik per Perusahaan", 14, 15);
+      
+      // Group data by company
+      const companyStats = data.reduce((acc, shipment) => {
+        const company = shipment.perusahaan;
+        if (!acc[company]) {
+          acc[company] = {
+            name: company,
+            total: 0,
+            delivered: 0,
+            pending: 0,
+            failed: 0,
+            totalQty: 0
+          };
+        }
+        
+        acc[company].total++;
+        acc[company].totalQty += shipment.qty;
+        
+        if (shipment.status === "terkirim") {
+          acc[company].delivered++;
+        } else if (shipment.status === "tertunda") {
+          acc[company].pending++;
+        } else if (shipment.status === "gagal") {
+          acc[company].failed++;
+        }
+        
+        return acc;
+      }, {} as Record<string, { name: string; total: number; delivered: number; pending: number; failed: number; totalQty: number }>);
+      
+      // Create company stats table
+      const statsColumn = ["Perusahaan", "Total", "Terkirim", "Tertunda", "Gagal", "Total Qty"];
+      const statsRows = Object.values(companyStats).map(stat => [
+        stat.name,
+        stat.total.toString(),
+        stat.delivered.toString(),
+        stat.pending.toString(),
+        stat.failed.toString(),
+        stat.totalQty.toString()
+      ]);
+      
+      autoTable(doc, {
+        head: [statsColumn],
+        body: statsRows,
+        startY: 20,
+        styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        margin: { top: 20 }
+      });
+      
+      // Save the PDF
+      doc.save(`laporan_lengkap_${getTodayFormatted()}.pdf`);
+      
+      toast.success("Berhasil mengunduh laporan lengkap PDF");
+    } catch (error) {
+      console.error("Error exporting complete report:", error);
+      toast.error("Gagal mengunduh laporan lengkap. Silakan coba lagi.");
     }
   };
 
@@ -444,6 +673,10 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
         </DropdownMenuItem>
         <DropdownMenuItem onClick={exportSummaryStatsPDF}>
           Export Statistik (PDF)
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={exportCompleteReportPDF}>
+          Export Laporan Lengkap dengan Diagram (PDF)
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
