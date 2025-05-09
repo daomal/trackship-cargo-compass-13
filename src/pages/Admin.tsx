@@ -18,7 +18,7 @@ import DataFilters from "@/components/DataFilters";
 import FileUploader from "@/components/FileUploader";
 import ExportOptions from "@/components/ExportOptions";
 import ShipmentForm from "@/components/ShipmentForm";
-import { getShipments } from "@/lib/shipmentService";
+import { getShipments, subscribeToShipments } from "@/lib/shipmentService";
 import { Shipment, FilterOptions, ShipmentStatus } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
@@ -36,7 +36,8 @@ const Admin = () => {
     dateRange: [null, null],
     status: "all",
     driver: "all",
-    company: "all"
+    company: "all",
+    searchQuery: ""
   });
 
   // Improved effect to check admin access
@@ -66,12 +67,28 @@ const Admin = () => {
     }
   }, [isAdmin, user, navigate, toast]);
 
+  // Subscribe to real-time shipment updates
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    const unsubscribe = subscribeToShipments((updatedShipments) => {
+      setShipments(updatedShipments);
+      // Re-apply any active filters
+      applyFilters(updatedShipments, filterOptions);
+    });
+
+    // Cleanup function
+    return () => unsubscribe();
+  }, [isAdmin, filterOptions]);
+
   const fetchShipments = async () => {
     setIsLoading(true);
     try {
       const data = await getShipments();
       setShipments(data);
-      setFilteredShipments(data);
+      
+      // Apply any existing filters
+      applyFilters(data, filterOptions);
     } catch (error) {
       console.error("Error fetching shipments:", error);
       toast({
@@ -84,11 +101,21 @@ const Admin = () => {
     }
   };
 
-  // Function to handle filtering
-  const handleFilter = (filters: FilterOptions) => {
-    setFilterOptions(filters);
+  // Helper function to apply filters
+  const applyFilters = (data: Shipment[], filters: FilterOptions) => {
+    let filtered = [...data];
     
-    let filtered = [...shipments];
+    // Filter by search query
+    if (filters.searchQuery && filters.searchQuery.trim() !== '') {
+      const searchTerm = filters.searchQuery.toLowerCase();
+      filtered = filtered.filter(shipment => 
+        shipment.noSuratJalan.toLowerCase().includes(searchTerm) ||
+        shipment.perusahaan.toLowerCase().includes(searchTerm) ||
+        shipment.tujuan.toLowerCase().includes(searchTerm) ||
+        shipment.supir.toLowerCase().includes(searchTerm) ||
+        (shipment.kendala && shipment.kendala.toLowerCase().includes(searchTerm))
+      );
+    }
     
     // Filter by date range
     if (filters.dateRange[0] && filters.dateRange[1]) {
@@ -117,6 +144,12 @@ const Admin = () => {
     }
     
     setFilteredShipments(filtered);
+  };
+
+  // Function to handle filtering
+  const handleFilter = (filters: FilterOptions) => {
+    setFilterOptions(filters);
+    applyFilters(shipments, filters);
   };
 
   // Extract all drivers for filter and form

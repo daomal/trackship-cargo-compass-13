@@ -9,6 +9,7 @@ export interface Shipment {
   supir: string;
   tanggalKirim: string;
   tanggalTiba: string | null;
+  waktuTiba: string | null;
   status: ShipmentStatus;
   kendala: string | null;
   qty: number;
@@ -24,6 +25,7 @@ export interface FilterOptions {
   status: ShipmentStatus | "all";
   driver: string | "all";
   company?: string | "all";
+  searchQuery?: string;
 }
 
 export interface ConstraintItem {
@@ -39,6 +41,7 @@ export interface SupabaseShipment {
   supir: string;
   tanggal_kirim: string;
   tanggal_tiba: string | null;
+  waktu_tiba: string | null;
   status: ShipmentStatus;
   kendala: string | null;
   qty: number;

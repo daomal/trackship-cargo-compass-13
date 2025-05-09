@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -34,11 +35,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { MoreHorizontal, Calendar, Edit, Trash2, FileText } from "lucide-react";
+import { MoreHorizontal, Calendar, Edit, Trash2, FileText, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { Shipment, ShipmentStatus } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
-import { updateShipment, deleteShipment, getShipmentStatusHistory } from "@/lib/shipmentService";
+import { updateShipment, deleteShipment, getShipmentStatusHistory, subscribeToShipments } from "@/lib/shipmentService";
 
 interface ShipmentTableProps {
   shipments: Shipment[];
@@ -54,20 +55,41 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
+  const [isEditDriverDialogOpen, setIsEditDriverDialogOpen] = useState(false);
   const [currentShipment, setCurrentShipment] = useState<Shipment | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [kendala, setKendala] = useState("");
+  const [driverName, setDriverName] = useState("");
   const [newStatus, setNewStatus] = useState<ShipmentStatus>("tertunda");
   const [statusHistory, setStatusHistory] = useState<any[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [localShipments, setLocalShipments] = useState<Shipment[]>(shipments);
+  const [currentTime, setCurrentTime] = useState<string>(
+    new Date().toTimeString().substring(0, 5)
+  );
+  
+  // Real-time updates
+  useEffect(() => {
+    setLocalShipments(shipments);
+  }, [shipments]);
+
+  useEffect(() => {
+    // Subscribe to real-time updates
+    const unsubscribe = subscribeToShipments((updatedShipments) => {
+      setLocalShipments(updatedShipments);
+    });
+
+    // Cleanup function
+    return () => unsubscribe();
+  }, []);
   
   // Calculate total pages
-  const totalPages = Math.ceil(shipments.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(localShipments.length / ITEMS_PER_PAGE);
   
   // Calculate current items
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, shipments.length);
-  const paginatedShipments = shipments.slice(startIndex, endIndex);
+  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, localShipments.length);
+  const paginatedShipments = localShipments.slice(startIndex, endIndex);
 
   // Helper function for status badge
   const renderStatusBadge = (status: ShipmentStatus) => {
@@ -101,7 +123,14 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
     setCurrentShipment(shipment);
     setNewStatus(shipment.status);
     setKendala(shipment.kendala || "");
+    setCurrentTime(new Date().toTimeString().substring(0, 5));
     setIsStatusDialogOpen(true);
+  };
+
+  const handleOpenEditDriverDialog = (shipment: Shipment) => {
+    setCurrentShipment(shipment);
+    setDriverName(shipment.supir);
+    setIsEditDriverDialogOpen(true);
   };
   
   const handleOpenHistoryDialog = async (shipment: Shipment) => {
@@ -117,6 +146,41 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       toast.error("Gagal memuat riwayat status");
     } finally {
       setIsLoadingHistory(false);
+    }
+  };
+
+  const handleUpdateDriver = async () => {
+    if (!currentShipment || !driverName.trim()) {
+      toast.error("Nama supir tidak boleh kosong");
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const updateData: Partial<Shipment> = {
+        supir: driverName
+      };
+      
+      await updateShipment(currentShipment.id, updateData);
+      
+      toast.success("Nama supir berhasil diperbarui");
+      setIsEditDriverDialogOpen(false);
+      
+      // Refresh data
+      if (onShipmentUpdated) {
+        onShipmentUpdated();
+      } else {
+        // Update local data if no refresh callback provided
+        setLocalShipments(prev => 
+          prev.map(s => s.id === currentShipment.id ? {...s, supir: driverName} : s)
+        );
+      }
+    } catch (error) {
+      console.error("Error updating driver:", error);
+      toast.error("Gagal memperbarui nama supir");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -141,10 +205,13 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       if (newStatus === "gagal") {
         updateData.kendala = kendala;
       } else if (newStatus === "terkirim") {
-        updateData.tanggalTiba = format(new Date(), "yyyy-MM-dd");
+        const today = format(new Date(), "yyyy-MM-dd");
+        updateData.tanggalTiba = today;
+        updateData.waktuTiba = currentTime;
         updateData.kendala = null;
       } else if (newStatus === "tertunda") {
         updateData.tanggalTiba = null;
+        updateData.waktuTiba = null;
         updateData.kendala = kendala || null;
       }
       
@@ -231,7 +298,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                   <TableHead>Tujuan</TableHead>
                   <TableHead>Supir</TableHead>
                   <TableHead>Tanggal Kirim</TableHead>
-                  <TableHead>Tanggal Tiba</TableHead>
+                  <TableHead>Tanggal & Waktu Tiba</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Kendala</TableHead>
                   {isAdmin && <TableHead className="w-[60px]">Aksi</TableHead>}
@@ -252,10 +319,26 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                       </TableCell>
                       <TableCell>{shipment.perusahaan}</TableCell>
                       <TableCell>{shipment.tujuan}</TableCell>
-                      <TableCell>{shipment.supir}</TableCell>
+                      <TableCell>
+                        {isAdmin ? (
+                          <Button 
+                            variant="link" 
+                            className="p-0 h-auto text-blue-600 hover:text-blue-800"
+                            onClick={() => handleOpenEditDriverDialog(shipment)}
+                          >
+                            {shipment.supir}
+                          </Button>
+                        ) : (
+                          shipment.supir
+                        )}
+                      </TableCell>
                       <TableCell>{shipment.tanggalKirim}</TableCell>
                       <TableCell>
-                        {shipment.tanggalTiba || "-"}
+                        {shipment.tanggalTiba 
+                          ? (shipment.waktuTiba 
+                            ? `${shipment.tanggalTiba} ${shipment.waktuTiba}` 
+                            : shipment.tanggalTiba) 
+                          : "-"}
                       </TableCell>
                       <TableCell>
                         {renderStatusBadge(shipment.status)}
@@ -283,6 +366,10 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                               <DropdownMenuItem onClick={() => handleOpenEditDialog(shipment)}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit Keterangan
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleOpenEditDriverDialog(shipment)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit Supir
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleOpenDeleteDialog(shipment)} className="text-red-600">
                                 <Trash2 className="mr-2 h-4 w-4" />
@@ -366,6 +453,22 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
               </Select>
             </div>
             
+            {/* Show time input if status is "terkirim" */}
+            {newStatus === "terkirim" && (
+              <div className="grid gap-2">
+                <Label htmlFor="waktu-tiba">Waktu Tiba</Label>
+                <div className="flex items-center">
+                  <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    id="waktu-tiba"
+                    type="time"
+                    value={currentTime}
+                    onChange={(e) => setCurrentTime(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+            
             {/* Show kendala field if status is "gagal" or "tertunda" */}
             {(newStatus === "gagal" || newStatus === "tertunda") && (
               <div className="grid gap-2">
@@ -385,6 +488,34 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
               Batal
             </Button>
             <Button onClick={handleUpdateStatus} disabled={isLoading}>
+              {isLoading ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Driver Dialog */}
+      <Dialog open={isEditDriverDialogOpen} onOpenChange={setIsEditDriverDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Nama Supir</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="driver-name">Nama Supir</Label>
+              <Input
+                id="driver-name"
+                value={driverName}
+                onChange={(e) => setDriverName(e.target.value)}
+                placeholder="Masukkan nama supir"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDriverDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={handleUpdateDriver} disabled={isLoading}>
               {isLoading ? "Menyimpan..." : "Simpan"}
             </Button>
           </DialogFooter>

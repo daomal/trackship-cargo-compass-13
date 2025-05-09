@@ -12,6 +12,7 @@ export const mapSupabaseShipment = (dbShipment: SupabaseShipment): Shipment => {
     supir: dbShipment.supir,
     tanggalKirim: dbShipment.tanggal_kirim,
     tanggalTiba: dbShipment.tanggal_tiba,
+    waktuTiba: dbShipment.waktu_tiba,
     status: dbShipment.status,
     kendala: dbShipment.kendala,
     qty: dbShipment.qty
@@ -28,6 +29,7 @@ export const mapToSupabaseShipment = (shipment: Partial<Shipment>) => {
     supir?: string;
     tanggal_kirim?: string;
     tanggal_tiba?: string | null;
+    waktu_tiba?: string | null;
     status?: string;
     kendala?: string | null;
     qty?: number;
@@ -39,6 +41,7 @@ export const mapToSupabaseShipment = (shipment: Partial<Shipment>) => {
   if (shipment.supir !== undefined) supabaseShipment.supir = shipment.supir;
   if (shipment.tanggalKirim !== undefined) supabaseShipment.tanggal_kirim = shipment.tanggalKirim;
   if (shipment.tanggalTiba !== undefined) supabaseShipment.tanggal_tiba = shipment.tanggalTiba;
+  if (shipment.waktuTiba !== undefined) supabaseShipment.waktu_tiba = shipment.waktuTiba;
   if (shipment.status !== undefined) supabaseShipment.status = shipment.status;
   if (shipment.kendala !== undefined) supabaseShipment.kendala = shipment.kendala;
   if (shipment.qty !== undefined) supabaseShipment.qty = shipment.qty;
@@ -82,17 +85,7 @@ export const getShipmentById = async (id: string): Promise<Shipment | null> => {
 
 // Create a new shipment
 export const createShipment = async (shipment: Omit<Shipment, 'id'>): Promise<Shipment> => {
-  const supabaseShipment = {
-    no_surat_jalan: shipment.noSuratJalan,
-    perusahaan: shipment.perusahaan,
-    tujuan: shipment.tujuan,
-    supir: shipment.supir,
-    tanggal_kirim: shipment.tanggalKirim,
-    tanggal_tiba: shipment.tanggalTiba,
-    status: shipment.status,
-    kendala: shipment.kendala,
-    qty: shipment.qty
-  };
+  const supabaseShipment = mapToSupabaseShipment(shipment);
 
   const { data, error } = await supabase
     .from('shipments')
@@ -158,17 +151,7 @@ export const getShipmentStatusHistory = async (shipmentId: string): Promise<Stat
 
 // Batch import shipments
 export const batchImportShipments = async (shipments: Omit<Shipment, 'id'>[]): Promise<Shipment[]> => {
-  const supabaseShipments = shipments.map(shipment => ({
-    no_surat_jalan: shipment.noSuratJalan,
-    perusahaan: shipment.perusahaan,
-    tujuan: shipment.tujuan,
-    supir: shipment.supir,
-    tanggal_kirim: shipment.tanggalKirim,
-    tanggal_tiba: shipment.tanggalTiba,
-    status: shipment.status,
-    kendala: shipment.kendala,
-    qty: shipment.qty
-  }));
+  const supabaseShipments = shipments.map(shipment => mapToSupabaseShipment(shipment));
   
   const { data, error } = await supabase
     .from('shipments')
@@ -194,4 +177,32 @@ export const getCompanySummaries = async () => {
   }
 
   return data;
+};
+
+// Tambahkan fungsi untuk mendengarkan perubahan real-time
+export const subscribeToShipments = (callback: (shipments: Shipment[]) => void) => {
+  const channel = supabase
+    .channel('public:shipments')
+    .on('postgres_changes', { 
+      event: '*', 
+      schema: 'public', 
+      table: 'shipments' 
+    }, async () => {
+      // Ketika ada perubahan, ambil data terbaru dan panggil callback
+      const { data } = await supabase
+        .from('shipments')
+        .select('*')
+        .order('tanggal_kirim', { ascending: false });
+        
+      if (data) {
+        const shipments = (data as SupabaseShipment[]).map(mapSupabaseShipment);
+        callback(shipments);
+      }
+    })
+    .subscribe();
+
+  // Return unsubscribe function
+  return () => {
+    supabase.removeChannel(channel);
+  };
 };

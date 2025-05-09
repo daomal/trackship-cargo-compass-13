@@ -11,6 +11,8 @@ import {
 import { Download } from "lucide-react";
 import { Shipment } from "@/lib/types";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface ExportOptionsProps {
   data: Shipment[];
@@ -79,9 +81,52 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
     }
   };
 
-  // Function to export as PDF (mock)
+  // Function to export as PDF
   const exportAsPDF = () => {
-    toast.info("Fitur ekspor PDF sedang dalam pengembangan");
+    try {
+      const doc = new jsPDF();
+      
+      // Add title
+      doc.setFontSize(18);
+      doc.text("Laporan Data Pengiriman", 14, 22);
+      
+      // Add date
+      doc.setFontSize(11);
+      doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`, 14, 30);
+      
+      // Prepare data for table
+      const tableColumn = ["No. SJ", "Perusahaan", "Tujuan", "Supir", "Tgl Kirim", "Tgl Tiba", "Status", "Kendala", "Qty"];
+      const tableRows = data.map((shipment) => [
+        shipment.noSuratJalan,
+        shipment.perusahaan,
+        shipment.tujuan,
+        shipment.supir,
+        shipment.tanggalKirim,
+        shipment.tanggalTiba || "-",
+        shipment.status,
+        shipment.kendala || "-",
+        shipment.qty.toString()
+      ]);
+
+      // Create the table
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 35,
+        styles: { fontSize: 8, cellPadding: 1.5 },
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        margin: { top: 35 }
+      });
+      
+      // Save the PDF
+      doc.save(`pengiriman_${getTodayFormatted()}.pdf`);
+      
+      toast.success("Berhasil mengunduh file PDF");
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      toast.error("Gagal mengunduh file PDF. Silakan coba lagi.");
+    }
   };
   
   // Export grouped by company
@@ -159,6 +204,82 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
       toast.error("Gagal mengunduh file. Silakan coba lagi.");
     }
   };
+
+  // Export grouped by company as PDF
+  const exportGroupedByCompanyPDF = () => {
+    try {
+      // Group data by company
+      const groupedByCompany = data.reduce((acc, shipment) => {
+        const company = shipment.perusahaan;
+        if (!acc[company]) {
+          acc[company] = [];
+        }
+        acc[company].push(shipment);
+        return acc;
+      }, {} as Record<string, Shipment[]>);
+      
+      const doc = new jsPDF();
+      let yPos = 14;
+      
+      // Add title
+      doc.setFontSize(18);
+      doc.text("Laporan Data Pengiriman Per Perusahaan", 14, yPos);
+      yPos += 8;
+      
+      // Add date
+      doc.setFontSize(11);
+      doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`, 14, yPos);
+      yPos += 10;
+      
+      const tableColumn = ["No. SJ", "Tujuan", "Supir", "Tgl Kirim", "Tgl Tiba", "Status", "Kendala", "Qty"];
+      
+      // Create pages for each company
+      Object.entries(groupedByCompany).forEach(([company, shipments], index) => {
+        if (index > 0) {
+          doc.addPage();
+          yPos = 14;
+        }
+        
+        // Add company name as header
+        doc.setFontSize(14);
+        doc.text(`Perusahaan: ${company}`, 14, yPos);
+        yPos += 6;
+        
+        const tableRows = shipments.map((shipment) => [
+          shipment.noSuratJalan,
+          shipment.tujuan,
+          shipment.supir,
+          shipment.tanggalKirim,
+          shipment.tanggalTiba || "-",
+          shipment.status,
+          shipment.kendala || "-",
+          shipment.qty.toString()
+        ]);
+        
+        // Create the table
+        autoTable(doc, {
+          head: [tableColumn],
+          body: tableRows,
+          startY: yPos,
+          styles: { fontSize: 8, cellPadding: 1.5 },
+          headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+          alternateRowStyles: { fillColor: [245, 245, 245] },
+          margin: { top: 35 }
+        });
+        
+        // Update position for next company
+        yPos = (doc as any).lastAutoTable.finalY + 10;
+      });
+      
+      // Save the PDF
+      doc.save(`pengiriman_per_perusahaan_${getTodayFormatted()}.pdf`);
+      
+      toast.success("Berhasil mengunduh file PDF per perusahaan");
+    } catch (error) {
+      console.error("Error exporting PDF by company:", error);
+      toast.error("Gagal mengunduh file PDF. Silakan coba lagi.");
+    }
+  };
   
   // Export summary statistics
   const exportSummaryStats = () => {
@@ -225,6 +346,75 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
       toast.error("Gagal mengunduh statistik. Silakan coba lagi.");
     }
   };
+  
+  // Export summary statistics as PDF
+  const exportSummaryStatsPDF = () => {
+    try {
+      // Group data by company and calculate stats
+      const companyStats = data.reduce((acc, shipment) => {
+        const company = shipment.perusahaan;
+        if (!acc[company]) {
+          acc[company] = {
+            name: company,
+            total: 0,
+            delivered: 0,
+            pending: 0,
+            failed: 0
+          };
+        }
+        
+        acc[company].total++;
+        if (shipment.status === "terkirim") {
+          acc[company].delivered++;
+        } else if (shipment.status === "tertunda") {
+          acc[company].pending++;
+        } else if (shipment.status === "gagal") {
+          acc[company].failed++;
+        }
+        
+        return acc;
+      }, {} as Record<string, { name: string; total: number; delivered: number; pending: number; failed: number }>);
+      
+      const doc = new jsPDF();
+      
+      // Add title
+      doc.setFontSize(18);
+      doc.text("Statistik Pengiriman", 14, 22);
+      
+      // Add date
+      doc.setFontSize(11);
+      doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`, 14, 30);
+      
+      // Prepare data for table
+      const tableColumn = ["Perusahaan", "Total", "Terkirim", "Tertunda", "Gagal"];
+      const tableRows = Object.values(companyStats).map(stat => [
+        stat.name,
+        stat.total.toString(),
+        stat.delivered.toString(),
+        stat.pending.toString(),
+        stat.failed.toString()
+      ]);
+      
+      // Create the table
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 35,
+        styles: { fontSize: 10, cellPadding: 2 },
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        margin: { top: 35 }
+      });
+      
+      // Save the PDF
+      doc.save(`statistik_pengiriman_${getTodayFormatted()}.pdf`);
+      
+      toast.success("Berhasil mengunduh statistik pengiriman dalam bentuk PDF");
+    } catch (error) {
+      console.error("Error exporting PDF statistics:", error);
+      toast.error("Gagal mengunduh statistik PDF. Silakan coba lagi.");
+    }
+  };
 
   return (
     <DropdownMenu>
@@ -238,15 +428,22 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
         <DropdownMenuItem onClick={exportAsCSV}>
           Export Data Lengkap (CSV)
         </DropdownMenuItem>
+        <DropdownMenuItem onClick={exportAsPDF}>
+          Export Data Lengkap (PDF)
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem onClick={exportGroupedByCompany}>
           Export Data per Perusahaan (CSV)
         </DropdownMenuItem>
+        <DropdownMenuItem onClick={exportGroupedByCompanyPDF}>
+          Export Data per Perusahaan (PDF)
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={exportSummaryStats}>
-          Export Statistik Pengiriman (CSV)
+          Export Statistik (CSV)
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={exportAsPDF}>
-          Export as PDF
+        <DropdownMenuItem onClick={exportSummaryStatsPDF}>
+          Export Statistik (PDF)
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -15,6 +15,11 @@ export const supabase = createClient<ExtendedDatabase>(SUPABASE_URL, SUPABASE_PU
     persistSession: true,
     autoRefreshToken: true,
     debug: true // Enable debug mode to see more detailed logs
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
   }
 });
 
