@@ -75,6 +75,61 @@
   transform: translateY(-2px);
 }
 
+/* New gradient backgrounds */
+.bg-gradient-teal {
+  background: linear-gradient(135deg, #80D0C7 0%, #0093E9 100%);
+}
+
+.bg-gradient-sunset {
+  background: linear-gradient(to right, #ee9ca7, #ffdde1);
+}
+
+.bg-gradient-ocean {
+  background: linear-gradient(to right, #2193b0, #6dd5ed);
+}
+
+.bg-gradient-mint {
+  background: linear-gradient(to right, #0cebeb, #20e3b2, #29ffc6);
+}
+
+.bg-gradient-twilight {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.main-background {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
+}
+
+.data-card {
+  background: linear-gradient(to right, #74ebd5 0%, #9face6 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.data-card:hover {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.dashboard-page {
+  background: linear-gradient(135deg, #E3FDF5 0%, #FFE6FA 100%);
+}
+
+.table-container {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.table-header {
+  background: linear-gradient(to right, #5ee7df 0%, #b490ca 100%);
+}
+
 /* Print styles for better PDF export */
 @media print {
   body * {
@@ -106,19 +161,13 @@
     page-break-inside: avoid;
   }
   
+  .driver-stats-table {
+    page-break-inside: avoid;
+    margin-bottom: 20mm;
+  }
+  
   @page {
     size: A4;
     margin: 10mm;
   }
-}
-
-.dashboard-page {
-  background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
-}
-
-.data-card {
-  background: linear-gradient(to right, #ffc3a0 0%, #ffafbd 100%);
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  margin-bottom: 1.5rem;
 }

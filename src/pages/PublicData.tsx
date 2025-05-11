@@ -17,6 +17,7 @@ import { Download } from "lucide-react";
 import DataFilters from "@/components/DataFilters";
 import SummaryCards from "@/components/SummaryCards";
 import DataCharts from "@/components/DataCharts";
+import DriverStatistics from "@/components/DriverStatistics";
 import ExportOptions from "@/components/ExportOptions";
 import { Link } from "react-router-dom";
 
@@ -140,19 +141,19 @@ const PublicData = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-twilight text-white">
       <div className="container mx-auto py-6 px-4 md:px-6">
         <div className="flex flex-col space-y-6">
           <div className="flex flex-row justify-between items-center">
             <div className="flex flex-col space-y-2">
-              <h1 className="text-3xl font-bold text-navy-500">Data Pengiriman Publik</h1>
-              <p className="text-muted-foreground">
+              <h1 className="text-3xl font-bold text-white">Data Pengiriman Publik</h1>
+              <p className="text-white/80">
                 Lihat data pengiriman dalam satu tampilan
               </p>
             </div>
             
             <div className="flex items-center gap-4">
-              <Button variant="outline" asChild className="bg-gradient-blue hover:shadow-md transition-all duration-300">
+              <Button variant="outline" asChild className="bg-white/20 text-white hover:bg-white/30 hover:shadow-md transition-all duration-300 border-white/40">
                 <Link to="/">
                   Dashboard
                 </Link>
@@ -161,7 +162,7 @@ const PublicData = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 animate-fade-in">
             <div className="lg:col-span-4">
               <SummaryCards summary={summary} />
             </div>
@@ -182,25 +183,29 @@ const PublicData = () => {
               <DataCharts shipments={filteredShipments} />
             </div>
             
+            <div className="lg:col-span-4 animate-fade-in">
+              <DriverStatistics shipments={filteredShipments} />
+            </div>
+            
             <div className="lg:col-span-4">
-              <Card className="bg-gradient-purple shadow-lg border border-blue-100">
+              <Card className="bg-gradient-sunset shadow-lg border-none text-navy-600">
                 <CardHeader>
                   <CardTitle>Daftar Pengiriman</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="rounded-md border border-blue-100 bg-white overflow-hidden">
+                  <div className="rounded-md border border-white/20 bg-white/90 overflow-hidden table-container">
                     <Table>
-                      <TableHeader className="bg-blue-50">
+                      <TableHeader className="table-header">
                         <TableRow>
-                          <TableHead className="w-[100px]">No. Surat Jalan</TableHead>
-                          <TableHead>Perusahaan</TableHead>
-                          <TableHead>Tujuan</TableHead>
-                          <TableHead>Supir</TableHead>
-                          <TableHead>Tanggal Kirim</TableHead>
-                          <TableHead>Tanggal & Waktu Tiba</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Kendala</TableHead>
-                          <TableHead className="text-right">Qty</TableHead>
+                          <TableHead className="w-[100px] text-white">No. Surat Jalan</TableHead>
+                          <TableHead className="text-white">Perusahaan</TableHead>
+                          <TableHead className="text-white">Tujuan</TableHead>
+                          <TableHead className="text-white">Supir</TableHead>
+                          <TableHead className="text-white">Tanggal Kirim</TableHead>
+                          <TableHead className="text-white">Tanggal & Waktu Tiba</TableHead>
+                          <TableHead className="text-white">Status</TableHead>
+                          <TableHead className="text-white">Kendala</TableHead>
+                          <TableHead className="text-right text-white">Qty</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -311,7 +316,7 @@ const PublicData = () => {
             
             <div className="lg:col-span-4">
               <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
-                <Card className="bg-gradient-data shadow-lg border border-blue-100 h-[400px]">
+                <Card className="bg-gradient-ocean shadow-lg border-none text-white h-[400px]">
                   <CardHeader>
                     <CardTitle>Distribusi Perusahaan</CardTitle>
                   </CardHeader>
@@ -325,15 +330,15 @@ const PublicData = () => {
                             return acc;
                           }, new Map<string, number>())
                         ).map(([company, count], index) => (
-                          <div key={index} className="flex justify-between items-center p-2 rounded-lg bg-white bg-opacity-60 shadow-sm border border-blue-50 hover:bg-opacity-80 transition-all">
+                          <div key={index} className="flex justify-between items-center p-2 rounded-lg bg-white/20 shadow-sm border border-white/30 hover:bg-white/30 transition-all">
                             <span className="text-sm font-medium">{company}</span>
-                            <span className="text-sm font-medium bg-blue-100 text-blue-800 px-2 py-1 rounded-full">{count} pengiriman</span>
+                            <span className="text-sm font-medium bg-white/30 text-white px-2 py-1 rounded-full">{count} pengiriman</span>
                           </div>
                         ))}
                       </div>
                     ) : (
                       <div className="flex items-center justify-center h-full">
-                        <p className="text-muted-foreground">Tidak ada data</p>
+                        <p className="text-white/70">Tidak ada data</p>
                       </div>
                     )}
                   </CardContent>

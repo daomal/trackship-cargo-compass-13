@@ -552,6 +552,96 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
         }
       }
       
+      // Add driver statistics section
+      doc.addPage();
+      doc.setFontSize(14);
+      doc.text("Statistik Performa Supir", 14, 15);
+      
+      // Prepare driver statistics
+      const driverStats = data.reduce((acc, shipment) => {
+        const driverName = shipment.supir;
+        if (!driverName) return acc;
+        
+        if (!acc[driverName]) {
+          acc[driverName] = {
+            name: driverName,
+            total: 0,
+            delivered: 0,
+            pending: 0,
+            failed: 0,
+            reasons: []
+          };
+        }
+        
+        acc[driverName].total++;
+        
+        if (shipment.status === "terkirim") {
+          acc[driverName].delivered++;
+        } else if (shipment.status === "tertunda") {
+          acc[driverName].pending++;
+        } else if (shipment.status === "gagal") {
+          acc[driverName].failed++;
+          
+          if (shipment.kendala && !acc[driverName].reasons.includes(shipment.kendala)) {
+            acc[driverName].reasons.push(shipment.kendala);
+          }
+        }
+        
+        return acc;
+      }, {} as Record<string, { name: string, total: number, delivered: number, pending: number, failed: number, reasons: string[] }>);
+      
+      // Create table for driver statistics
+      const driverStatsArray = Object.values(driverStats).sort((a, b) => b.total - a.total);
+      
+      // Create driver stats table with reasons in a separate column
+      const statsColumns = ["Supir", "Total", "Terkirim", "Tertunda", "Gagal"];
+      
+      const statsRows = driverStatsArray.map(driver => [
+        driver.name,
+        driver.total.toString(),
+        driver.delivered.toString(),
+        driver.pending.toString(),
+        driver.failed.toString()
+      ]);
+      
+      autoTable(doc, {
+        head: [statsColumns],
+        body: statsRows,
+        startY: 20,
+        styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        margin: { top: 20 }
+      });
+      
+      // Add reasons in a separate table
+      doc.addPage();
+      doc.setFontSize(14);
+      doc.text("Alasan Kendala per Supir", 14, 15);
+      
+      const reasonsColumns = ["Supir", "Alasan Kendala"];
+      const reasonsRows = driverStatsArray
+        .filter(driver => driver.reasons.length > 0)
+        .map(driver => [
+          driver.name,
+          driver.reasons.join(", ")
+        ]);
+      
+      if (reasonsRows.length > 0) {
+        autoTable(doc, {
+          head: [reasonsColumns],
+          body: reasonsRows,
+          startY: 20,
+          styles: { fontSize: 9, cellPadding: 2 },
+          headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+          alternateRowStyles: { fillColor: [245, 245, 245] },
+          margin: { top: 20 }
+        });
+      } else {
+        doc.setFontSize(11);
+        doc.text("Tidak ada data kendala yang tercatat", pageWidth / 2, 30, { align: 'center' });
+      }
+      
       // Add shipment data table on a new page
       doc.addPage();
       doc.setFontSize(14);
@@ -614,8 +704,8 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
       }, {} as Record<string, { name: string; total: number; delivered: number; pending: number; failed: number; totalQty: number }>);
       
       // Create company stats table
-      const statsColumn = ["Perusahaan", "Total", "Terkirim", "Tertunda", "Gagal", "Total Qty"];
-      const statsRows = Object.values(companyStats).map(stat => [
+      const companyColumns = ["Perusahaan", "Total", "Terkirim", "Tertunda", "Gagal", "Total Qty"];
+      const companyRows = Object.values(companyStats).map(stat => [
         stat.name,
         stat.total.toString(),
         stat.delivered.toString(),
@@ -625,8 +715,8 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
       ]);
       
       autoTable(doc, {
-        head: [statsColumn],
-        body: statsRows,
+        head: [companyColumns],
+        body: companyRows,
         startY: 20,
         styles: { fontSize: 9, cellPadding: 2 },
         headStyles: { fillColor: [41, 128, 185], textColor: 255 },

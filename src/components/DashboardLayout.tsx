@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import SummaryCards from "./SummaryCards";
 import ShipmentTable from "./ShipmentTable";
 import DataCharts from "./DataCharts";
+import DriverStatistics from "./DriverStatistics";
 import ConstraintAnalysis from "./ConstraintAnalysis";
 import DataFilters from "./DataFilters";
 import { Shipment, ShipmentStatus, FilterOptions } from "@/lib/types";
@@ -101,19 +102,19 @@ const DashboardLayout = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-gradient-twilight">
         <div className="container mx-auto py-6 px-4 md:px-6">
           <div className="flex flex-col space-y-6">
             <div className="flex flex-row justify-between items-center">
               <div className="flex flex-col space-y-2">
-                <h1 className="text-3xl font-bold text-navy-500">Dashboard Pengiriman</h1>
-                <p className="text-muted-foreground">
+                <h1 className="text-3xl font-bold text-white">Dashboard Pengiriman</h1>
+                <p className="text-white/80">
                   Pantau dan kelola data pengiriman dalam satu tempat
                 </p>
               </div>
               
               <div className="flex items-center gap-4">
-                <Button variant="outline" asChild>
+                <Button variant="outline" asChild className="bg-white/20 text-white hover:bg-white/30 hover:shadow-md transition-all duration-300 border-white/40">
                   <Link to="/public-data">
                     <BarChart2 className="mr-2 h-4 w-4" />
                     Lihat Data Publik
@@ -122,13 +123,13 @@ const DashboardLayout = () => {
                 
                 {user ? (
                   <div className="flex items-center gap-4">
-                    <div className="text-sm text-muted-foreground flex items-center">
+                    <div className="text-sm text-white/80 flex items-center">
                       <User className="w-4 h-4 mr-1" /> 
                       {user.email}
                     </div>
                     
                     {isAdmin && (
-                      <Button variant="default" className="bg-blue-600 hover:bg-blue-700" asChild>
+                      <Button variant="default" className="bg-white/20 text-white hover:bg-white/30" asChild>
                         <Link to="/admin">
                           <UserCog className="mr-2 h-4 w-4" />
                           Panel Admin
@@ -139,12 +140,13 @@ const DashboardLayout = () => {
                     <Button 
                       variant="outline" 
                       onClick={() => signOut()}
+                      className="bg-white/20 text-white hover:bg-white/30 hover:shadow-md border-white/40"
                     >
                       Logout
                     </Button>
                   </div>
                 ) : (
-                  <Button variant="default" asChild>
+                  <Button variant="default" className="bg-gradient-ocean" asChild>
                     <Link to="/auth">
                       <LogIn className="mr-2 h-4 w-4" />
                       Login
@@ -173,6 +175,10 @@ const DashboardLayout = () => {
               
               <div className="lg:col-span-4">
                 <ShipmentTable shipments={filteredShipments} onShipmentUpdated={fetchShipments} />
+              </div>
+              
+              <div className="lg:col-span-4">
+                <DriverStatistics shipments={filteredShipments} />
               </div>
               
               <div className="lg:col-span-2">
