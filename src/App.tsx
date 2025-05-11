@@ -26,21 +26,23 @@ function App() {
       <ThemeProvider defaultTheme="light" storageKey="theme-preference">
         <Router>
           <AuthProvider>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/public-data" element={<PublicData />} />
-              <Route
-                path="/admin"
-                element={
-                  <ProtectedRoute requiredRole="admin">
-                    <Admin />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <Toaster />
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 transition-all duration-300 ease-in-out">
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/public-data" element={<PublicData />} />
+                <Route
+                  path="/admin"
+                  element={
+                    <ProtectedRoute requiredRole="admin">
+                      <Admin />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <Toaster position="top-right" richColors closeButton />
+            </div>
           </AuthProvider>
         </Router>
       </ThemeProvider>
