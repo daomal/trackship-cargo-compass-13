@@ -140,7 +140,7 @@ const PublicData = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="container mx-auto py-6 px-4 md:px-6">
         <div className="flex flex-col space-y-6">
           <div className="flex flex-row justify-between items-center">
@@ -152,7 +152,7 @@ const PublicData = () => {
             </div>
             
             <div className="flex items-center gap-4">
-              <Button variant="outline" asChild>
+              <Button variant="outline" asChild className="bg-gradient-blue hover:shadow-md transition-all duration-300">
                 <Link to="/">
                   Dashboard
                 </Link>
@@ -166,7 +166,7 @@ const PublicData = () => {
               <SummaryCards summary={summary} />
             </div>
             
-            <div className="lg:col-span-4">
+            <div className="lg:col-span-4 animate-fade-in">
               <div className="flex flex-col space-y-4">
                 <div className="flex flex-col md:flex-row gap-4 justify-between">
                   <DataFilters 
@@ -178,15 +178,19 @@ const PublicData = () => {
               </div>
             </div>
             
+            <div className="lg:col-span-4 animate-fade-in">
+              <DataCharts shipments={filteredShipments} />
+            </div>
+            
             <div className="lg:col-span-4">
-              <Card>
+              <Card className="bg-gradient-purple shadow-lg border border-blue-100">
                 <CardHeader>
                   <CardTitle>Daftar Pengiriman</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="rounded-md border">
+                  <div className="rounded-md border border-blue-100 bg-white overflow-hidden">
                     <Table>
-                      <TableHeader>
+                      <TableHeader className="bg-blue-50">
                         <TableRow>
                           <TableHead className="w-[100px]">No. Surat Jalan</TableHead>
                           <TableHead>Perusahaan</TableHead>
@@ -217,7 +221,7 @@ const PublicData = () => {
                         ) : (
                           <>
                             {paginatedShipments.map((shipment) => (
-                              <TableRow key={shipment.id}>
+                              <TableRow key={shipment.id} className="hover:bg-blue-50/50 transition-colors">
                                 <TableCell className="font-medium">
                                   {shipment.noSuratJalan}
                                 </TableCell>
@@ -244,7 +248,7 @@ const PublicData = () => {
                               </TableRow>
                             ))}
                             {/* Total row */}
-                            <TableRow className="bg-muted/50 font-medium">
+                            <TableRow className="bg-blue-50/70 font-medium">
                               <TableCell colSpan={8} className="text-right">
                                 Total Qty:
                               </TableCell>
@@ -306,37 +310,34 @@ const PublicData = () => {
             </div>
             
             <div className="lg:col-span-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <DataCharts shipments={filteredShipments} />
-                <div className="h-[400px]">
-                  <Card className="h-full">
-                    <CardHeader>
-                      <CardTitle>Distribusi Perusahaan</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {filteredShipments.length > 0 ? (
-                        <div className="space-y-2">
-                          {Array.from(
-                            filteredShipments.reduce((acc, shipment) => {
-                              const company = shipment.perusahaan;
-                              acc.set(company, (acc.get(company) || 0) + 1);
-                              return acc;
-                            }, new Map<string, number>())
-                          ).map(([company, count], index) => (
-                            <div key={index} className="flex justify-between items-center">
-                              <span className="text-sm font-medium">{company}</span>
-                              <span className="text-sm font-medium">{count} pengiriman</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center h-full">
-                          <p className="text-muted-foreground">Tidak ada data</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
+              <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
+                <Card className="bg-gradient-data shadow-lg border border-blue-100 h-[400px]">
+                  <CardHeader>
+                    <CardTitle>Distribusi Perusahaan</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {filteredShipments.length > 0 ? (
+                      <div className="space-y-2">
+                        {Array.from(
+                          filteredShipments.reduce((acc, shipment) => {
+                            const company = shipment.perusahaan;
+                            acc.set(company, (acc.get(company) || 0) + 1);
+                            return acc;
+                          }, new Map<string, number>())
+                        ).map(([company, count], index) => (
+                          <div key={index} className="flex justify-between items-center p-2 rounded-lg bg-white bg-opacity-60 shadow-sm border border-blue-50 hover:bg-opacity-80 transition-all">
+                            <span className="text-sm font-medium">{company}</span>
+                            <span className="text-sm font-medium bg-blue-100 text-blue-800 px-2 py-1 rounded-full">{count} pengiriman</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <p className="text-muted-foreground">Tidak ada data</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
             </div>
           </div>

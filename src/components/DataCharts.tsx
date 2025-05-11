@@ -2,9 +2,10 @@
 import React from "react";
 import { Shipment } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart, PieChart, LineChart } from "recharts";
 import {
+  BarChart,
+  PieChart,
+  LineChart,
   Bar,
   XAxis,
   YAxis,
@@ -76,103 +77,101 @@ const DataCharts: React.FC<DataChartsProps> = ({ shipments }) => {
   const lineChartData = prepareLineChartData();
 
   return (
-    <Card className="card-gradient animate-fade-in">
+    <Card className="bg-gradient-purple animate-fade-in shadow-lg border border-blue-100">
       <CardHeader className="border-b border-blue-100">
         <CardTitle className="text-navy-600">Visualisasi Data</CardTitle>
       </CardHeader>
-      <CardContent className="pt-6">
-        <Tabs defaultValue="bar">
-          <TabsList className="grid grid-cols-3 mb-6 bg-blue-50">
-            <TabsTrigger value="bar" className="data-export-tab">Batang</TabsTrigger>
-            <TabsTrigger value="pie" className="data-export-tab">Pie</TabsTrigger>
-            <TabsTrigger value="line" className="data-export-tab">Line</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="bar" className="animate-scale-in">
-            <div className="w-full h-[300px] p-2 bg-white rounded-md">
-              <ResponsiveContainer width="100%" height="100%" className="recharts-wrapper">
-                <BarChart data={barChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                  <XAxis dataKey="date" tick={{ fill: '#4B5563' }} />
-                  <YAxis tick={{ fill: '#4B5563' }} />
-                  <Tooltip
-                    formatter={(value: number) => [`${value} pengiriman`, "Jumlah"]}
-                    labelFormatter={(label) => `Tanggal: ${label}`}
-                    contentStyle={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e0e0e0' }}
-                  />
-                  <Bar
-                    dataKey="count"
-                    name="Jumlah Pengiriman"
-                    fill="url(#colorGradient)"
-                    radius={[4, 4, 0, 0]}
-                  />
-                  <defs>
-                    <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.8}/>
-                      <stop offset="100%" stopColor="#3B82F6" stopOpacity={0.4}/>
-                    </linearGradient>
-                  </defs>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="pie" className="animate-scale-in">
-            <div className="w-full h-[300px] p-2 bg-white rounded-md">
-              <ResponsiveContainer width="100%" height="100%" className="recharts-wrapper">
-                <PieChart>
-                  <Pie
-                    data={pieChartData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={90}
-                    innerRadius={30}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {pieChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    formatter={(value: number) => [`${value} pengiriman`, "Jumlah"]}
-                    contentStyle={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e0e0e0' }}
-                  />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="line" className="animate-scale-in">
-            <div className="w-full h-[300px] p-2 bg-white rounded-md">
-              <ResponsiveContainer width="100%" height="100%" className="recharts-wrapper">
-                <LineChart data={lineChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                  <XAxis dataKey="date" tick={{ fill: '#4B5563' }} />
-                  <YAxis tick={{ fill: '#4B5563' }} />
-                  <Tooltip
-                    formatter={(value: number) => [`${value} pengiriman`, "Jumlah"]}
-                    labelFormatter={(label) => `Tanggal: ${label}`}
-                    contentStyle={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e0e0e0' }}
-                  />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="count"
-                    name="Jumlah Pengiriman"
-                    stroke="#3B82F6"
-                    strokeWidth={2}
-                    dot={{ r: 4, strokeWidth: 2, fill: "#fff" }}
-                    activeDot={{ r: 6 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </TabsContent>
-        </Tabs>
+      <CardContent className="pt-6 space-y-8">
+        {/* Bar Chart */}
+        <div className="chart-container">
+          <h3 className="text-lg font-medium text-navy-600 mb-2">Pengiriman per Tanggal</h3>
+          <div className="w-full h-[300px] p-2 bg-white rounded-md shadow-sm">
+            <ResponsiveContainer width="100%" height="100%" className="recharts-wrapper">
+              <BarChart data={barChartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                <XAxis dataKey="date" tick={{ fill: '#4B5563' }} />
+                <YAxis tick={{ fill: '#4B5563' }} />
+                <Tooltip
+                  formatter={(value: number) => [`${value} pengiriman`, "Jumlah"]}
+                  labelFormatter={(label) => `Tanggal: ${label}`}
+                  contentStyle={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e0e0e0' }}
+                />
+                <Bar
+                  dataKey="count"
+                  name="Jumlah Pengiriman"
+                  fill="url(#colorGradient)"
+                  radius={[4, 4, 0, 0]}
+                />
+                <defs>
+                  <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.8}/>
+                    <stop offset="100%" stopColor="#3B82F6" stopOpacity={0.4}/>
+                  </linearGradient>
+                </defs>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        
+        {/* Pie Chart */}
+        <div className="chart-container">
+          <h3 className="text-lg font-medium text-navy-600 mb-2">Status Pengiriman</h3>
+          <div className="w-full h-[300px] p-2 bg-white rounded-md shadow-sm">
+            <ResponsiveContainer width="100%" height="100%" className="recharts-wrapper">
+              <PieChart>
+                <Pie
+                  data={pieChartData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={90}
+                  innerRadius={30}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                >
+                  {pieChartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  formatter={(value: number) => [`${value} pengiriman`, "Jumlah"]}
+                  contentStyle={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e0e0e0' }}
+                />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        
+        {/* Line Chart */}
+        <div className="chart-container">
+          <h3 className="text-lg font-medium text-navy-600 mb-2">Trend Pengiriman</h3>
+          <div className="w-full h-[300px] p-2 bg-white rounded-md shadow-sm">
+            <ResponsiveContainer width="100%" height="100%" className="recharts-wrapper">
+              <LineChart data={lineChartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                <XAxis dataKey="date" tick={{ fill: '#4B5563' }} />
+                <YAxis tick={{ fill: '#4B5563' }} />
+                <Tooltip
+                  formatter={(value: number) => [`${value} pengiriman`, "Jumlah"]}
+                  labelFormatter={(label) => `Tanggal: ${label}`}
+                  contentStyle={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e0e0e0' }}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  name="Jumlah Pengiriman"
+                  stroke="#3B82F6"
+                  strokeWidth={2}
+                  dot={{ r: 4, strokeWidth: 2, fill: "#fff" }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

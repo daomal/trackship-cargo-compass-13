@@ -1,4 +1,3 @@
-
 import React, { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -463,7 +462,7 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
       toast.info("Sedang menyiapkan laporan lengkap...");
       
       // Get chart elements
-      const chartElements = document.querySelectorAll('.recharts-wrapper');
+      const chartElements = document.querySelectorAll('.chart-container');
       if (!chartElements.length) {
         toast.error("Tidak dapat menemukan diagram untuk diekspor");
         return;
@@ -527,7 +526,7 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
       for (const chart of Array.from(chartElements)) {
         try {
           // If we've already added charts and need more space, add a new page
-          if (chartsAdded > 0 && currentY > 220) {
+          if (chartsAdded > 0) {
             doc.addPage();
             currentY = 20;
           }
@@ -648,7 +647,7 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline">
+        <Button variant="outline" className="bg-gradient-blue hover:shadow-md transition-all duration-300">
           <Download className="mr-2 h-4 w-4" /> 
           Export
         </Button>

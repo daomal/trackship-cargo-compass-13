@@ -47,6 +47,34 @@
   color: #888;
 }
 
+.bg-gradient-soft {
+  background: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%);
+}
+
+.bg-gradient-blue {
+  background: linear-gradient(90deg, hsla(186, 33%, 94%, 1) 0%, hsla(216, 41%, 79%, 1) 100%);
+}
+
+.bg-gradient-purple {
+  background: linear-gradient(109.6deg, rgba(223,234,247,1) 11.2%, rgba(244,248,252,1) 91.1%);
+}
+
+.bg-gradient-data {
+  background: linear-gradient(to top, #accbee 0%, #e7f0fd 100%);
+}
+
+.gradient-card {
+  background: linear-gradient(90deg, hsla(46, 73%, 75%, 1) 0%, hsla(176, 73%, 88%, 1) 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.gradient-card:hover {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
 /* Print styles for better PDF export */
 @media print {
   body * {
@@ -57,6 +85,10 @@
   
   .recharts-wrapper {
     break-inside: avoid;
+    page-break-inside: avoid;
+    display: block !important;
+    max-width: 100% !important;
+    height: auto !important;
   }
   
   canvas {
@@ -69,8 +101,24 @@
     overflow: visible !important;
   }
   
+  .chart-container {
+    margin-bottom: 20mm;
+    page-break-inside: avoid;
+  }
+  
   @page {
     size: A4;
     margin: 10mm;
   }
+}
+
+.dashboard-page {
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+}
+
+.data-card {
+  background: linear-gradient(to right, #ffc3a0 0%, #ffafbd 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1.5rem;
 }
