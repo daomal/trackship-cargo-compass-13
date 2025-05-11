@@ -101,11 +101,11 @@
   
   /* Card styles */
   .card-elegant {
-    @apply bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow-md transition-all duration-300;
+    @apply bg-gradient-to-br from-blue-500 to-indigo-600 text-white border border-blue-400 rounded-lg shadow-md hover:shadow-lg transition-all duration-300;
   }
   
   .card-gradient {
-    @apply bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-lg shadow-sm;
+    @apply bg-gradient-to-br from-purple-500 to-indigo-500 text-white border border-purple-400 rounded-lg shadow-md;
   }
 
   /* Button styles enhanced */
@@ -119,7 +119,7 @@
   }
   
   .table-elegant th {
-    @apply bg-gradient-to-r from-gray-50 to-blue-50 text-gray-700 font-medium px-4 py-2 text-left;
+    @apply bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium px-4 py-2 text-left;
   }
   
   .table-elegant tr {

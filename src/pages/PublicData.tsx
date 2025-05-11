@@ -195,7 +195,7 @@ const PublicData = () => {
                 <CardContent>
                   <div className="rounded-md border border-white/20 bg-white/90 overflow-hidden table-container">
                     <Table>
-                      <TableHeader className="table-header">
+                      <TableHeader className="bg-gradient-ocean text-white">
                         <TableRow>
                           <TableHead className="w-[100px] text-white">No. Surat Jalan</TableHead>
                           <TableHead className="text-white">Perusahaan</TableHead>
