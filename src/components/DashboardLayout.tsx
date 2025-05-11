@@ -102,19 +102,19 @@ const DashboardLayout = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen bg-gradient-twilight">
+      <div className="min-h-screen bg-gradient-purple">
         <div className="container mx-auto py-6 px-4 md:px-6">
           <div className="flex flex-col space-y-6">
             <div className="flex flex-row justify-between items-center">
               <div className="flex flex-col space-y-2">
-                <h1 className="text-3xl font-bold text-white">Dashboard Pengiriman</h1>
-                <p className="text-white/80">
+                <h1 className="text-3xl font-bold text-purple-900">Dashboard Pengiriman</h1>
+                <p className="text-purple-700">
                   Pantau dan kelola data pengiriman dalam satu tempat
                 </p>
               </div>
               
               <div className="flex items-center gap-4">
-                <Button variant="outline" asChild className="bg-white/20 text-white hover:bg-white/30 hover:shadow-md transition-all duration-300 border-white/40">
+                <Button variant="outline" asChild className="bg-white/90 text-purple-700 hover:bg-purple-50 hover:shadow-md transition-all duration-300 border-purple-200">
                   <Link to="/public-data">
                     <BarChart2 className="mr-2 h-4 w-4" />
                     Lihat Data Publik
@@ -123,13 +123,13 @@ const DashboardLayout = () => {
                 
                 {user ? (
                   <div className="flex items-center gap-4">
-                    <div className="text-sm text-white/80 flex items-center">
+                    <div className="text-sm text-purple-700 flex items-center">
                       <User className="w-4 h-4 mr-1" /> 
                       {user.email}
                     </div>
                     
                     {isAdmin && (
-                      <Button variant="default" className="bg-white/20 text-white hover:bg-white/30" asChild>
+                      <Button variant="default" className="bg-gradient-ocean text-white hover:opacity-90" asChild>
                         <Link to="/admin">
                           <UserCog className="mr-2 h-4 w-4" />
                           Panel Admin
@@ -140,13 +140,13 @@ const DashboardLayout = () => {
                     <Button 
                       variant="outline" 
                       onClick={() => signOut()}
-                      className="bg-white/20 text-white hover:bg-white/30 hover:shadow-md border-white/40"
+                      className="bg-white/90 text-purple-700 hover:bg-purple-50 hover:shadow-md border-purple-200"
                     >
                       Logout
                     </Button>
                   </div>
                 ) : (
-                  <Button variant="default" className="bg-gradient-ocean" asChild>
+                  <Button variant="default" className="bg-gradient-ocean text-white" asChild>
                     <Link to="/auth">
                       <LogIn className="mr-2 h-4 w-4" />
                       Login

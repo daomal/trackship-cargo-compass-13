@@ -14,35 +14,35 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 221.2 83% 53%;
+    --primary: 255 70% 60%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 40% 96.1%;
+    --secondary: 260 60% 95%;
     --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --muted: 210 40% 96.1%;
+    --muted: 260 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 210 40% 96.1%;
+    --accent: 262 70% 90%;
     --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221 83% 53%;
+    --border: 260 31.8% 91.4%;
+    --input: 260 31.8% 91.4%;
+    --ring: 255 83% 63%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 222 47% 11%;
+    --sidebar-background: 260 47% 41%;
     --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 221 83% 53%;
+    --sidebar-primary: 255 83% 73%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent: 260 35% 50%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 221 83% 53%;
+    --sidebar-border: 260 35% 50%;
+    --sidebar-ring: 255 83% 73%;
   }
 
   * {
@@ -54,8 +54,9 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
+  /* Dashboard card with purple gradient */
   .dashboard-card {
-    @apply bg-white rounded-lg shadow-md p-4 border border-gray-100 transition-all hover:shadow-lg;
+    @apply bg-gradient-to-br from-white to-purple-50 rounded-lg shadow-md p-4 border border-purple-100 transition-all hover:shadow-lg;
   }
 
   .status-delivered {
@@ -101,7 +102,7 @@
   
   /* Card styles */
   .card-elegant {
-    @apply bg-gradient-to-br from-blue-500 to-indigo-600 text-white border border-blue-400 rounded-lg shadow-md hover:shadow-lg transition-all duration-300;
+    @apply bg-gradient-to-br from-purple-400 to-indigo-500 text-white border border-purple-400 rounded-lg shadow-md hover:shadow-lg transition-all duration-300;
   }
   
   .card-gradient {
@@ -110,7 +111,7 @@
 
   /* Button styles enhanced */
   .btn-elegant {
-    @apply bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-300;
+    @apply bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-300;
   }
 
   /* Table styles */
@@ -119,11 +120,11 @@
   }
   
   .table-elegant th {
-    @apply bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium px-4 py-2 text-left;
+    @apply bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium px-4 py-2 text-left;
   }
   
   .table-elegant tr {
-    @apply border-b border-gray-100 hover:bg-blue-50/30 transition-colors;
+    @apply border-b border-purple-100 hover:bg-purple-50/30 transition-colors;
   }
   
   .table-elegant td {

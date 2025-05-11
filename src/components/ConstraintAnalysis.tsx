@@ -44,16 +44,16 @@ const ConstraintAnalysis: React.FC<ConstraintAnalysisProps> = ({ shipments }) =>
   const constraintData = analyzeConstraints();
 
   return (
-    <Card className="h-full">
+    <Card className="h-full bg-gradient-to-br from-white to-purple-100 border border-purple-200 shadow-lg">
       <CardHeader>
-        <CardTitle>Analisis Kendala</CardTitle>
-        <CardDescription>
+        <CardTitle className="text-purple-900">Analisis Kendala</CardTitle>
+        <CardDescription className="text-purple-700">
           Kendala yang paling sering terjadi dalam pengiriman
         </CardDescription>
       </CardHeader>
       <CardContent>
         {constraintData.length === 0 ? (
-          <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+          <div className="flex items-center justify-center h-[300px] text-purple-600">
             Tidak ada data kendala
           </div>
         ) : (
@@ -79,7 +79,7 @@ const ConstraintAnalysis: React.FC<ConstraintAnalysisProps> = ({ shipments }) =>
                 <Bar
                   dataKey="count"
                   name="Jumlah Kejadian"
-                  fill="#F59E0B"
+                  fill="#8B5CF6"
                   radius={[0, 4, 4, 0]}
                 />
               </BarChart>

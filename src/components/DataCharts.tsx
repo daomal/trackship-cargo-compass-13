@@ -77,15 +77,15 @@ const DataCharts: React.FC<DataChartsProps> = ({ shipments }) => {
   const lineChartData = prepareLineChartData();
 
   return (
-    <Card className="bg-gradient-ocean animate-fade-in shadow-lg border border-blue-100 text-white">
-      <CardHeader className="border-b border-blue-100">
-        <CardTitle className="text-white">Visualisasi Data</CardTitle>
+    <Card className="bg-gradient-to-br from-white to-purple-100 animate-fade-in shadow-lg border border-purple-200 text-purple-900">
+      <CardHeader className="border-b border-purple-200">
+        <CardTitle className="text-purple-900">Visualisasi Data</CardTitle>
       </CardHeader>
       <CardContent className="pt-6 space-y-8">
         {/* Bar Chart */}
         <div className="chart-container">
-          <h3 className="text-lg font-medium text-white mb-2">Pengiriman per Tanggal</h3>
-          <div className="w-full h-[300px] p-2 bg-white/90 rounded-md shadow-sm">
+          <h3 className="text-lg font-medium text-purple-900 mb-2">Pengiriman per Tanggal</h3>
+          <div className="w-full h-[300px] p-2 bg-white rounded-md shadow-sm border border-purple-100">
             <ResponsiveContainer width="100%" height="100%" className="recharts-wrapper">
               <BarChart data={barChartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
@@ -104,8 +104,8 @@ const DataCharts: React.FC<DataChartsProps> = ({ shipments }) => {
                 />
                 <defs>
                   <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#2193b0" stopOpacity={0.8}/>
-                    <stop offset="100%" stopColor="#6dd5ed" stopOpacity={0.4}/>
+                    <stop offset="0%" stopColor="#8B5CF6" stopOpacity={0.8}/>
+                    <stop offset="100%" stopColor="#C4B5FD" stopOpacity={0.4}/>
                   </linearGradient>
                 </defs>
               </BarChart>
@@ -115,8 +115,8 @@ const DataCharts: React.FC<DataChartsProps> = ({ shipments }) => {
         
         {/* Pie Chart */}
         <div className="chart-container">
-          <h3 className="text-lg font-medium text-white mb-2">Status Pengiriman</h3>
-          <div className="w-full h-[300px] p-2 bg-white/90 rounded-md shadow-sm">
+          <h3 className="text-lg font-medium text-purple-900 mb-2">Status Pengiriman</h3>
+          <div className="w-full h-[300px] p-2 bg-white rounded-md shadow-sm border border-purple-100">
             <ResponsiveContainer width="100%" height="100%" className="recharts-wrapper">
               <PieChart>
                 <Pie
@@ -146,8 +146,8 @@ const DataCharts: React.FC<DataChartsProps> = ({ shipments }) => {
         
         {/* Line Chart */}
         <div className="chart-container">
-          <h3 className="text-lg font-medium text-white mb-2">Trend Pengiriman</h3>
-          <div className="w-full h-[300px] p-2 bg-white/90 rounded-md shadow-sm">
+          <h3 className="text-lg font-medium text-purple-900 mb-2">Trend Pengiriman</h3>
+          <div className="w-full h-[300px] p-2 bg-white rounded-md shadow-sm border border-purple-100">
             <ResponsiveContainer width="100%" height="100%" className="recharts-wrapper">
               <LineChart data={lineChartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
@@ -163,7 +163,7 @@ const DataCharts: React.FC<DataChartsProps> = ({ shipments }) => {
                   type="monotone"
                   dataKey="count"
                   name="Jumlah Pengiriman"
-                  stroke="#0093E9"
+                  stroke="#8B5CF6"
                   strokeWidth={2}
                   dot={{ r: 4, strokeWidth: 2, fill: "#fff" }}
                   activeDot={{ r: 6 }}

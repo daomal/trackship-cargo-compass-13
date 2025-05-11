@@ -48,23 +48,23 @@
 }
 
 .bg-gradient-soft {
-  background: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%);
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9d8fd 100%);
 }
 
 .bg-gradient-blue {
-  background: linear-gradient(90deg, hsla(186, 33%, 94%, 1) 0%, hsla(216, 41%, 79%, 1) 100%);
+  background: linear-gradient(90deg, #e9d8fd 0%, #c3cbfe 100%);
 }
 
 .bg-gradient-purple {
-  background: linear-gradient(109.6deg, rgba(223,234,247,1) 11.2%, rgba(244,248,252,1) 91.1%);
+  background: linear-gradient(109.6deg, rgba(229,230,255,1) 11.2%, rgba(229,217,255,1) 91.1%);
 }
 
 .bg-gradient-data {
-  background: linear-gradient(to top, #accbee 0%, #e7f0fd 100%);
+  background: linear-gradient(to top, #d8b4fe 0%, #f1f5f9 100%);
 }
 
 .gradient-card {
-  background: linear-gradient(90deg, hsla(46, 73%, 75%, 1) 0%, hsla(176, 73%, 88%, 1) 100%);
+  background: linear-gradient(90deg, #ddd6fe 0%, #c7d2fe 100%);
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
@@ -77,32 +77,32 @@
 
 /* New gradient backgrounds */
 .bg-gradient-teal {
-  background: linear-gradient(135deg, #80D0C7 0%, #0093E9 100%);
+  background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%);
 }
 
 .bg-gradient-sunset {
-  background: linear-gradient(to right, #ee9ca7, #ffdde1);
+  background: linear-gradient(to right, #f9a8d4, #fae8ff);
 }
 
 .bg-gradient-ocean {
-  background: linear-gradient(to right, #2193b0, #6dd5ed);
+  background: linear-gradient(to right, #8b5cf6, #6366f1);
 }
 
 .bg-gradient-mint {
-  background: linear-gradient(to right, #0cebeb, #20e3b2, #29ffc6);
+  background: linear-gradient(to right, #c4b5fd, #a5b4fc, #93c5fd);
 }
 
 .bg-gradient-twilight {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #f1f5f9 0%, #e9d5ff 100%);
 }
 
 .main-background {
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: linear-gradient(135deg, #fafafa 0%, #e9d5ff 100%);
   min-height: 100vh;
 }
 
 .data-card {
-  background: linear-gradient(to right, #74ebd5 0%, #9face6 100%);
+  background: linear-gradient(to right, #c4b5fd 0%, #a5b4fc 100%);
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   margin-bottom: 1.5rem;
@@ -115,7 +115,7 @@
 }
 
 .dashboard-page {
-  background: linear-gradient(135deg, #E3FDF5 0%, #FFE6FA 100%);
+  background: linear-gradient(135deg, #fafafa 0%, #e9d5ff 100%);
 }
 
 .table-container {
@@ -127,7 +127,7 @@
 }
 
 .table-header {
-  background: linear-gradient(to right, #5ee7df 0%, #b490ca 100%);
+  background: linear-gradient(to right, #a78bfa 0%, #8b5cf6 100%);
 }
 
 /* Print styles for better PDF export */
