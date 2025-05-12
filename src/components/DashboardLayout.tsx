@@ -2,13 +2,14 @@
 import React, { useEffect, useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { LogIn, User, UserCog, BarChart2 } from "lucide-react";
+import { LogIn, User, UserCog, BarChart2, Route } from "lucide-react";
 import { Link } from "react-router-dom";
 import SummaryCards from "./SummaryCards";
 import ShipmentTable from "./ShipmentTable";
 import DataCharts from "./DataCharts";
 import DriverStatistics from "./DriverStatistics";
 import ConstraintAnalysis from "./ConstraintAnalysis";
+import NotesSection from "./NotesSection";
 import DataFilters from "./DataFilters";
 import { Shipment, ShipmentStatus, FilterOptions } from "@/lib/types";
 import { getShipments } from "@/lib/shipmentService";
@@ -24,6 +25,8 @@ const DashboardLayout = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const isMobile = useIsMobile();
+  const [currentPage, setCurrentPage] = useState(1);
+  const shipmentsPerPage = 10;
   
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     dateRange: [null, null],
@@ -100,6 +103,7 @@ const DashboardLayout = () => {
     }
     
     setFilteredShipments(filtered);
+    setCurrentPage(1); // Reset to first page when filtering
   };
 
   // Handle real-time search changes
@@ -124,6 +128,12 @@ const DashboardLayout = () => {
     failed: filteredShipments.filter(s => s.status === "gagal").length
   };
 
+  // Pagination calculation
+  const indexOfLastShipment = currentPage * shipmentsPerPage;
+  const indexOfFirstShipment = indexOfLastShipment - shipmentsPerPage;
+  const currentShipments = filteredShipments.slice(indexOfFirstShipment, indexOfLastShipment);
+  const totalPages = Math.ceil(filteredShipments.length / shipmentsPerPage);
+
   return (
     <SidebarProvider>
       <div className="min-h-screen bg-gradient-purple">
@@ -144,14 +154,16 @@ const DashboardLayout = () => {
                     Lihat Data Publik
                   </Link>
                 </Button>
+
+                <Button variant="outline" asChild className="bg-white/90 text-purple-700 hover:bg-purple-50 hover:shadow-md transition-all duration-300 border-purple-200">
+                  <Link to="/trayek-driver">
+                    <Route className="mr-2 h-4 w-4" />
+                    Trayek Driver
+                  </Link>
+                </Button>
                 
                 {user ? (
                   <div className={`flex ${isMobile ? 'flex-col w-full' : 'items-center'} gap-4`}>
-                    <div className="text-sm text-purple-700 flex items-center">
-                      <User className="w-4 h-4 mr-1" /> 
-                      {user.email}
-                    </div>
-                    
                     {isAdmin && (
                       <Button variant="default" className="bg-gradient-ocean text-white hover:opacity-90" asChild>
                         <Link to="/admin">
@@ -198,7 +210,13 @@ const DashboardLayout = () => {
               </div>
               
               <div className="lg:col-span-4">
-                <ShipmentTable shipments={filteredShipments} onShipmentUpdated={fetchShipments} />
+                <ShipmentTable 
+                  shipments={currentShipments} 
+                  onShipmentUpdated={fetchShipments} 
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                />
               </div>
               
               <div className="lg:col-span-4">
@@ -211,6 +229,10 @@ const DashboardLayout = () => {
               
               <div className="lg:col-span-2">
                 <ConstraintAnalysis shipments={filteredShipments} />
+              </div>
+
+              <div className="lg:col-span-4">
+                <NotesSection />
               </div>
             </div>
           </div>
