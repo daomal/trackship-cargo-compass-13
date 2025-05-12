@@ -4,18 +4,16 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { LogIn, User, UserCog, BarChart2, Truck } from "lucide-react";
 import { Link } from "react-router-dom";
-import SummaryCards from "./SummaryCards";
 import ShipmentTable from "./ShipmentTable";
-import DataCharts from "./DataCharts";
-import DriverStatistics from "./DriverStatistics";
-import ConstraintAnalysis from "./ConstraintAnalysis";
 import DataFilters from "./DataFilters";
 import NoteForm from "./NoteForm";
-import { Shipment, ShipmentStatus, FilterOptions } from "@/lib/types";
+import { Shipment, ShipmentStatus, FilterOptions, DashboardView } from "@/lib/types";
 import { getShipments } from "@/lib/shipmentService";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import DashboardNav from "./DashboardNav";
+import DashboardHome from "./DashboardHome";
 
 const DashboardLayout = () => {
   const { toast } = useToast();
@@ -25,6 +23,7 @@ const DashboardLayout = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const isMobile = useIsMobile();
+  const [activeView, setActiveView] = useState<DashboardView>("dashboard");
   
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     dateRange: [null, null],
@@ -117,22 +116,40 @@ const DashboardLayout = () => {
   // Extract all companies for filter
   const companies = Array.from(new Set(shipments.map(s => s.perusahaan))).filter(Boolean);
 
-  // Count summary data
-  const summary = {
-    total: filteredShipments.length,
-    delivered: filteredShipments.filter(s => s.status === "terkirim").length,
-    pending: filteredShipments.filter(s => s.status === "tertunda").length,
-    failed: filteredShipments.filter(s => s.status === "gagal").length
+  // Render active view
+  const renderView = () => {
+    switch (activeView) {
+      case "dashboard":
+        return <DashboardHome shipments={filteredShipments} />;
+      case "shipments":
+        return (
+          <div className="space-y-4">
+            <DataFilters 
+              onFilter={handleFilter} 
+              drivers={drivers}
+              companies={companies}
+            />
+            <ShipmentTable 
+              shipments={filteredShipments} 
+              onShipmentUpdated={fetchShipments} 
+            />
+          </div>
+        );
+      case "notes":
+        return <NoteForm />;
+      default:
+        return <DashboardHome shipments={filteredShipments} />;
+    }
   };
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen bg-gradient-purple">
+      <div className="min-h-screen bg-gradient-to-r from-violet-100 to-indigo-100">
         <div className="container mx-auto py-6 px-4 md:px-6">
           <div className="flex flex-col space-y-6">
             <div className={`flex ${isMobile ? 'flex-col space-y-4' : 'flex-row'} justify-between items-center`}>
               <div className="flex flex-col space-y-2">
-                <h1 className="text-2xl md:text-3xl font-bold text-black">Dashboard Pengiriman</h1>
+                <h1 className="text-2xl md:text-3xl font-bold text-purple-900">Dashboard Pengiriman</h1>
                 <p className="text-gray-700">
                   Pantau dan kelola data pengiriman dalam satu tempat
                 </p>
@@ -156,7 +173,7 @@ const DashboardLayout = () => {
                 {user ? (
                   <div className={`flex ${isMobile ? 'flex-col w-full' : 'items-center'} gap-4`}>
                     {isAdmin && (
-                      <Button variant="default" className="bg-gradient-ocean text-white hover:opacity-90" asChild>
+                      <Button variant="default" className="bg-gradient-to-r from-violet-500 to-purple-500 text-white hover:opacity-90" asChild>
                         <Link to="/admin">
                           <UserCog className="mr-2 h-4 w-4" />
                           Panel Admin
@@ -173,7 +190,7 @@ const DashboardLayout = () => {
                     </Button>
                   </div>
                 ) : (
-                  <Button variant="default" className="bg-gradient-ocean text-white" asChild>
+                  <Button variant="default" className="bg-gradient-to-r from-violet-500 to-purple-500 text-white" asChild>
                     <Link to="/auth">
                       <LogIn className="mr-2 h-4 w-4" />
                       Login
@@ -183,43 +200,11 @@ const DashboardLayout = () => {
               </div>
             </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              <div className="lg:col-span-4">
-                <SummaryCards summary={summary} />
-              </div>
-              
-              <div className="lg:col-span-4">
-                <div className="flex flex-col space-y-4">
-                  <div className="flex flex-col md:flex-row gap-4 justify-between">
-                    <DataFilters 
-                      onFilter={handleFilter} 
-                      drivers={drivers}
-                      companies={companies}
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="lg:col-span-4">
-                <ShipmentTable shipments={filteredShipments} onShipmentUpdated={fetchShipments} />
-              </div>
-              
-              <div className="lg:col-span-4">
-                <NoteForm />
-              </div>
-              
-              <div className="lg:col-span-4">
-                <DriverStatistics shipments={filteredShipments} />
-              </div>
-              
-              <div className="lg:col-span-2">
-                <DataCharts shipments={filteredShipments} />
-              </div>
-              
-              <div className="lg:col-span-2">
-                <ConstraintAnalysis shipments={filteredShipments} />
-              </div>
-            </div>
+            {/* Dashboard Navigation */}
+            <DashboardNav activeView={activeView} onViewChange={setActiveView} />
+            
+            {/* Active View Content */}
+            {renderView()}
           </div>
         </div>
       </div>

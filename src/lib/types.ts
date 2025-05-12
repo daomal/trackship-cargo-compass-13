@@ -1,4 +1,3 @@
-
 export type ShipmentStatus = "terkirim" | "gagal" | "tertunda";
 
 export interface Shipment {
@@ -95,3 +94,6 @@ export interface CommonConstraint {
   issue: string;
   count: number;
 }
+
+// Dashboard navigation
+export type DashboardView = "dashboard" | "shipments" | "notes";
