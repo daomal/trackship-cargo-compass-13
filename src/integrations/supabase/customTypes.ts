@@ -115,6 +115,30 @@ export interface ExtendedDatabase extends GeneratedDatabase {
           }
         ]
       }
+      notes: {
+        Row: {
+          id: string
+          content: string
+          author_name: string
+          user_id: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          content: string
+          author_name?: string
+          user_id?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          content?: string
+          author_name?: string
+          user_id?: string | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
