@@ -10,7 +10,6 @@ import Admin from "@/pages/Admin";
 import NotFound from "@/pages/NotFound";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import PublicData from "@/pages/PublicData";
-import TrayekDriver from "@/pages/TrayekDriver";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -32,7 +31,6 @@ function App() {
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/public-data" element={<PublicData />} />
-                <Route path="/trayek-driver" element={<TrayekDriver />} />
                 <Route
                   path="/admin"
                   element={
