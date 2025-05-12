@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { LogIn, User, UserCog, BarChart2 } from "lucide-react";
+import { LogIn, User, UserCog, BarChart2, Truck } from "lucide-react";
 import { Link } from "react-router-dom";
 import SummaryCards from "./SummaryCards";
 import ShipmentTable from "./ShipmentTable";
@@ -10,6 +10,7 @@ import DataCharts from "./DataCharts";
 import DriverStatistics from "./DriverStatistics";
 import ConstraintAnalysis from "./ConstraintAnalysis";
 import DataFilters from "./DataFilters";
+import NoteForm from "./NoteForm";
 import { Shipment, ShipmentStatus, FilterOptions } from "@/lib/types";
 import { getShipments } from "@/lib/shipmentService";
 import { useToast } from "@/hooks/use-toast";
@@ -145,13 +146,15 @@ const DashboardLayout = () => {
                   </Link>
                 </Button>
                 
+                <Button variant="outline" asChild className="bg-white/90 text-purple-700 hover:bg-purple-50 hover:shadow-md transition-all duration-300 border-purple-200">
+                  <a href="https://trayekbaru.netlify.app/" target="_blank" rel="noopener noreferrer">
+                    <Truck className="mr-2 h-4 w-4" />
+                    Trayek Driver
+                  </a>
+                </Button>
+                
                 {user ? (
                   <div className={`flex ${isMobile ? 'flex-col w-full' : 'items-center'} gap-4`}>
-                    <div className="text-sm text-purple-700 flex items-center">
-                      <User className="w-4 h-4 mr-1" /> 
-                      {user.email}
-                    </div>
-                    
                     {isAdmin && (
                       <Button variant="default" className="bg-gradient-ocean text-white hover:opacity-90" asChild>
                         <Link to="/admin">
@@ -199,6 +202,10 @@ const DashboardLayout = () => {
               
               <div className="lg:col-span-4">
                 <ShipmentTable shipments={filteredShipments} onShipmentUpdated={fetchShipments} />
+              </div>
+              
+              <div className="lg:col-span-4">
+                <NoteForm />
               </div>
               
               <div className="lg:col-span-4">
