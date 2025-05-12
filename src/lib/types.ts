@@ -67,6 +67,15 @@ export interface StatusHistoryItem {
   created_by: string | null;
 }
 
+// Note interface for the forum feature
+export interface Note {
+  id: string;
+  content: string;
+  author_name: string;
+  user_id?: string | null;
+  created_at: string;
+}
+
 // Analytics interfaces
 export interface CompanyShipmentSummary {
   company: string;
