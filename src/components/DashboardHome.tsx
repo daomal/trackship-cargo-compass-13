@@ -21,25 +21,29 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ shipments }) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 w-full animate-fade-in">
       {/* Summary Cards */}
-      <div>
+      <div className="w-full">
         <SummaryCards summary={summary} />
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <DataCharts shipments={shipments} />
-        <ConstraintAnalysis shipments={shipments} />
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 w-full">
+        <div className="h-full shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 rounded-xl overflow-hidden">
+          <DataCharts shipments={shipments} />
+        </div>
+        <div className="h-full shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 rounded-xl overflow-hidden">
+          <ConstraintAnalysis shipments={shipments} />
+        </div>
       </div>
 
       {/* Driver Statistics */}
-      <div>
+      <div className="w-full shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 rounded-xl overflow-hidden animate-slide-in">
         <DriverStatistics shipments={shipments} />
       </div>
 
       {/* Company Analytics */}
-      <div>
+      <div className="w-full shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 rounded-xl overflow-hidden animate-scale-in">
         <CompanyAnalytics shipments={shipments} />
       </div>
     </div>

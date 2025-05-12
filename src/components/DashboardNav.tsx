@@ -11,13 +11,13 @@ interface DashboardNavProps {
 
 const DashboardNav: React.FC<DashboardNavProps> = ({ activeView, onViewChange }) => {
   return (
-    <div className="flex space-x-2 mb-6">
+    <div className="flex space-x-2 mb-6 overflow-x-auto pb-2 animate-fade-in">
       <Button
         variant={activeView === "dashboard" ? "default" : "outline"}
         className={
           activeView === "dashboard"
-            ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white"
-            : "bg-white/90 text-purple-700 hover:bg-purple-50 hover:shadow-md transition-all duration-300 border-purple-200"
+            ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg transform transition-all duration-300 rounded-xl"
+            : "bg-white/90 text-purple-700 hover:bg-purple-50 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 shadow-md border-purple-200 rounded-xl"
         }
         onClick={() => onViewChange("dashboard")}
       >
@@ -29,8 +29,8 @@ const DashboardNav: React.FC<DashboardNavProps> = ({ activeView, onViewChange })
         variant={activeView === "shipments" ? "default" : "outline"}
         className={
           activeView === "shipments"
-            ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white"
-            : "bg-white/90 text-purple-700 hover:bg-purple-50 hover:shadow-md transition-all duration-300 border-purple-200"
+            ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg transform transition-all duration-300 rounded-xl"
+            : "bg-white/90 text-purple-700 hover:bg-purple-50 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 shadow-md border-purple-200 rounded-xl"
         }
         onClick={() => onViewChange("shipments")}
       >
@@ -42,8 +42,8 @@ const DashboardNav: React.FC<DashboardNavProps> = ({ activeView, onViewChange })
         variant={activeView === "notes" ? "default" : "outline"}
         className={
           activeView === "notes"
-            ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white"
-            : "bg-white/90 text-purple-700 hover:bg-purple-50 hover:shadow-md transition-all duration-300 border-purple-200"
+            ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg transform transition-all duration-300 rounded-xl"
+            : "bg-white/90 text-purple-700 hover:bg-purple-50 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 shadow-md border-purple-200 rounded-xl"
         }
         onClick={() => onViewChange("notes")}
       >
