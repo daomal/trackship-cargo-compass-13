@@ -20,6 +20,7 @@ import DataCharts from "@/components/DataCharts";
 import DriverStatistics from "@/components/DriverStatistics";
 import ExportOptions from "@/components/ExportOptions";
 import { Link } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -28,6 +29,8 @@ const PublicData = () => {
   const [filteredShipments, setFilteredShipments] = useState<Shipment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const isMobile = useIsMobile();
+  
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     dateRange: [null, null],
     status: "all",
@@ -141,19 +144,23 @@ const PublicData = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-twilight text-white">
+    <div className="min-h-screen bg-gradient-twilight">
       <div className="container mx-auto py-6 px-4 md:px-6">
         <div className="flex flex-col space-y-6">
-          <div className="flex flex-row justify-between items-center">
+          <div className={`flex ${isMobile ? 'flex-col space-y-4' : 'flex-row'} justify-between items-center`}>
             <div className="flex flex-col space-y-2">
-              <h1 className="text-3xl font-bold text-white">Data Pengiriman Publik</h1>
-              <p className="text-white/80">
+              <h1 className="text-2xl md:text-3xl font-bold text-black">Data Pengiriman Publik</h1>
+              <p className="text-gray-700">
                 Lihat data pengiriman dalam satu tampilan
               </p>
             </div>
             
-            <div className="flex items-center gap-4">
-              <Button variant="outline" asChild className="bg-white/20 text-white hover:bg-white/30 hover:shadow-md transition-all duration-300 border-white/40">
+            <div className={`flex ${isMobile ? 'flex-col w-full' : 'items-center'} gap-4`}>
+              <Button 
+                variant="outline" 
+                asChild 
+                className="bg-white/90 text-purple-700 hover:bg-purple-50 hover:shadow-md transition-all duration-300 border-purple-200"
+              >
                 <Link to="/">
                   Dashboard
                 </Link>
@@ -188,83 +195,85 @@ const PublicData = () => {
             </div>
             
             <div className="lg:col-span-4">
-              <Card className="bg-gradient-sunset shadow-lg border-none text-navy-600">
+              <Card className="bg-gradient-sunset shadow-lg border-none">
                 <CardHeader>
-                  <CardTitle>Daftar Pengiriman</CardTitle>
+                  <CardTitle className="text-black">Daftar Pengiriman</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="rounded-md border border-white/20 bg-white/90 overflow-hidden table-container">
-                    <Table>
-                      <TableHeader className="bg-gradient-ocean text-white">
-                        <TableRow>
-                          <TableHead className="w-[100px] text-white">No. Surat Jalan</TableHead>
-                          <TableHead className="text-white">Perusahaan</TableHead>
-                          <TableHead className="text-white">Tujuan</TableHead>
-                          <TableHead className="text-white">Supir</TableHead>
-                          <TableHead className="text-white">Tanggal Kirim</TableHead>
-                          <TableHead className="text-white">Tanggal & Waktu Tiba</TableHead>
-                          <TableHead className="text-white">Status</TableHead>
-                          <TableHead className="text-white">Kendala</TableHead>
-                          <TableHead className="text-right text-white">Qty</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {isLoading ? (
+                  <div className="rounded-md border border-purple-200 bg-white/90 overflow-hidden table-container">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader className="bg-gradient-ocean text-white">
                           <TableRow>
-                            <TableCell colSpan={9} className="text-center h-32">
-                              <div className="flex justify-center">
-                                <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
-                              </div>
-                            </TableCell>
+                            <TableHead className="w-[100px] text-white">No. Surat Jalan</TableHead>
+                            <TableHead className="text-white">Perusahaan</TableHead>
+                            <TableHead className="text-white">Tujuan</TableHead>
+                            <TableHead className="text-white">Supir</TableHead>
+                            <TableHead className="text-white">Tanggal Kirim</TableHead>
+                            <TableHead className="text-white">Tanggal & Waktu Tiba</TableHead>
+                            <TableHead className="text-white">Status</TableHead>
+                            <TableHead className="text-white">Kendala</TableHead>
+                            <TableHead className="text-right text-white">Qty</TableHead>
                           </TableRow>
-                        ) : paginatedShipments.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={9} className="text-center h-32">
-                              Tidak ada data pengiriman
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          <>
-                            {paginatedShipments.map((shipment) => (
-                              <TableRow key={shipment.id} className="hover:bg-blue-50/50 transition-colors">
-                                <TableCell className="font-medium">
-                                  {shipment.noSuratJalan}
-                                </TableCell>
-                                <TableCell>{shipment.perusahaan}</TableCell>
-                                <TableCell>{shipment.tujuan}</TableCell>
-                                <TableCell>{shipment.supir}</TableCell>
-                                <TableCell>{shipment.tanggalKirim}</TableCell>
-                                <TableCell>
-                                  {shipment.tanggalTiba 
-                                    ? (shipment.waktuTiba 
-                                      ? `${shipment.tanggalTiba} ${shipment.waktuTiba}` 
-                                      : shipment.tanggalTiba) 
-                                    : "-"}
-                                </TableCell>
-                                <TableCell>
-                                  {renderStatusBadge(shipment.status)}
-                                </TableCell>
-                                <TableCell>
-                                  {shipment.kendala || "-"}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  {shipment.qty}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                            {/* Total row */}
-                            <TableRow className="bg-blue-50/70 font-medium">
-                              <TableCell colSpan={8} className="text-right">
-                                Total Qty:
-                              </TableCell>
-                              <TableCell className="text-right">
-                                {totalQuantity}
+                        </TableHeader>
+                        <TableBody>
+                          {isLoading ? (
+                            <TableRow>
+                              <TableCell colSpan={9} className="text-center h-32">
+                                <div className="flex justify-center">
+                                  <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+                                </div>
                               </TableCell>
                             </TableRow>
-                          </>
-                        )}
-                      </TableBody>
-                    </Table>
+                          ) : paginatedShipments.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={9} className="text-center h-32 text-black">
+                                Tidak ada data pengiriman
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            <>
+                              {paginatedShipments.map((shipment) => (
+                                <TableRow key={shipment.id} className="hover:bg-blue-50/50 transition-colors">
+                                  <TableCell className="font-medium text-black">
+                                    {shipment.noSuratJalan}
+                                  </TableCell>
+                                  <TableCell className="text-black">{shipment.perusahaan}</TableCell>
+                                  <TableCell className="text-black">{shipment.tujuan}</TableCell>
+                                  <TableCell className="text-black">{shipment.supir}</TableCell>
+                                  <TableCell className="text-black">{shipment.tanggalKirim}</TableCell>
+                                  <TableCell className="text-black">
+                                    {shipment.tanggalTiba 
+                                      ? (shipment.waktuTiba 
+                                        ? `${shipment.tanggalTiba} ${shipment.waktuTiba}` 
+                                        : shipment.tanggalTiba) 
+                                      : "-"}
+                                  </TableCell>
+                                  <TableCell>
+                                    {renderStatusBadge(shipment.status)}
+                                  </TableCell>
+                                  <TableCell className="text-black">
+                                    {shipment.kendala || "-"}
+                                  </TableCell>
+                                  <TableCell className="text-right text-black">
+                                    {shipment.qty}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                              {/* Total row */}
+                              <TableRow className="bg-blue-50/70 font-medium">
+                                <TableCell colSpan={8} className="text-right text-black">
+                                  Total Qty:
+                                </TableCell>
+                                <TableCell className="text-right text-black">
+                                  {totalQuantity}
+                                </TableCell>
+                              </TableRow>
+                            </>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </div>
 
                   {totalPages > 1 && (
@@ -274,7 +283,7 @@ const PublicData = () => {
                           <PaginationItem>
                             <PaginationPrevious
                               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                              className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                              className={`${currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} text-black bg-white/90 hover:bg-purple-50`}
                             />
                           </PaginationItem>
                           
@@ -293,6 +302,7 @@ const PublicData = () => {
                                 <PaginationLink
                                   onClick={() => setCurrentPage(pageNumber)}
                                   isActive={currentPage === pageNumber}
+                                  className="text-black bg-white/90 hover:bg-purple-50"
                                 >
                                   {pageNumber}
                                 </PaginationLink>
@@ -303,7 +313,7 @@ const PublicData = () => {
                           <PaginationItem>
                             <PaginationNext
                               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                              className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                              className={`${currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} text-black bg-white/90 hover:bg-purple-50`}
                             />
                           </PaginationItem>
                         </PaginationContent>

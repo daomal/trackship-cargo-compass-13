@@ -26,7 +26,7 @@ function App() {
       <ThemeProvider defaultTheme="light" storageKey="theme-preference">
         <Router>
           <AuthProvider>
-            <div className="min-h-screen bg-gradient-purple transition-all duration-300 ease-in-out">
+            <div className="min-h-screen bg-gradient-purple text-black transition-all duration-300 ease-in-out">
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />

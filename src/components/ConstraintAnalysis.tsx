@@ -17,12 +17,15 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ConstraintAnalysisProps {
   shipments: Shipment[];
 }
 
 const ConstraintAnalysis: React.FC<ConstraintAnalysisProps> = ({ shipments }) => {
+  const isMobile = useIsMobile();
+
   // Calculate constraint statistics
   const analyzeConstraints = () => {
     const constraints = new Map<string, number>();
@@ -65,13 +68,13 @@ const ConstraintAnalysis: React.FC<ConstraintAnalysisProps> = ({ shipments }) =>
                 margin={{
                   top: 5,
                   right: 30,
-                  left: 20,
+                  left: isMobile ? 60 : 20,
                   bottom: 5,
                 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={150} />
+                <YAxis dataKey="name" type="category" width={isMobile ? 100 : 150} />
                 <Tooltip
                   formatter={(value: number) => [`${value} kasus`, "Jumlah"]}
                   labelFormatter={(label) => `Kendala: ${label}`}

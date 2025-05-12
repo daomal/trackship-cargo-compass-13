@@ -14,6 +14,7 @@ import { Shipment, ShipmentStatus, FilterOptions } from "@/lib/types";
 import { getShipments } from "@/lib/shipmentService";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const DashboardLayout = () => {
   const { toast } = useToast();
@@ -21,11 +22,15 @@ const DashboardLayout = () => {
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [filteredShipments, setFilteredShipments] = useState<Shipment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const isMobile = useIsMobile();
+  
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     dateRange: [null, null],
     status: "all",
     driver: "all",
-    company: "all"
+    company: "all",
+    searchQuery: ""
   });
 
   // Fetch shipments on component mount
@@ -83,8 +88,27 @@ const DashboardLayout = () => {
       filtered = filtered.filter(shipment => shipment.perusahaan === filters.company);
     }
     
+    // Filter by search query
+    if (filters.searchQuery && filters.searchQuery.trim() !== "") {
+      const query = filters.searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(shipment => 
+        shipment.noSuratJalan.toLowerCase().includes(query) ||
+        shipment.perusahaan.toLowerCase().includes(query) ||
+        shipment.tujuan.toLowerCase().includes(query) ||
+        shipment.supir.toLowerCase().includes(query)
+      );
+    }
+    
     setFilteredShipments(filtered);
   };
+
+  // Handle real-time search changes
+  useEffect(() => {
+    handleFilter({
+      ...filterOptions,
+      searchQuery: searchQuery
+    });
+  }, [searchQuery]);
 
   // Extract all drivers for filter
   const drivers = Array.from(new Set(shipments.map(s => s.supir))).filter(Boolean);
@@ -105,15 +129,15 @@ const DashboardLayout = () => {
       <div className="min-h-screen bg-gradient-purple">
         <div className="container mx-auto py-6 px-4 md:px-6">
           <div className="flex flex-col space-y-6">
-            <div className="flex flex-row justify-between items-center">
+            <div className={`flex ${isMobile ? 'flex-col space-y-4' : 'flex-row'} justify-between items-center`}>
               <div className="flex flex-col space-y-2">
-                <h1 className="text-3xl font-bold text-purple-900">Dashboard Pengiriman</h1>
-                <p className="text-purple-700">
+                <h1 className="text-2xl md:text-3xl font-bold text-black">Dashboard Pengiriman</h1>
+                <p className="text-gray-700">
                   Pantau dan kelola data pengiriman dalam satu tempat
                 </p>
               </div>
               
-              <div className="flex items-center gap-4">
+              <div className={`flex ${isMobile ? 'flex-col w-full space-y-2' : 'items-center'} gap-4`}>
                 <Button variant="outline" asChild className="bg-white/90 text-purple-700 hover:bg-purple-50 hover:shadow-md transition-all duration-300 border-purple-200">
                   <Link to="/public-data">
                     <BarChart2 className="mr-2 h-4 w-4" />
@@ -122,7 +146,7 @@ const DashboardLayout = () => {
                 </Button>
                 
                 {user ? (
-                  <div className="flex items-center gap-4">
+                  <div className={`flex ${isMobile ? 'flex-col w-full' : 'items-center'} gap-4`}>
                     <div className="text-sm text-purple-700 flex items-center">
                       <User className="w-4 h-4 mr-1" /> 
                       {user.email}

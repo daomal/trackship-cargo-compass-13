@@ -52,6 +52,7 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    color: #000000; /* Ensuring black text color throughout the site */
   }
 
   /* Dashboard card with purple gradient */
@@ -102,11 +103,11 @@
   
   /* Card styles */
   .card-elegant {
-    @apply bg-gradient-to-br from-purple-400 to-indigo-500 text-white border border-purple-400 rounded-lg shadow-md hover:shadow-lg transition-all duration-300;
+    @apply bg-gradient-to-br from-white to-purple-100 text-black border border-purple-200 rounded-lg shadow-md hover:shadow-lg transition-all duration-300;
   }
   
   .card-gradient {
-    @apply bg-gradient-to-br from-purple-500 to-indigo-500 text-white border border-purple-400 rounded-lg shadow-md;
+    @apply bg-gradient-to-br from-white to-purple-200 text-black border border-purple-200 rounded-lg shadow-md;
   }
 
   /* Button styles enhanced */
@@ -128,7 +129,7 @@
   }
   
   .table-elegant td {
-    @apply px-4 py-3;
+    @apply px-4 py-3 text-black;
   }
 
   /* Glassmorphism effect */
@@ -166,6 +167,31 @@
     canvas, .recharts-surface {
       max-width: 100% !important;
       height: auto !important;
+    }
+  }
+  
+  /* Mobile responsive styles */
+  @media (max-width: 768px) {
+    .grid-cols-1 {
+      grid-template-columns: 1fr;
+    }
+    
+    .flex-col-mobile {
+      flex-direction: column;
+    }
+    
+    .w-full-mobile {
+      width: 100%;
+    }
+    
+    .px-4-mobile {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+    
+    .text-sm-mobile {
+      font-size: 0.875rem;
+      line-height: 1.25rem;
     }
   }
 }
