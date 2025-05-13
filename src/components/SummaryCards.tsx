@@ -21,7 +21,7 @@ interface SummaryCardsProps {
 const SummaryCards: React.FC<SummaryCardsProps> = ({ summary }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <Card className="book-style-card book-card book-card-purple stagger-item animate-fade-in bg-[#9b87f5] text-white">
+      <Card className="stagger-item animate-fade-in bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-xl rounded-xl overflow-hidden border-0">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-white">Total Pengiriman</CardTitle>
           <div className="rounded-full bg-white/20 p-2 transition-transform duration-300 hover:scale-110">
@@ -36,7 +36,7 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({ summary }) => {
         </CardContent>
       </Card>
       
-      <Card className="book-style-card book-card book-card-green stagger-item animate-fade-in bg-[#4CAF50] text-white" style={{animationDelay: "0.1s"}}>
+      <Card className="stagger-item animate-fade-in bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-xl rounded-xl overflow-hidden border-0" style={{animationDelay: "0.1s"}}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-white">Terkirim</CardTitle>
           <div className="rounded-full bg-white/20 p-2 transition-transform duration-300 hover:scale-110">
@@ -53,7 +53,7 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({ summary }) => {
         </CardContent>
       </Card>
       
-      <Card className="book-style-card book-card book-card-blue stagger-item animate-fade-in bg-[#1EAEDB] text-white" style={{animationDelay: "0.2s"}}>
+      <Card className="stagger-item animate-fade-in bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-xl rounded-xl overflow-hidden border-0" style={{animationDelay: "0.2s"}}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-white">Tertunda</CardTitle>
           <div className="rounded-full bg-white/20 p-2 transition-transform duration-300 hover:scale-110">
@@ -70,7 +70,7 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({ summary }) => {
         </CardContent>
       </Card>
       
-      <Card className="book-style-card book-card book-card-red stagger-item animate-fade-in bg-[#ea384c] text-white" style={{animationDelay: "0.3s"}}>
+      <Card className="stagger-item animate-fade-in bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-xl rounded-xl overflow-hidden border-0" style={{animationDelay: "0.3s"}}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-white">Gagal Kirim</CardTitle>
           <div className="rounded-full bg-white/20 p-2 transition-transform duration-300 hover:scale-110">

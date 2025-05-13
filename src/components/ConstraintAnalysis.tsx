@@ -48,19 +48,19 @@ const ConstraintAnalysis: React.FC<ConstraintAnalysisProps> = ({ shipments }) =>
   const constraintData = analyzeConstraints();
   
   // Colors for alternating bars
-  const barColors = ["#9b87f5", "#4CAF50", "#1EAEDB", "#ea384c"];
+  const barColors = ["#6366f1", "#10b981", "#3b82f6", "#f43f5e"];
 
   return (
-    <Card className="h-full data-card shadow-2xl bg-white">
+    <Card className="h-full shadow-xl bg-white border-0 rounded-xl overflow-hidden">
       <CardHeader>
-        <CardTitle className="text-[#8B4513]">Analisis Kendala</CardTitle>
-        <CardDescription className="text-[#A97555]">
+        <CardTitle className="text-slate-800">Analisis Kendala</CardTitle>
+        <CardDescription className="text-slate-500">
           Kendala yang paling sering terjadi dalam pengiriman
         </CardDescription>
       </CardHeader>
       <CardContent>
         {constraintData.length === 0 ? (
-          <div className="flex items-center justify-center h-[300px] text-[#A97555]">
+          <div className="flex items-center justify-center h-[300px] text-slate-500">
             Tidak ada data kendala
           </div>
         ) : (
@@ -77,12 +77,13 @@ const ConstraintAnalysis: React.FC<ConstraintAnalysisProps> = ({ shipments }) =>
                   bottom: 5,
                 }}
               >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" tick={{ fill: '#8B4513' }} />
-                <YAxis dataKey="name" type="category" width={isMobile ? 100 : 150} tick={{ fill: '#8B4513' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis type="number" tick={{ fill: '#475569' }} />
+                <YAxis dataKey="name" type="category" width={isMobile ? 100 : 150} tick={{ fill: '#475569' }} />
                 <Tooltip
                   formatter={(value: number) => [`${value} kasus`, "Jumlah"]}
                   labelFormatter={(label) => `Kendala: ${label}`}
+                  contentStyle={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
                 />
                 <Bar
                   dataKey="count"
