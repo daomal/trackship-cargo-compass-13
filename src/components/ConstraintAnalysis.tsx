@@ -47,16 +47,16 @@ const ConstraintAnalysis: React.FC<ConstraintAnalysisProps> = ({ shipments }) =>
   const constraintData = analyzeConstraints();
 
   return (
-    <Card className="h-full bg-gradient-to-br from-white to-purple-100 border border-purple-200 shadow-lg">
+    <Card className="h-full bg-gradient-to-br from-[#E8F3FF] to-[#F9FAFF] border border-[#E2EEFF] shadow-lg">
       <CardHeader>
-        <CardTitle className="text-purple-900">Analisis Kendala</CardTitle>
-        <CardDescription className="text-purple-700">
+        <CardTitle className="text-[#1A4A9B]">Analisis Kendala</CardTitle>
+        <CardDescription className="text-[#4D72B1]">
           Kendala yang paling sering terjadi dalam pengiriman
         </CardDescription>
       </CardHeader>
       <CardContent>
         {constraintData.length === 0 ? (
-          <div className="flex items-center justify-center h-[300px] text-purple-600">
+          <div className="flex items-center justify-center h-[300px] text-[#4D72B1]">
             Tidak ada data kendala
           </div>
         ) : (
@@ -72,6 +72,12 @@ const ConstraintAnalysis: React.FC<ConstraintAnalysisProps> = ({ shipments }) =>
                   bottom: 5,
                 }}
               >
+                <defs>
+                  <linearGradient id="barGradient" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#1A4A9B" stopOpacity={0.8} />
+                    <stop offset="100%" stopColor="#4D72B1" stopOpacity={0.6} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" />
                 <YAxis dataKey="name" type="category" width={isMobile ? 100 : 150} />
@@ -82,7 +88,7 @@ const ConstraintAnalysis: React.FC<ConstraintAnalysisProps> = ({ shipments }) =>
                 <Bar
                   dataKey="count"
                   name="Jumlah Kejadian"
-                  fill="#8B5CF6"
+                  fill="url(#barGradient)"
                   radius={[0, 4, 4, 0]}
                 />
               </BarChart>

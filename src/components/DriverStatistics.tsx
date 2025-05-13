@@ -73,35 +73,35 @@ const DriverStatistics: React.FC<DriverStatisticsProps> = ({ shipments }) => {
   const driverStats = getDriverStats();
 
   return (
-    <Card className="bg-gradient-mint animate-fade-in shadow-lg border border-blue-100 text-navy-600">
-      <CardHeader className="border-b border-blue-100">
-        <CardTitle className="text-navy-600">Statistik Performa Supir</CardTitle>
+    <Card className="bg-gradient-to-br from-[#E8F3FF] to-[#F9FAFF] animate-fade-in shadow-lg border border-[#E2EEFF] text-[#1A4A9B]">
+      <CardHeader className="border-b border-[#E2EEFF]">
+        <CardTitle className="text-[#1A4A9B]">Statistik Performa Supir</CardTitle>
       </CardHeader>
       <CardContent className="pt-6">
-        <div className="rounded-md border border-blue-100 bg-white/90 overflow-hidden driver-stats-table">
+        <div className="rounded-md border border-[#E2EEFF] bg-white/90 overflow-hidden driver-stats-table">
           <Table>
-            <TableHeader className="bg-gradient-mint/50">
+            <TableHeader className="bg-gradient-to-r from-[#E8F3FF] to-[#F9FAFF]">
               <TableRow>
-                <TableHead>Nama Supir</TableHead>
-                <TableHead className="text-center">Total Pengiriman</TableHead>
-                <TableHead className="text-center">Terkirim</TableHead>
-                <TableHead className="text-center">Tertunda</TableHead>
-                <TableHead className="text-center">Gagal</TableHead>
-                <TableHead>Alasan Gagal/Tertunda</TableHead>
+                <TableHead className="text-[#1A4A9B]">Nama Supir</TableHead>
+                <TableHead className="text-center text-[#1A4A9B]">Total Pengiriman</TableHead>
+                <TableHead className="text-center text-[#1A4A9B]">Terkirim</TableHead>
+                <TableHead className="text-center text-[#1A4A9B]">Tertunda</TableHead>
+                <TableHead className="text-center text-[#1A4A9B]">Gagal</TableHead>
+                <TableHead className="text-[#1A4A9B]">Alasan Gagal/Tertunda</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {driverStats.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center h-32">
+                  <TableCell colSpan={6} className="text-center h-32 text-[#4D72B1]">
                     Tidak ada data supir
                   </TableCell>
                 </TableRow>
               ) : (
                 driverStats.map((driver) => (
-                  <TableRow key={driver.name} className="hover:bg-blue-50/50 transition-colors">
-                    <TableCell className="font-medium">{driver.name}</TableCell>
-                    <TableCell className="text-center">{driver.total}</TableCell>
+                  <TableRow key={driver.name} className="hover:bg-[#E8F3FF]/50 transition-colors">
+                    <TableCell className="font-medium text-[#1A4A9B]">{driver.name}</TableCell>
+                    <TableCell className="text-center text-[#1A4A9B]">{driver.total}</TableCell>
                     <TableCell className="text-center">
                       <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
                         {driver.delivered}
@@ -117,7 +117,7 @@ const DriverStatistics: React.FC<DriverStatisticsProps> = ({ shipments }) => {
                         {driver.failed}
                       </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-[#4D72B1]">
                       {driver.reasons.length > 0 ? (
                         <ul className="list-disc pl-5 text-sm">
                           {driver.reasons.map((reason, index) => (

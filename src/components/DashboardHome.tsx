@@ -29,21 +29,21 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ shipments }) => {
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 w-full">
-        <div className="h-full shadow-2xl hover:shadow-[0_15px_30px_rgba(0,0,0,0.2)] transform hover:-translate-y-2 transition-all duration-500 rounded-xl overflow-hidden bg-white">
+        <div className="h-full shadow-2xl hover:shadow-[0_20px_35px_rgba(0,0,0,0.25)] transform hover:-translate-y-2 transition-all duration-500 rounded-xl overflow-hidden bg-gradient-to-br from-[#E8F3FF] to-[#F9FAFF] border border-[#E2EEFF]">
           <DataCharts shipments={shipments} />
         </div>
-        <div className="h-full shadow-2xl hover:shadow-[0_15px_30px_rgba(0,0,0,0.2)] transform hover:-translate-y-2 transition-all duration-500 rounded-xl overflow-hidden bg-white">
+        <div className="h-full shadow-2xl hover:shadow-[0_20px_35px_rgba(0,0,0,0.25)] transform hover:-translate-y-2 transition-all duration-500 rounded-xl overflow-hidden bg-gradient-to-br from-[#E8F3FF] to-[#F9FAFF] border border-[#E2EEFF]">
           <ConstraintAnalysis shipments={shipments} />
         </div>
       </div>
 
       {/* Driver Statistics */}
-      <div className="w-full shadow-2xl hover:shadow-[0_15px_30px_rgba(0,0,0,0.2)] transform hover:-translate-y-2 transition-all duration-500 rounded-xl overflow-hidden animate-slide-in bg-white">
+      <div className="w-full shadow-2xl hover:shadow-[0_20px_35px_rgba(0,0,0,0.25)] transform hover:-translate-y-2 transition-all duration-500 rounded-xl overflow-hidden animate-slide-in bg-gradient-to-br from-[#E8F3FF] to-[#F9FAFF] border border-[#E2EEFF]">
         <DriverStatistics shipments={shipments} />
       </div>
 
       {/* Company Analytics */}
-      <div className="w-full shadow-2xl hover:shadow-[0_15px_30px_rgba(0,0,0,0.2)] transform hover:-translate-y-2 transition-all duration-500 rounded-xl overflow-hidden animate-scale-in bg-white">
+      <div className="w-full shadow-2xl hover:shadow-[0_20px_35px_rgba(0,0,0,0.25)] transform hover:-translate-y-2 transition-all duration-500 rounded-xl overflow-hidden animate-scale-in bg-gradient-to-br from-[#E8F3FF] to-[#F9FAFF] border border-[#E2EEFF]">
         <CompanyAnalytics shipments={shipments} />
       </div>
     </div>

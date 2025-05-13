@@ -4,7 +4,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 
 const Index = () => {
   return (
-    <div className="w-full bg-gray-100">
+    <div className="w-full bg-[#F8FAFF]">
       <DashboardLayout />
     </div>
   );

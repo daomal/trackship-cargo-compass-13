@@ -77,20 +77,20 @@ const DataCharts: React.FC<DataChartsProps> = ({ shipments }) => {
   const lineChartData = prepareLineChartData();
 
   return (
-    <Card className="bg-gradient-to-br from-white to-purple-100 animate-fade-in shadow-lg border border-purple-200 text-purple-900">
-      <CardHeader className="border-b border-purple-200">
-        <CardTitle className="text-purple-900">Visualisasi Data</CardTitle>
+    <Card className="bg-gradient-to-br from-[#E8F3FF] to-[#F9FAFF] animate-fade-in shadow-lg border border-[#E2EEFF] text-[#1A4A9B]">
+      <CardHeader className="border-b border-[#E2EEFF]">
+        <CardTitle className="text-[#1A4A9B]">Visualisasi Data</CardTitle>
       </CardHeader>
       <CardContent className="pt-6 space-y-8">
         {/* Bar Chart */}
         <div className="chart-container">
-          <h3 className="text-lg font-medium text-purple-900 mb-2">Pengiriman per Tanggal</h3>
-          <div className="w-full h-[300px] p-2 bg-white rounded-md shadow-sm border border-purple-100">
+          <h3 className="text-lg font-medium text-[#1A4A9B] mb-2">Pengiriman per Tanggal</h3>
+          <div className="w-full h-[300px] p-2 bg-white rounded-md shadow-sm border border-[#E2EEFF]">
             <ResponsiveContainer width="100%" height="100%" className="recharts-wrapper">
               <BarChart data={barChartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                <XAxis dataKey="date" tick={{ fill: '#4B5563' }} />
-                <YAxis tick={{ fill: '#4B5563' }} />
+                <XAxis dataKey="date" tick={{ fill: '#4D72B1' }} />
+                <YAxis tick={{ fill: '#4D72B1' }} />
                 <Tooltip
                   formatter={(value: number) => [`${value} pengiriman`, "Jumlah"]}
                   labelFormatter={(label) => `Tanggal: ${label}`}
@@ -104,8 +104,8 @@ const DataCharts: React.FC<DataChartsProps> = ({ shipments }) => {
                 />
                 <defs>
                   <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#8B5CF6" stopOpacity={0.8}/>
-                    <stop offset="100%" stopColor="#C4B5FD" stopOpacity={0.4}/>
+                    <stop offset="0%" stopColor="#1A4A9B" stopOpacity={0.8}/>
+                    <stop offset="100%" stopColor="#4D72B1" stopOpacity={0.4}/>
                   </linearGradient>
                 </defs>
               </BarChart>
@@ -115,8 +115,8 @@ const DataCharts: React.FC<DataChartsProps> = ({ shipments }) => {
         
         {/* Pie Chart */}
         <div className="chart-container">
-          <h3 className="text-lg font-medium text-purple-900 mb-2">Status Pengiriman</h3>
-          <div className="w-full h-[300px] p-2 bg-white rounded-md shadow-sm border border-purple-100">
+          <h3 className="text-lg font-medium text-[#1A4A9B] mb-2">Status Pengiriman</h3>
+          <div className="w-full h-[300px] p-2 bg-white rounded-md shadow-sm border border-[#E2EEFF]">
             <ResponsiveContainer width="100%" height="100%" className="recharts-wrapper">
               <PieChart>
                 <Pie
@@ -146,13 +146,13 @@ const DataCharts: React.FC<DataChartsProps> = ({ shipments }) => {
         
         {/* Line Chart */}
         <div className="chart-container">
-          <h3 className="text-lg font-medium text-purple-900 mb-2">Trend Pengiriman</h3>
-          <div className="w-full h-[300px] p-2 bg-white rounded-md shadow-sm border border-purple-100">
+          <h3 className="text-lg font-medium text-[#1A4A9B] mb-2">Trend Pengiriman</h3>
+          <div className="w-full h-[300px] p-2 bg-white rounded-md shadow-sm border border-[#E2EEFF]">
             <ResponsiveContainer width="100%" height="100%" className="recharts-wrapper">
               <LineChart data={lineChartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                <XAxis dataKey="date" tick={{ fill: '#4B5563' }} />
-                <YAxis tick={{ fill: '#4B5563' }} />
+                <XAxis dataKey="date" tick={{ fill: '#4D72B1' }} />
+                <YAxis tick={{ fill: '#4D72B1' }} />
                 <Tooltip
                   formatter={(value: number) => [`${value} pengiriman`, "Jumlah"]}
                   labelFormatter={(label) => `Tanggal: ${label}`}
@@ -163,7 +163,7 @@ const DataCharts: React.FC<DataChartsProps> = ({ shipments }) => {
                   type="monotone"
                   dataKey="count"
                   name="Jumlah Pengiriman"
-                  stroke="#8B5CF6"
+                  stroke="#1A4A9B"
                   strokeWidth={2}
                   dot={{ r: 4, strokeWidth: 2, fill: "#fff" }}
                   activeDot={{ r: 6 }}

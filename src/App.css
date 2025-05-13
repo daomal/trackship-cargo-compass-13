@@ -13,10 +13,10 @@
   transition: filter 300ms;
 }
 .logo:hover {
-  filter: drop-shadow(0 0 2em rgba(100, 108, 255, 0.6));
+  filter: drop-shadow(0 0 2em rgba(26, 74, 155, 0.6));
 }
 .logo.react:hover {
-  filter: drop-shadow(0 0 2em rgba(97, 218, 251, 0.6));
+  filter: drop-shadow(0 0 2em rgba(26, 74, 155, 0.6));
 }
 
 @keyframes logo-spin {
@@ -49,27 +49,27 @@
 
 /* Improved gradient backgrounds */
 .bg-gradient-soft {
-  background: linear-gradient(135deg, #ffffff 0%, #e9d8fd 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #E8F3FF 100%);
 }
 
 .bg-gradient-blue {
-  background: linear-gradient(90deg, #e9d8fd 0%, #c3cbfe 100%);
+  background: linear-gradient(90deg, #E8F3FF 0%, #F9FAFF 100%);
 }
 
 .bg-gradient-purple {
-  background: linear-gradient(135deg, #ffffff 0%, #d8b4fe 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #E2EEFF 100%);
 }
 
 .bg-gradient-data {
-  background: linear-gradient(to top, #d8b4fe 0%, #ffffff 100%);
+  background: linear-gradient(to top, #E2EEFF 0%, #ffffff 100%);
 }
 
 .gradient-card {
-  background: linear-gradient(90deg, #f5f3ff 0%, #ede9fe 100%);
+  background: linear-gradient(90deg, #E8F3FF 0%, #F9FAFF 100%);
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
-  border: 1px solid #e9d8fd;
+  border: 1px solid #E2EEFF;
 }
 
 .gradient-card:hover {
@@ -79,37 +79,37 @@
 
 /* New gradient backgrounds */
 .bg-gradient-teal {
-  background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%);
+  background: linear-gradient(135deg, #E8F3FF 0%, #F9FAFF 100%);
 }
 
 .bg-gradient-sunset {
-  background: linear-gradient(135deg, #ffffff 0%, #f9a8d4 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #E8F3FF 100%);
 }
 
 .bg-gradient-ocean {
-  background: linear-gradient(to right, #8b5cf6, #6366f1);
+  background: linear-gradient(to right, #1A4A9B, #4D72B1);
 }
 
 .bg-gradient-mint {
-  background: linear-gradient(to right, #c4b5fd, #a5b4fc, #93c5fd);
+  background: linear-gradient(to right, #E8F3FF, #F9FAFF);
 }
 
 .bg-gradient-twilight {
-  background: linear-gradient(135deg, #ffffff 0%, #e9d5ff 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #E8F3FF 100%);
 }
 
 .main-background {
-  background: linear-gradient(135deg, #ffffff 0%, #e9d5ff 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #E8F3FF 100%);
   min-height: 100vh;
 }
 
 .data-card {
-  background: linear-gradient(to right, #f5f3ff 0%, #ede9fe 100%);
+  background: linear-gradient(to right, #E8F3FF 0%, #F9FAFF 100%);
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   margin-bottom: 1.5rem;
   transition: all 0.3s ease;
-  border: 1px solid #e9d8fd;
+  border: 1px solid #E2EEFF;
 }
 
 .data-card:hover {
@@ -118,7 +118,7 @@
 }
 
 .dashboard-page {
-  background: linear-gradient(135deg, #ffffff 0%, #e9d5ff 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #E8F3FF 100%);
 }
 
 .table-container {
@@ -127,11 +127,11 @@
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   overflow: hidden;
-  border: 1px solid #e9d8fd;
+  border: 1px solid #E2EEFF;
 }
 
 .table-header {
-  background: linear-gradient(to right, #a78bfa 0%, #8b5cf6 100%);
+  background: linear-gradient(to right, #1A4A9B 0%, #4D72B1 100%);
 }
 
 /* Print styles for better PDF export */
