@@ -73,42 +73,42 @@ const DriverStatistics: React.FC<DriverStatisticsProps> = ({ shipments }) => {
   const driverStats = getDriverStats();
 
   return (
-    <Card className="bg-gradient-to-br from-[#E8F3FF] to-[#F9FAFF] animate-fade-in shadow-lg border border-[#E2EEFF] text-[#1A4A9B]">
-      <CardHeader className="border-b border-[#E2EEFF]">
-        <CardTitle className="text-[#1A4A9B]">Statistik Performa Supir</CardTitle>
+    <Card className="data-card animate-fade-in shadow-2xl text-[#333]">
+      <CardHeader className="border-b border-[#e6d9c7]">
+        <CardTitle className="text-[#4a2d7c]">Statistik Performa Supir</CardTitle>
       </CardHeader>
       <CardContent className="pt-6">
-        <div className="rounded-md border border-[#E2EEFF] bg-white/90 overflow-hidden driver-stats-table">
+        <div className="rounded-md border border-[#e6d9c7] bg-white/90 overflow-hidden driver-stats-table">
           <Table>
-            <TableHeader className="bg-gradient-to-r from-[#E8F3FF] to-[#F9FAFF]">
+            <TableHeader className="bg-gradient-to-r from-[#f5efe6] to-[#ffffff]">
               <TableRow>
-                <TableHead className="text-[#1A4A9B]">Nama Supir</TableHead>
-                <TableHead className="text-center text-[#1A4A9B]">Total Pengiriman</TableHead>
-                <TableHead className="text-center text-[#1A4A9B]">Terkirim</TableHead>
-                <TableHead className="text-center text-[#1A4A9B]">Tertunda</TableHead>
-                <TableHead className="text-center text-[#1A4A9B]">Gagal</TableHead>
-                <TableHead className="text-[#1A4A9B]">Alasan Gagal/Tertunda</TableHead>
+                <TableHead className="text-[#4a2d7c]">Nama Supir</TableHead>
+                <TableHead className="text-center text-[#4a2d7c]">Total Pengiriman</TableHead>
+                <TableHead className="text-center text-[#4a2d7c]">Terkirim</TableHead>
+                <TableHead className="text-center text-[#4a2d7c]">Tertunda</TableHead>
+                <TableHead className="text-center text-[#4a2d7c]">Gagal</TableHead>
+                <TableHead className="text-[#4a2d7c]">Alasan Gagal/Tertunda</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {driverStats.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center h-32 text-[#4D72B1]">
+                  <TableCell colSpan={6} className="text-center h-32 text-[#7E69AB]">
                     Tidak ada data supir
                   </TableCell>
                 </TableRow>
               ) : (
                 driverStats.map((driver) => (
-                  <TableRow key={driver.name} className="hover:bg-[#E8F3FF]/50 transition-colors">
-                    <TableCell className="font-medium text-[#1A4A9B]">{driver.name}</TableCell>
-                    <TableCell className="text-center text-[#1A4A9B]">{driver.total}</TableCell>
+                  <TableRow key={driver.name} className="hover:bg-[#f5efe6]/50 transition-colors">
+                    <TableCell className="font-medium text-[#4a2d7c]">{driver.name}</TableCell>
+                    <TableCell className="text-center text-[#4a2d7c]">{driver.total}</TableCell>
                     <TableCell className="text-center">
                       <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
                         {driver.delivered}
                       </span>
                     </TableCell>
                     <TableCell className="text-center">
-                      <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
                         {driver.pending}
                       </span>
                     </TableCell>
@@ -117,7 +117,7 @@ const DriverStatistics: React.FC<DriverStatisticsProps> = ({ shipments }) => {
                         {driver.failed}
                       </span>
                     </TableCell>
-                    <TableCell className="text-[#4D72B1]">
+                    <TableCell className="text-[#7E69AB]">
                       {driver.reasons.length > 0 ? (
                         <ul className="list-disc pl-5 text-sm">
                           {driver.reasons.map((reason, index) => (

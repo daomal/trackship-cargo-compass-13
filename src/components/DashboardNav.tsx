@@ -16,8 +16,8 @@ const DashboardNav: React.FC<DashboardNavProps> = ({ activeView, onViewChange })
         variant={activeView === "dashboard" ? "default" : "outline"}
         className={
           activeView === "dashboard"
-            ? "bg-gradient-to-r from-[#1A4A9B] to-[#4D72B1] text-white shadow-lg transform transition-all duration-300 rounded-xl hover:translate-y-[-2px] hover:shadow-xl"
-            : "bg-white/90 text-[#1A4A9B] hover:bg-[#E8F3FF] hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 shadow-md border-[#E2EEFF] rounded-xl"
+            ? "btn-3d-effect btn-subscribe-blue shadow-lg transform transition-all duration-300 rounded-xl hover:translate-y-[-2px] hover:shadow-xl"
+            : "bg-white/90 text-[#1EAEDB] hover:bg-[#e6f7fd] hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 shadow-md border-[#e6d9c7] rounded-xl btn-3d-effect"
         }
         onClick={() => onViewChange("dashboard")}
       >
@@ -29,8 +29,8 @@ const DashboardNav: React.FC<DashboardNavProps> = ({ activeView, onViewChange })
         variant={activeView === "shipments" ? "default" : "outline"}
         className={
           activeView === "shipments"
-            ? "bg-gradient-to-r from-[#1A4A9B] to-[#4D72B1] text-white shadow-lg transform transition-all duration-300 rounded-xl hover:translate-y-[-2px] hover:shadow-xl"
-            : "bg-white/90 text-[#1A4A9B] hover:bg-[#E8F3FF] hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 shadow-md border-[#E2EEFF] rounded-xl"
+            ? "btn-3d-effect btn-subscribe-blue shadow-lg transform transition-all duration-300 rounded-xl hover:translate-y-[-2px] hover:shadow-xl"
+            : "bg-white/90 text-[#1EAEDB] hover:bg-[#e6f7fd] hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 shadow-md border-[#e6d9c7] rounded-xl btn-3d-effect"
         }
         onClick={() => onViewChange("shipments")}
       >
@@ -42,8 +42,8 @@ const DashboardNav: React.FC<DashboardNavProps> = ({ activeView, onViewChange })
         variant={activeView === "notes" ? "default" : "outline"}
         className={
           activeView === "notes"
-            ? "bg-gradient-to-r from-[#1A4A9B] to-[#4D72B1] text-white shadow-lg transform transition-all duration-300 rounded-xl hover:translate-y-[-2px] hover:shadow-xl"
-            : "bg-white/90 text-[#1A4A9B] hover:bg-[#E8F3FF] hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 shadow-md border-[#E2EEFF] rounded-xl"
+            ? "btn-3d-effect btn-subscribe-blue shadow-lg transform transition-all duration-300 rounded-xl hover:translate-y-[-2px] hover:shadow-xl"
+            : "bg-white/90 text-[#1EAEDB] hover:bg-[#e6f7fd] hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 shadow-md border-[#e6d9c7] rounded-xl btn-3d-effect"
         }
         onClick={() => onViewChange("notes")}
       >

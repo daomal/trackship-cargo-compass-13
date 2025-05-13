@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { LogIn, User, UserCog, BarChart2, Truck } from "lucide-react";
@@ -141,26 +142,26 @@ const DashboardLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="container mx-auto py-6 px-4 md:px-8 max-w-full xl:max-w-[1600px]">
+    <div className="min-h-screen" style={{ backgroundColor: "#f5efe6" }}>
+      <div className="container mx-auto py-6 px-4 md:px-8 max-w-full 2xl:max-w-[1800px]">
         <div className="flex flex-col space-y-6 animate-fade-in">
           <div className={`flex ${isMobile ? 'flex-col space-y-4' : 'flex-row'} justify-between items-center`}>
             <div className="flex flex-col space-y-2 animate-slide-in">
-              <h1 className="text-2xl md:text-3xl font-bold text-slate-800">Dashboard Pengiriman</h1>
-              <p className="text-gray-600">
+              <h1 className="text-2xl md:text-3xl font-bold text-[#4a2d7c]">Dashboard Pengiriman</h1>
+              <p className="text-[#7E69AB]">
                 Pantau dan kelola data pengiriman dalam satu tempat
               </p>
             </div>
             
             <div className={`flex ${isMobile ? 'flex-col w-full space-y-2' : 'items-center'} gap-4 animate-slide-in`} style={{animationDelay: "0.2s"}}>
-              <Button variant="outline" asChild className="bg-white text-slate-700 hover:bg-blue-50 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border-blue-200 rounded-xl">
+              <Button variant="outline" asChild className="btn-3d-effect btn-view-all text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl">
                 <Link to="/public-data">
                   <BarChart2 className="mr-2 h-4 w-4" />
                   Lihat Data Publik
                 </Link>
               </Button>
               
-              <Button variant="outline" asChild className="bg-white text-slate-700 hover:bg-blue-50 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border-blue-200 rounded-xl">
+              <Button variant="outline" asChild className="btn-3d-effect btn-view-all text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl">
                 <a href="https://trayekbaru.netlify.app/" target="_blank" rel="noopener noreferrer">
                   <Truck className="mr-2 h-4 w-4" />
                   Trayek Driver
@@ -170,7 +171,7 @@ const DashboardLayout = () => {
               {user ? (
                 <div className={`flex ${isMobile ? 'flex-col w-full' : 'items-center'} gap-4`}>
                   {isAdmin && (
-                    <Button variant="default" className="bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:opacity-90 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl" asChild>
+                    <Button variant="default" className="btn-3d-effect btn-admin-rainbow text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl" asChild>
                       <Link to="/admin">
                         <UserCog className="mr-2 h-4 w-4" />
                         Panel Admin
@@ -181,13 +182,13 @@ const DashboardLayout = () => {
                   <Button 
                     variant="outline" 
                     onClick={() => signOut()}
-                    className="bg-white text-slate-700 hover:bg-blue-50 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border-blue-200 rounded-xl"
+                    className="btn-3d-effect btn-view-all text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl"
                   >
                     Logout
                   </Button>
                 </div>
               ) : (
-                <Button variant="default" className="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl" asChild>
+                <Button variant="default" className="btn-3d-effect btn-view-all text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl" asChild>
                   <Link to="/auth">
                     <LogIn className="mr-2 h-4 w-4" />
                     Login

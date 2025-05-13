@@ -51,9 +51,9 @@ const DataCharts: React.FC<DataChartsProps> = ({ shipments }) => {
     });
     
     return [
-      { name: "Terkirim", value: statusCount.terkirim, color: "#22C55E" },
-      { name: "Tertunda", value: statusCount.tertunda, color: "#F59E0B" },
-      { name: "Gagal", value: statusCount.gagal, color: "#EF4444" },
+      { name: "Terkirim", value: statusCount.terkirim, color: "#4CAF50" },
+      { name: "Tertunda", value: statusCount.tertunda, color: "#1EAEDB" },
+      { name: "Gagal", value: statusCount.gagal, color: "#ea384c" },
     ];
   };
   
@@ -76,38 +76,38 @@ const DataCharts: React.FC<DataChartsProps> = ({ shipments }) => {
   const pieChartData = preparePieChartData();
   const lineChartData = prepareLineChartData();
 
+  // Colors for alternating bars
+  const barColors = ["#9b87f5", "#4CAF50", "#1EAEDB", "#ea384c"];
+
   return (
-    <Card className="bg-gradient-to-br from-[#E8F3FF] to-[#F9FAFF] animate-fade-in shadow-lg border border-[#E2EEFF] text-[#1A4A9B]">
-      <CardHeader className="border-b border-[#E2EEFF]">
-        <CardTitle className="text-[#1A4A9B]">Visualisasi Data</CardTitle>
+    <Card className="data-card animate-fade-in shadow-2xl text-[#333]">
+      <CardHeader className="border-b border-[#e6d9c7]">
+        <CardTitle className="text-[#4a2d7c]">Visualisasi Data</CardTitle>
       </CardHeader>
       <CardContent className="pt-6 space-y-8">
         {/* Bar Chart */}
         <div className="chart-container">
-          <h3 className="text-lg font-medium text-[#1A4A9B] mb-2">Pengiriman per Tanggal</h3>
-          <div className="w-full h-[300px] p-2 bg-white rounded-md shadow-sm border border-[#E2EEFF]">
+          <h3 className="text-lg font-medium text-[#4a2d7c] mb-2">Pengiriman per Tanggal</h3>
+          <div className="w-full h-[300px] p-2 bg-white rounded-md shadow-xl border border-[#e6d9c7]">
             <ResponsiveContainer width="100%" height="100%" className="recharts-wrapper">
-              <BarChart data={barChartData}>
+              <BarChart data={barChartData} className="chart-3d">
                 <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                <XAxis dataKey="date" tick={{ fill: '#4D72B1' }} />
-                <YAxis tick={{ fill: '#4D72B1' }} />
+                <XAxis dataKey="date" tick={{ fill: '#555' }} />
+                <YAxis tick={{ fill: '#555' }} />
                 <Tooltip
                   formatter={(value: number) => [`${value} pengiriman`, "Jumlah"]}
                   labelFormatter={(label) => `Tanggal: ${label}`}
-                  contentStyle={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e0e0e0' }}
+                  contentStyle={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e6d9c7' }}
                 />
                 <Bar
                   dataKey="count"
                   name="Jumlah Pengiriman"
-                  fill="url(#colorGradient)"
                   radius={[4, 4, 0, 0]}
-                />
-                <defs>
-                  <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#1A4A9B" stopOpacity={0.8}/>
-                    <stop offset="100%" stopColor="#4D72B1" stopOpacity={0.4}/>
-                  </linearGradient>
-                </defs>
+                >
+                  {barChartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={barColors[index % barColors.length]} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -115,10 +115,10 @@ const DataCharts: React.FC<DataChartsProps> = ({ shipments }) => {
         
         {/* Pie Chart */}
         <div className="chart-container">
-          <h3 className="text-lg font-medium text-[#1A4A9B] mb-2">Status Pengiriman</h3>
-          <div className="w-full h-[300px] p-2 bg-white rounded-md shadow-sm border border-[#E2EEFF]">
+          <h3 className="text-lg font-medium text-[#4a2d7c] mb-2">Status Pengiriman</h3>
+          <div className="w-full h-[300px] p-2 bg-white rounded-md shadow-xl border border-[#e6d9c7]">
             <ResponsiveContainer width="100%" height="100%" className="recharts-wrapper">
-              <PieChart>
+              <PieChart className="chart-3d">
                 <Pie
                   data={pieChartData}
                   cx="50%"
@@ -136,7 +136,7 @@ const DataCharts: React.FC<DataChartsProps> = ({ shipments }) => {
                 </Pie>
                 <Tooltip 
                   formatter={(value: number) => [`${value} pengiriman`, "Jumlah"]}
-                  contentStyle={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e0e0e0' }}
+                  contentStyle={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e6d9c7' }}
                 />
                 <Legend />
               </PieChart>
@@ -146,24 +146,24 @@ const DataCharts: React.FC<DataChartsProps> = ({ shipments }) => {
         
         {/* Line Chart */}
         <div className="chart-container">
-          <h3 className="text-lg font-medium text-[#1A4A9B] mb-2">Trend Pengiriman</h3>
-          <div className="w-full h-[300px] p-2 bg-white rounded-md shadow-sm border border-[#E2EEFF]">
+          <h3 className="text-lg font-medium text-[#4a2d7c] mb-2">Trend Pengiriman</h3>
+          <div className="w-full h-[300px] p-2 bg-white rounded-md shadow-xl border border-[#e6d9c7]">
             <ResponsiveContainer width="100%" height="100%" className="recharts-wrapper">
-              <LineChart data={lineChartData}>
+              <LineChart data={lineChartData} className="chart-3d">
                 <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                <XAxis dataKey="date" tick={{ fill: '#4D72B1' }} />
-                <YAxis tick={{ fill: '#4D72B1' }} />
+                <XAxis dataKey="date" tick={{ fill: '#555' }} />
+                <YAxis tick={{ fill: '#555' }} />
                 <Tooltip
                   formatter={(value: number) => [`${value} pengiriman`, "Jumlah"]}
                   labelFormatter={(label) => `Tanggal: ${label}`}
-                  contentStyle={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e0e0e0' }}
+                  contentStyle={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e6d9c7' }}
                 />
                 <Legend />
                 <Line
                   type="monotone"
                   dataKey="count"
                   name="Jumlah Pengiriman"
-                  stroke="#1A4A9B"
+                  stroke="#9b87f5"
                   strokeWidth={2}
                   dot={{ r: 4, strokeWidth: 2, fill: "#fff" }}
                   activeDot={{ r: 6 }}

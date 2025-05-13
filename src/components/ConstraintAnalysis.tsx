@@ -16,6 +16,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Cell,
 } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -45,18 +46,21 @@ const ConstraintAnalysis: React.FC<ConstraintAnalysisProps> = ({ shipments }) =>
   };
 
   const constraintData = analyzeConstraints();
+  
+  // Colors for alternating bars
+  const barColors = ["#9b87f5", "#4CAF50", "#1EAEDB", "#ea384c"];
 
   return (
-    <Card className="h-full bg-gradient-to-br from-[#E8F3FF] to-[#F9FAFF] border border-[#E2EEFF] shadow-lg">
+    <Card className="h-full data-card shadow-2xl">
       <CardHeader>
-        <CardTitle className="text-[#1A4A9B]">Analisis Kendala</CardTitle>
-        <CardDescription className="text-[#4D72B1]">
+        <CardTitle className="text-[#4a2d7c]">Analisis Kendala</CardTitle>
+        <CardDescription className="text-[#7E69AB]">
           Kendala yang paling sering terjadi dalam pengiriman
         </CardDescription>
       </CardHeader>
       <CardContent>
         {constraintData.length === 0 ? (
-          <div className="flex items-center justify-center h-[300px] text-[#4D72B1]">
+          <div className="flex items-center justify-center h-[300px] text-[#7E69AB]">
             Tidak ada data kendala
           </div>
         ) : (
@@ -65,6 +69,7 @@ const ConstraintAnalysis: React.FC<ConstraintAnalysisProps> = ({ shipments }) =>
               <BarChart
                 layout="vertical"
                 data={constraintData}
+                className="chart-3d"
                 margin={{
                   top: 5,
                   right: 30,
@@ -72,12 +77,6 @@ const ConstraintAnalysis: React.FC<ConstraintAnalysisProps> = ({ shipments }) =>
                   bottom: 5,
                 }}
               >
-                <defs>
-                  <linearGradient id="barGradient" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#1A4A9B" stopOpacity={0.8} />
-                    <stop offset="100%" stopColor="#4D72B1" stopOpacity={0.6} />
-                  </linearGradient>
-                </defs>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" />
                 <YAxis dataKey="name" type="category" width={isMobile ? 100 : 150} />
@@ -88,9 +87,12 @@ const ConstraintAnalysis: React.FC<ConstraintAnalysisProps> = ({ shipments }) =>
                 <Bar
                   dataKey="count"
                   name="Jumlah Kejadian"
-                  fill="url(#barGradient)"
                   radius={[0, 4, 4, 0]}
-                />
+                >
+                  {constraintData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={barColors[index % barColors.length]} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>

@@ -43,6 +43,15 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 260 35% 50%;
     --sidebar-ring: 255 83% 73%;
+    
+    /* New theme colors */
+    --bg-cream: 36 33% 94%;
+    --purple-chat: 264 60% 80%;
+    --book-green: 120 39% 54%;
+    --book-blue: 210 100% 56%;
+    --book-red: 0 73% 58%;
+    --subscribe-blue: 195 97% 49%;
+    --view-all-red: 0 73% 58%;
   }
 
   * {
@@ -53,6 +62,7 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
     color: #000000; /* Ensuring black text color throughout the site */
+    background-color: hsl(var(--bg-cream));
   }
 
   /* Dashboard card with purple gradient */
@@ -113,6 +123,78 @@
   /* Button styles enhanced */
   .btn-elegant {
     @apply bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-300;
+  }
+
+  /* Book themed cards */
+  .book-card {
+    @apply rounded-lg shadow-xl transition-all duration-300 transform hover:-translate-y-2 hover:shadow-2xl;
+    box-shadow: 0 15px 25px rgba(0,0,0,0.2);
+    background: #ffffff;
+    border-left: 8px solid;
+  }
+  
+  .book-card-purple {
+    border-left-color: hsl(var(--purple-chat));
+  }
+  
+  .book-card-green {
+    border-left-color: hsl(var(--book-green));
+  }
+  
+  .book-card-blue {
+    border-left-color: hsl(var(--book-blue));
+  }
+  
+  .book-card-red {
+    border-left-color: hsl(var(--book-red));
+  }
+
+  /* 3D button styles */
+  .btn-3d {
+    @apply font-medium rounded-lg text-white px-4 py-2 shadow-lg transition-all duration-300;
+    transform: perspective(100px) translateZ(0);
+  }
+  
+  .btn-3d:hover {
+    transform: perspective(100px) translateZ(5px);
+  }
+  
+  .btn-3d-blue {
+    background-color: hsl(var(--subscribe-blue));
+    box-shadow: 0 4px 0 darken(hsl(var(--subscribe-blue)), 10%);
+  }
+  
+  .btn-3d-red {
+    background-color: hsl(var(--view-all-red));
+    box-shadow: 0 4px 0 darken(hsl(var(--view-all-red)), 10%);
+  }
+  
+  /* 3D Chart effects */
+  .chart-3d {
+    filter: drop-shadow(0px 10px 4px rgba(0,0,0,0.2));
+  }
+  
+  .chart-container {
+    @apply p-4 bg-white rounded-lg shadow-xl;
+    border-radius: 12px;
+    box-shadow: 0 15px 25px rgba(0,0,0,0.1);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .chart-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 8px;
+    background: linear-gradient(to right, 
+      hsl(var(--purple-chat)), 
+      hsl(var(--book-green)),
+      hsl(var(--book-blue)),
+      hsl(var(--book-red))
+    );
   }
 
   /* Table styles */
