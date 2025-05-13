@@ -16,7 +16,7 @@ const DashboardNav: React.FC<DashboardNavProps> = ({ activeView, onViewChange })
         variant={activeView === "dashboard" ? "default" : "outline"}
         className={
           activeView === "dashboard"
-            ? "btn-3d-effect btn-subscribe-blue shadow-lg transform transition-all duration-300 rounded-xl hover:translate-y-[-2px] hover:shadow-xl"
+            ? "btn-3d-effect btn-subscribe-blue bg-[#1EAEDB] text-white shadow-lg transform transition-all duration-300 rounded-xl hover:translate-y-[-2px] hover:shadow-xl"
             : "bg-white/90 text-[#1EAEDB] hover:bg-[#e6f7fd] hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 shadow-md border-[#e6d9c7] rounded-xl btn-3d-effect"
         }
         onClick={() => onViewChange("dashboard")}
@@ -29,7 +29,7 @@ const DashboardNav: React.FC<DashboardNavProps> = ({ activeView, onViewChange })
         variant={activeView === "shipments" ? "default" : "outline"}
         className={
           activeView === "shipments"
-            ? "btn-3d-effect btn-subscribe-blue shadow-lg transform transition-all duration-300 rounded-xl hover:translate-y-[-2px] hover:shadow-xl"
+            ? "btn-3d-effect btn-subscribe-blue bg-[#1EAEDB] text-white shadow-lg transform transition-all duration-300 rounded-xl hover:translate-y-[-2px] hover:shadow-xl"
             : "bg-white/90 text-[#1EAEDB] hover:bg-[#e6f7fd] hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 shadow-md border-[#e6d9c7] rounded-xl btn-3d-effect"
         }
         onClick={() => onViewChange("shipments")}
@@ -42,7 +42,7 @@ const DashboardNav: React.FC<DashboardNavProps> = ({ activeView, onViewChange })
         variant={activeView === "notes" ? "default" : "outline"}
         className={
           activeView === "notes"
-            ? "btn-3d-effect btn-subscribe-blue shadow-lg transform transition-all duration-300 rounded-xl hover:translate-y-[-2px] hover:shadow-xl"
+            ? "btn-3d-effect btn-subscribe-blue bg-[#1EAEDB] text-white shadow-lg transform transition-all duration-300 rounded-xl hover:translate-y-[-2px] hover:shadow-xl"
             : "bg-white/90 text-[#1EAEDB] hover:bg-[#e6f7fd] hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 shadow-md border-[#e6d9c7] rounded-xl btn-3d-effect"
         }
         onClick={() => onViewChange("notes")}

@@ -147,21 +147,21 @@ const DashboardLayout = () => {
         <div className="flex flex-col space-y-6 animate-fade-in">
           <div className={`flex ${isMobile ? 'flex-col space-y-4' : 'flex-row'} justify-between items-center`}>
             <div className="flex flex-col space-y-2 animate-slide-in">
-              <h1 className="text-2xl md:text-3xl font-bold text-[#4a2d7c]">Dashboard Pengiriman</h1>
-              <p className="text-[#7E69AB]">
+              <h1 className="text-2xl md:text-3xl font-bold text-[#8B4513]">Dashboard Pengiriman</h1>
+              <p className="text-[#A97555]">
                 Pantau dan kelola data pengiriman dalam satu tempat
               </p>
             </div>
             
             <div className={`flex ${isMobile ? 'flex-col w-full space-y-2' : 'items-center'} gap-4 animate-slide-in`} style={{animationDelay: "0.2s"}}>
-              <Button variant="outline" asChild className="btn-3d-effect btn-view-all text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl">
+              <Button variant="outline" asChild className="btn-3d-effect text-white bg-[#ea384c] shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl">
                 <Link to="/public-data">
                   <BarChart2 className="mr-2 h-4 w-4" />
                   Lihat Data Publik
                 </Link>
               </Button>
               
-              <Button variant="outline" asChild className="btn-3d-effect btn-view-all text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl">
+              <Button variant="outline" asChild className="btn-3d-effect text-white bg-[#ea384c] shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl">
                 <a href="https://trayekbaru.netlify.app/" target="_blank" rel="noopener noreferrer">
                   <Truck className="mr-2 h-4 w-4" />
                   Trayek Driver
@@ -171,7 +171,7 @@ const DashboardLayout = () => {
               {user ? (
                 <div className={`flex ${isMobile ? 'flex-col w-full' : 'items-center'} gap-4`}>
                   {isAdmin && (
-                    <Button variant="default" className="btn-3d-effect btn-admin-rainbow text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl" asChild>
+                    <Button variant="default" className="btn-3d-effect btn-admin-rainbow bg-gradient-to-r from-[#9b87f5] via-[#ea384c] to-[#1EAEDB] text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl" asChild>
                       <Link to="/admin">
                         <UserCog className="mr-2 h-4 w-4" />
                         Panel Admin
@@ -182,13 +182,13 @@ const DashboardLayout = () => {
                   <Button 
                     variant="outline" 
                     onClick={() => signOut()}
-                    className="btn-3d-effect btn-view-all text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl"
+                    className="btn-3d-effect text-white bg-[#ea384c] shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl"
                   >
                     Logout
                   </Button>
                 </div>
               ) : (
-                <Button variant="default" className="btn-3d-effect btn-view-all text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl" asChild>
+                <Button variant="default" className="btn-3d-effect text-white bg-[#ea384c] shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl" asChild>
                   <Link to="/auth">
                     <LogIn className="mr-2 h-4 w-4" />
                     Login

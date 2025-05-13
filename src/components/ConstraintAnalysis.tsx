@@ -51,16 +51,16 @@ const ConstraintAnalysis: React.FC<ConstraintAnalysisProps> = ({ shipments }) =>
   const barColors = ["#9b87f5", "#4CAF50", "#1EAEDB", "#ea384c"];
 
   return (
-    <Card className="h-full data-card shadow-2xl">
+    <Card className="h-full data-card shadow-2xl bg-white">
       <CardHeader>
-        <CardTitle className="text-[#4a2d7c]">Analisis Kendala</CardTitle>
-        <CardDescription className="text-[#7E69AB]">
+        <CardTitle className="text-[#8B4513]">Analisis Kendala</CardTitle>
+        <CardDescription className="text-[#A97555]">
           Kendala yang paling sering terjadi dalam pengiriman
         </CardDescription>
       </CardHeader>
       <CardContent>
         {constraintData.length === 0 ? (
-          <div className="flex items-center justify-center h-[300px] text-[#7E69AB]">
+          <div className="flex items-center justify-center h-[300px] text-[#A97555]">
             Tidak ada data kendala
           </div>
         ) : (
@@ -78,8 +78,8 @@ const ConstraintAnalysis: React.FC<ConstraintAnalysisProps> = ({ shipments }) =>
                 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={isMobile ? 100 : 150} />
+                <XAxis type="number" tick={{ fill: '#8B4513' }} />
+                <YAxis dataKey="name" type="category" width={isMobile ? 100 : 150} tick={{ fill: '#8B4513' }} />
                 <Tooltip
                   formatter={(value: number) => [`${value} kasus`, "Jumlah"]}
                   labelFormatter={(label) => `Kendala: ${label}`}
