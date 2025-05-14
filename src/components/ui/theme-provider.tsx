@@ -32,7 +32,7 @@ export function ThemeProvider({
         return storedTheme as Theme;
       }
     }
-    return defaultTheme;
+    return defaultTheme as Theme;
   });
 
   useEffect(() => {
