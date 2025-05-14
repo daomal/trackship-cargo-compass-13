@@ -4,6 +4,8 @@ import { ThemeProvider } from "@/components/ui/theme-provider";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { Capacitor } from "@capacitor/core";
 import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
 import Admin from "@/pages/Admin";
@@ -21,6 +23,17 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  // Handle mobile platform specific adjustments
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      // Add class to body when running as a native app
+      document.body.classList.add('capacitor-app');
+      
+      // Additional mobile-specific setup can go here
+      console.log(`Running on ${Capacitor.getPlatform()} platform`);
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light" storageKey="theme-preference">
