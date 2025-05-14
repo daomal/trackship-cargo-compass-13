@@ -28,9 +28,9 @@ export function ThemeProvider({
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof localStorage !== 'undefined') {
       const storedTheme = localStorage.getItem(storageKey);
-      return (storedTheme === 'dark' || storedTheme === 'light' || storedTheme === 'system') 
-        ? storedTheme as Theme 
-        : defaultTheme;
+      if (storedTheme === 'dark' || storedTheme === 'light' || storedTheme === 'system') {
+        return storedTheme as Theme;
+      }
     }
     return defaultTheme;
   });
