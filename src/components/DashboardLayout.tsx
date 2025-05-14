@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { LogIn, User, UserCog, BarChart2, Truck } from "lucide-react";
+import { LogIn, User, UserCog, BarChart2, Truck, Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import ShipmentTable from "./ShipmentTable";
 import DataFilters from "./DataFilters";
@@ -23,6 +23,7 @@ const DashboardLayout = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const isMobile = useIsMobile();
   const [activeView, setActiveView] = useState<DashboardView>("dashboard");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     dateRange: [null, null],
@@ -141,6 +142,52 @@ const DashboardLayout = () => {
     }
   };
 
+  const renderTopButtons = () => (
+    <div className={`flex ${isMobile ? 'flex-col w-full' : 'items-center'} gap-4`}>
+      <Button variant="outline" asChild className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl border-0">
+        <Link to="/public-data">
+          <BarChart2 className="mr-2 h-4 w-4" />
+          Lihat Data Publik
+        </Link>
+      </Button>
+      
+      <Button variant="outline" asChild className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl border-0">
+        <a href="https://trayekbaru.netlify.app/" target="_blank" rel="noopener noreferrer">
+          <Truck className="mr-2 h-4 w-4" />
+          Trayek Driver
+        </a>
+      </Button>
+      
+      {user ? (
+        <div className={`flex ${isMobile ? 'flex-col w-full' : 'items-center'} gap-4`}>
+          {isAdmin && (
+            <Button variant="default" className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl border-0" asChild>
+              <Link to="/admin">
+                <UserCog className="mr-2 h-4 w-4" />
+                Panel Admin
+              </Link>
+            </Button>
+          )}
+          
+          <Button 
+            variant="outline" 
+            onClick={() => signOut()}
+            className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl border-0"
+          >
+            Logout
+          </Button>
+        </div>
+      ) : (
+        <Button variant="default" className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl border-0" asChild>
+          <Link to="/auth">
+            <LogIn className="mr-2 h-4 w-4" />
+            Login
+          </Link>
+        </Button>
+      )}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="container mx-auto py-6 px-4 md:px-8 max-w-full 2xl:max-w-[1800px]">
@@ -153,49 +200,35 @@ const DashboardLayout = () => {
               </p>
             </div>
             
-            <div className={`flex ${isMobile ? 'flex-col w-full space-y-2' : 'items-center'} gap-4 animate-slide-in`} style={{animationDelay: "0.2s"}}>
-              <Button variant="outline" asChild className="btn-3d-effect text-white bg-rose-500 hover:bg-rose-600 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl border-0">
-                <Link to="/public-data">
-                  <BarChart2 className="mr-2 h-4 w-4" />
-                  Lihat Data Publik
-                </Link>
-              </Button>
-              
-              <Button variant="outline" asChild className="btn-3d-effect text-white bg-rose-500 hover:bg-rose-600 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl border-0">
-                <a href="https://trayekbaru.netlify.app/" target="_blank" rel="noopener noreferrer">
-                  <Truck className="mr-2 h-4 w-4" />
-                  Trayek Driver
-                </a>
-              </Button>
-              
-              {user ? (
-                <div className={`flex ${isMobile ? 'flex-col w-full' : 'items-center'} gap-4`}>
-                  {isAdmin && (
-                    <Button variant="default" className="btn-3d-effect bg-gradient-to-r from-indigo-500 via-rose-500 to-blue-500 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl border-0" asChild>
-                      <Link to="/admin">
-                        <UserCog className="mr-2 h-4 w-4" />
-                        Panel Admin
-                      </Link>
-                    </Button>
-                  )}
-                  
-                  <Button 
-                    variant="outline" 
-                    onClick={() => signOut()}
-                    className="btn-3d-effect text-white bg-rose-500 hover:bg-rose-600 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl border-0"
-                  >
-                    Logout
-                  </Button>
-                </div>
-              ) : (
-                <Button variant="default" className="btn-3d-effect text-white bg-rose-500 hover:bg-rose-600 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl border-0" asChild>
-                  <Link to="/auth">
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Login
-                  </Link>
+            {isMobile ? (
+              <div className="flex justify-end w-full">
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                  className="relative z-20 md:hidden"
+                >
+                  {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                 </Button>
-              )}
-            </div>
+
+                {/* Mobile menu overlay */}
+                {isMobileMenuOpen && (
+                  <div className="fixed inset-0 bg-black/50 z-10" onClick={() => setIsMobileMenuOpen(false)}></div>
+                )}
+
+                {/* Mobile menu */}
+                <div className={`fixed top-0 right-0 h-screen bg-white shadow-2xl w-4/5 max-w-xs transform transition-transform duration-300 ease-in-out z-10 p-6 ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+                  <div className="flex flex-col space-y-6 pt-12">
+                    <h3 className="text-xl font-bold mb-4">Menu</h3>
+                    {renderTopButtons()}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-4 animate-slide-in" style={{animationDelay: "0.2s"}}>
+                {renderTopButtons()}
+              </div>
+            )}
           </div>
           
           {/* Dashboard Navigation */}

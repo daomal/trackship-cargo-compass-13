@@ -70,6 +70,8 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
   );
   const [driverEditId, setDriverEditId] = useState<string | null>(null);
   const [editableDriverName, setEditableDriverName] = useState("");
+  const [qtyEditId, setQtyEditId] = useState<string | null>(null);
+  const [editableQty, setEditableQty] = useState<number>(0);
   
   // Real-time updates
   useEffect(() => {
@@ -112,6 +114,57 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
     };
 
     return <span className={statusClasses[status]}>{statusText[status]}</span>;
+  };
+
+  // Function for in-place qty editing
+  const handleStartQtyEdit = (shipment: Shipment, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setQtyEditId(shipment.id);
+    setEditableQty(shipment.qty);
+  };
+
+  const handleQtyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value) && value >= 0) {
+      setEditableQty(value);
+    }
+  };
+
+  const handleQtySave = async () => {
+    if (!qtyEditId) {
+      return;
+    }
+    
+    try {
+      await updateShipment(qtyEditId, {
+        qty: editableQty
+      });
+      
+      toast.success("Qty berhasil diperbarui");
+      setQtyEditId(null);
+      
+      // Update data either through callback or local state
+      if (onShipmentUpdated) {
+        onShipmentUpdated();
+      } else {
+        // Update local data if no refresh callback provided
+        setLocalShipments(prev => 
+          prev.map(s => s.id === qtyEditId ? {...s, qty: editableQty} : s)
+        );
+      }
+    } catch (error) {
+      console.error("Error updating qty:", error);
+      toast.error("Gagal memperbarui qty");
+    }
+  };
+
+  const handleQtyKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleQtySave();
+    } else if (e.key === 'Escape') {
+      setQtyEditId(null);
+    }
   };
 
   const handleOpenEditDialog = (shipment: Shipment) => {
@@ -421,7 +474,31 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                         {shipment.kendala || "-"}
                       </TableCell>
                       <TableCell className="text-right">
-                        {shipment.qty}
+                        {isAdmin ? (
+                          qtyEditId === shipment.id ? (
+                            <div className="flex items-center justify-end gap-2">
+                              <Input 
+                                type="number"
+                                value={editableQty}
+                                onChange={handleQtyChange}
+                                onKeyDown={handleQtyKeyDown}
+                                onBlur={handleQtySave}
+                                autoFocus
+                                className="py-1 h-8 w-20 text-right"
+                              />
+                            </div>
+                          ) : (
+                            <Button 
+                              variant="ghost" 
+                              className="p-0 h-auto text-blue-600 hover:text-blue-800 hover:underline"
+                              onClick={(e) => handleStartQtyEdit(shipment, e)}
+                            >
+                              {shipment.qty}
+                            </Button>
+                          )
+                        ) : (
+                          shipment.qty
+                        )}
                       </TableCell>
                       {isAdmin && (
                         <TableCell>
@@ -447,6 +524,10 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                               <DropdownMenuItem onClick={(e) => {e.preventDefault(); handleStartDriverEdit(shipment, e);}}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit Supir
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={(e) => {e.preventDefault(); handleStartQtyEdit(shipment, e);}}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit Qty
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleOpenDeleteDialog(shipment)} className="text-red-600">
                                 <Trash2 className="mr-2 h-4 w-4" />
