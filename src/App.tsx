@@ -12,6 +12,7 @@ import Admin from "@/pages/Admin";
 import NotFound from "@/pages/NotFound";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import PublicData from "@/pages/PublicData";
+import InstallApp from "@/components/InstallApp";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -54,6 +55,7 @@ function App() {
                 />
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              <InstallApp />
               <Toaster position="top-right" richColors closeButton />
             </div>
           </AuthProvider>
