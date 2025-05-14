@@ -13,7 +13,7 @@ const startApp = () => {
 };
 
 // Wait for the device to be ready when using Capacitor
-if (window.cordova) {
+if (typeof window !== 'undefined' && 'cordova' in window) {
   document.addEventListener('deviceready', startApp, false);
 } else {
   startApp();
