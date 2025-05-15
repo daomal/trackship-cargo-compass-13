@@ -15,56 +15,67 @@ const InstallApp = () => {
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    // Check if app is already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstalled(true);
+    try {
+      // Check if app is already installed
+      if (window.matchMedia('(display-mode: standalone)').matches) {
+        setIsInstalled(true);
+      }
+
+      const handleBeforeInstallPrompt = (e: Event) => {
+        // Prevent Chrome 67 and earlier from automatically showing the prompt
+        e.preventDefault();
+        // Store the event so it can be triggered later
+        setDeferredPrompt(e as BeforeInstallPromptEvent);
+        setIsInstallable(true);
+      };
+
+      window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      
+      window.addEventListener('appinstalled', () => {
+        setIsInstalled(true);
+        setIsInstallable(false);
+        setDeferredPrompt(null);
+        toast.success('Aplikasi berhasil diinstall!');
+      });
+
+      return () => {
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      };
+    } catch (error) {
+      console.error("Error in InstallApp component:", error);
+      // Fail safely without breaking the app
+      return null;
     }
-
-    const handleBeforeInstallPrompt = (e: Event) => {
-      // Prevent Chrome 67 and earlier from automatically showing the prompt
-      e.preventDefault();
-      // Store the event so it can be triggered later
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setIsInstallable(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    
-    window.addEventListener('appinstalled', () => {
-      setIsInstalled(true);
-      setIsInstallable(false);
-      setDeferredPrompt(null);
-      toast.success('Aplikasi berhasil diinstall!');
-    });
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) {
-      toast.error('Instalasi tidak tersedia saat ini');
-      return;
-    }
+    try {
+      if (!deferredPrompt) {
+        toast.error('Instalasi tidak tersedia saat ini');
+        return;
+      }
 
-    // Show the prompt
-    deferredPrompt.prompt();
+      // Show the prompt
+      await deferredPrompt.prompt();
 
-    // Wait for the user to respond to the prompt
-    const choiceResult = await deferredPrompt.userChoice;
-    
-    if (choiceResult.outcome === 'accepted') {
-      toast.success('Proses instalasi dimulai');
-    } else {
-      toast.info('Instalasi dibatalkan');
+      // Wait for the user to respond to the prompt
+      const choiceResult = await deferredPrompt.userChoice;
+      
+      if (choiceResult.outcome === 'accepted') {
+        toast.success('Proses instalasi dimulai');
+      } else {
+        toast.info('Instalasi dibatalkan');
+      }
+      
+      // Clear the saved prompt since it can't be used again
+      setDeferredPrompt(null);
+    } catch (error) {
+      console.error("Error during installation:", error);
+      toast.error('Terjadi kesalahan saat instalasi');
     }
-    
-    // Clear the saved prompt since it can't be used again
-    setDeferredPrompt(null);
   };
 
-  // Register service worker
+  // Register service worker with error handling
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -98,4 +109,3 @@ const InstallApp = () => {
 };
 
 export default InstallApp;
-
