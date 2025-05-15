@@ -1,5 +1,5 @@
 
-import React, { Suspense, ErrorBoundary } from "react";
+import React, { Suspense } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { toast } from "@/hooks/use-toast";
 
