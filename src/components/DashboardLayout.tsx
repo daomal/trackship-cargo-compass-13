@@ -143,28 +143,45 @@ const DashboardLayout = () => {
   };
 
   const renderTopButtons = () => (
-    <div className={`flex ${isMobile ? 'flex-col w-full' : 'items-center'} gap-4`}>
-      <Button variant="outline" asChild className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl border-0">
-        <Link to="/public-data">
-          <BarChart2 className="mr-2 h-4 w-4" />
-          Lihat Data Publik
+    <div className={`flex ${isMobile ? 'flex-col w-full space-y-3' : 'items-center'} gap-4`}>
+      <Button 
+        variant="outline" 
+        asChild 
+        className="mobile-spacing bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl border-0 text-sm md:text-base whitespace-nowrap overflow-hidden text-ellipsis"
+      >
+        <Link to="/public-data" className="flex items-center justify-center">
+          <BarChart2 className="mr-2 h-4 w-4 flex-shrink-0" />
+          <span className="truncate">Lihat Data Publik</span>
         </Link>
       </Button>
       
-      <Button variant="outline" asChild className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl border-0">
-        <a href="https://trayekbaru.netlify.app/" target="_blank" rel="noopener noreferrer">
-          <Truck className="mr-2 h-4 w-4" />
-          Trayek Driver
+      <Button 
+        variant="outline" 
+        asChild 
+        className="mobile-spacing bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl border-0 text-sm md:text-base whitespace-nowrap overflow-hidden text-ellipsis"
+      >
+        <a 
+          href="https://trayekbaru.netlify.app/" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="flex items-center justify-center"
+        >
+          <Truck className="mr-2 h-4 w-4 flex-shrink-0" />
+          <span className="truncate">Trayek Driver</span>
         </a>
       </Button>
       
       {user ? (
-        <div className={`flex ${isMobile ? 'flex-col w-full' : 'items-center'} gap-4`}>
+        <div className={`flex ${isMobile ? 'flex-col w-full space-y-3' : 'items-center'} gap-4`}>
           {isAdmin && (
-            <Button variant="default" className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl border-0" asChild>
-              <Link to="/admin">
-                <UserCog className="mr-2 h-4 w-4" />
-                Panel Admin
+            <Button 
+              variant="default" 
+              className="mobile-spacing bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl border-0 text-sm md:text-base whitespace-nowrap overflow-hidden text-ellipsis" 
+              asChild
+            >
+              <Link to="/admin" className="flex items-center justify-center">
+                <UserCog className="mr-2 h-4 w-4 flex-shrink-0" />
+                <span className="truncate">Panel Admin</span>
               </Link>
             </Button>
           )}
@@ -172,16 +189,20 @@ const DashboardLayout = () => {
           <Button 
             variant="outline" 
             onClick={() => signOut()}
-            className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl border-0"
+            className="mobile-spacing bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl border-0 text-sm md:text-base whitespace-nowrap overflow-hidden text-ellipsis"
           >
-            Logout
+            <span className="truncate">Logout</span>
           </Button>
         </div>
       ) : (
-        <Button variant="default" className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl border-0" asChild>
-          <Link to="/auth">
-            <LogIn className="mr-2 h-4 w-4" />
-            Login
+        <Button 
+          variant="default" 
+          className="mobile-spacing bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl border-0 text-sm md:text-base whitespace-nowrap overflow-hidden text-ellipsis" 
+          asChild
+        >
+          <Link to="/auth" className="flex items-center justify-center">
+            <LogIn className="mr-2 h-4 w-4 flex-shrink-0" />
+            <span className="truncate">Login</span>
           </Link>
         </Button>
       )}
@@ -216,9 +237,9 @@ const DashboardLayout = () => {
                   <div className="fixed inset-0 bg-black/50 z-10" onClick={() => setIsMobileMenuOpen(false)}></div>
                 )}
 
-                {/* Mobile menu */}
+                {/* Mobile menu - improved styling */}
                 <div className={`fixed top-0 right-0 h-screen bg-white shadow-2xl w-4/5 max-w-xs transform transition-transform duration-300 ease-in-out z-10 p-6 ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-                  <div className="flex flex-col space-y-6 pt-12">
+                  <div className="flex flex-col space-y-6 pt-12 mobile-menu">
                     <h3 className="text-xl font-bold mb-4">Menu</h3>
                     {renderTopButtons()}
                   </div>
@@ -235,7 +256,7 @@ const DashboardLayout = () => {
           <DashboardNav activeView={activeView} onViewChange={setActiveView} />
           
           {/* Active View Content - Full width */}
-          <div className="w-full">
+          <div className="w-full mobile-container">
             {renderView()}
           </div>
         </div>

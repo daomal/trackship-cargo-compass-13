@@ -2,6 +2,7 @@
 {
   "short_name": "Cargo Compass",
   "name": "TrackShip Cargo Compass",
+  "description": "Aplikasi pemantauan dan pengelolaan pengiriman",
   "icons": [
     {
       "src": "favicon.ico",
@@ -11,12 +12,14 @@
     {
       "src": "logo192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "logo512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
   "start_url": "/",
@@ -24,5 +27,45 @@
   "theme_color": "#6366f1",
   "background_color": "#ffffff",
   "orientation": "portrait",
-  "scope": "/"
+  "scope": "/",
+  "categories": ["logistics", "transportation", "business", "tracking"],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "url": "/",
+      "icons": [
+        {
+          "src": "logo192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Data Publik",
+      "short_name": "Publik",
+      "url": "/public-data",
+      "icons": [
+        {
+          "src": "logo192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "placeholder.svg",
+      "sizes": "1280x720",
+      "type": "image/svg+xml",
+      "form_factor": "wide"
+    },
+    {
+      "src": "placeholder.svg",
+      "sizes": "720x1280",
+      "type": "image/svg+xml",
+      "form_factor": "narrow"
+    }
+  ],
+  "prefer_related_applications": false
 }

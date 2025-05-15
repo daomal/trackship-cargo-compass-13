@@ -51,7 +51,7 @@ const InstallApp = () => {
   const handleInstallClick = async () => {
     try {
       if (!deferredPrompt) {
-        toast.error('Instalasi tidak tersedia saat ini');
+        toast.info('Untuk menginstal aplikasi ini: \n1. Buka menu browser Anda (tiga titik di kanan atas) \n2. Pilih "Tambahkan ke layar utama" atau "Instal aplikasi"');
         return;
       }
 
@@ -62,7 +62,7 @@ const InstallApp = () => {
       const choiceResult = await deferredPrompt.userChoice;
       
       if (choiceResult.outcome === 'accepted') {
-        toast.success('Proses instalasi dimulai');
+        toast.success('Aplikasi sedang diinstall');
       } else {
         toast.info('Instalasi dibatalkan');
       }
@@ -92,14 +92,14 @@ const InstallApp = () => {
   }, []);
 
   if (isInstalled) {
-    return null; // Tidak menampilkan tombol jika aplikasi sudah terinstall
+    return null; // Don't show if app is already installed
   }
 
   return isInstallable ? (
     <div className="fixed bottom-4 right-4 z-50">
       <Button 
         onClick={handleInstallClick} 
-        className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700"
+        className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-lg border-0"
       >
         <DownloadIcon size={18} />
         Instal Aplikasi

@@ -4,7 +4,7 @@ import { ThemeProvider } from "@/components/ui/theme-provider";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
@@ -13,6 +13,7 @@ import NotFound from "@/pages/NotFound";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import PublicData from "@/pages/PublicData";
 import InstallApp from "@/components/InstallApp";
+import SplashScreen from "@/components/SplashScreen";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,6 +25,8 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  const [splashScreenDone, setSplashScreenDone] = useState(false);
+  
   // Handle mobile platform specific adjustments
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
@@ -35,12 +38,20 @@ function App() {
     }
   }, []);
 
+  const handleSplashScreenFinish = () => {
+    setSplashScreenDone(true);
+  };
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light" storageKey="theme-preference">
+        {!splashScreenDone && Capacitor.isNativePlatform() && (
+          <SplashScreen onFinish={handleSplashScreenFinish} />
+        )}
+        
         <Router>
           <AuthProvider>
-            <div className="min-h-screen bg-gray-100 text-black transition-all duration-300 ease-in-out overflow-x-hidden">
+            <div className={`min-h-screen bg-gray-100 text-black transition-all duration-300 ease-in-out overflow-x-hidden ${splashScreenDone || !Capacitor.isNativePlatform() ? 'opacity-100' : 'opacity-0'}`}>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
