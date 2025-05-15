@@ -6,6 +6,7 @@ import DataCharts from "./DataCharts";
 import DriverStatistics from "./DriverStatistics";
 import ConstraintAnalysis from "./ConstraintAnalysis";
 import CompanyAnalytics from "./CompanyAnalytics";
+import AppDownloadInfo from "./AppDownloadInfo";
 
 interface DashboardHomeProps {
   shipments: Shipment[];
@@ -22,6 +23,9 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ shipments }) => {
 
   return (
     <div className="space-y-8 w-full animate-fade-in max-w-full">
+      {/* App Download Info */}
+      <AppDownloadInfo />
+      
       {/* Summary Cards */}
       <div className="w-full">
         <SummaryCards summary={summary} />

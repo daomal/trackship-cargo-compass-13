@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Table,
@@ -36,7 +35,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { MoreHorizontal, Calendar, Edit, Trash2, FileText, Clock } from "lucide-react";
+import { MoreHorizontal, Calendar, Edit, Trash2, FileText, Clock, Link } from "lucide-react";
 import { format } from "date-fns";
 import { Shipment, ShipmentStatus } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
@@ -48,6 +47,7 @@ interface ShipmentTableProps {
 }
 
 const ITEMS_PER_PAGE = 10;
+const TRACKING_URL = "https://www.google.com/maps";
 
 const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpdated }) => {
   const { isAdmin } = useAuth();
@@ -389,6 +389,13 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
     }
   };
 
+  // Helper function to navigate to tracking URL
+  const navigateToTracking = (shipmentId: string) => {
+    // You can customize this URL with specific parameters if needed
+    const trackingUrl = `${TRACKING_URL}?shipment=${shipmentId}`;
+    window.open(trackingUrl, '_blank');
+  };
+
   return (
     <>
       <Card>
@@ -400,7 +407,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[100px]">No. Surat Jalan</TableHead>
+                  <TableHead className="w-[150px]">Track Lokasi</TableHead>
                   <TableHead>Perusahaan</TableHead>
                   <TableHead>Tujuan</TableHead>
                   <TableHead>Supir</TableHead>
@@ -422,8 +429,16 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                 ) : (
                   paginatedShipments.map((shipment) => (
                     <TableRow key={shipment.id}>
-                      <TableCell className="font-medium">
-                        {shipment.noSuratJalan}
+                      <TableCell>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex items-center gap-2"
+                          onClick={() => navigateToTracking(shipment.id)}
+                        >
+                          <Link className="h-4 w-4" />
+                          Lacak
+                        </Button>
                       </TableCell>
                       <TableCell>{shipment.perusahaan}</TableCell>
                       <TableCell>{shipment.tujuan}</TableCell>

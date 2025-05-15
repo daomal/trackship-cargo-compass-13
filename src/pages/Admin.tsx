@@ -22,6 +22,7 @@ import { Shipment, FilterOptions, ShipmentStatus } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
 import CompanyAnalytics from "@/components/CompanyAnalytics";
+import AppDownloadInfo from "@/components/AppDownloadInfo";
 
 const Admin = () => {
   const { isAdmin, user, signOut } = useAuth();
@@ -180,6 +181,9 @@ const Admin = () => {
               </div>
               <Button variant="outline" onClick={() => signOut()}>Logout</Button>
             </div>
+            
+            {/* App Download Info */}
+            <AppDownloadInfo />
             
             <Tabs defaultValue="manage">
               <TabsList className="mb-4">
