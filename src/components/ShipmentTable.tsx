@@ -47,7 +47,7 @@ interface ShipmentTableProps {
 }
 
 const ITEMS_PER_PAGE = 10;
-// Default tracking URL that will be configurable
+// Default tracking URL as fallback
 const DEFAULT_TRACKING_URL = "https://www.google.com/maps";
 
 const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpdated }) => {
@@ -59,6 +59,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const [isEditDriverDialogOpen, setIsEditDriverDialogOpen] = useState(false);
   const [isTrackingDialogOpen, setIsTrackingDialogOpen] = useState(false);
+  const [isEditTrackingUrlDialogOpen, setIsEditTrackingUrlDialogOpen] = useState(false);
   const [currentShipment, setCurrentShipment] = useState<Shipment | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [kendala, setKendala] = useState("");
@@ -75,6 +76,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
   const [qtyEditId, setQtyEditId] = useState<string | null>(null);
   const [editableQty, setEditableQty] = useState<number>(0);
   const [trackingUrl, setTrackingUrl] = useState<string>(DEFAULT_TRACKING_URL);
+  const [rowTrackingUrl, setRowTrackingUrl] = useState<string>("");
   
   // Real-time updates
   useEffect(() => {
@@ -196,6 +198,50 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       description: "URL tracking berhasil disimpan",
     });
     setIsTrackingDialogOpen(false);
+  };
+
+  const handleOpenEditTrackingUrlDialog = (shipment: Shipment) => {
+    setCurrentShipment(shipment);
+    setRowTrackingUrl(shipment.trackingUrl || trackingUrl);
+    setIsEditTrackingUrlDialogOpen(true);
+  };
+
+  const handleSaveRowTrackingUrl = async () => {
+    if (!currentShipment) return;
+    
+    setIsLoading(true);
+    
+    try {
+      await updateShipment(currentShipment.id, {
+        trackingUrl: rowTrackingUrl
+      });
+      
+      toast({
+        title: "Berhasil",
+        description: "URL tracking berhasil disimpan",
+      });
+      
+      setIsEditTrackingUrlDialogOpen(false);
+      
+      // Update data either through callback or local state
+      if (onShipmentUpdated) {
+        onShipmentUpdated();
+      } else {
+        // Update local data if no refresh callback provided
+        setLocalShipments(prev => 
+          prev.map(s => s.id === currentShipment.id ? {...s, trackingUrl: rowTrackingUrl} : s)
+        );
+      }
+    } catch (error) {
+      console.error("Error updating tracking URL:", error);
+      toast({
+        title: "Error",
+        description: "Gagal memperbarui URL tracking",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleOpenEditDialog = (shipment: Shipment) => {
@@ -468,9 +514,12 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
   };
 
   // Helper function to navigate to tracking URL
-  const navigateToTracking = (shipmentId: string) => {
+  const navigateToTracking = (shipment: Shipment) => {
+    // Use the shipment-specific tracking URL if available, otherwise use the global one
+    const shipmentTrackingUrl = shipment.trackingUrl || trackingUrl;
+    
     // Create a tracking URL with the shipment ID as a parameter
-    const fullTrackingUrl = `${trackingUrl}?shipment=${shipmentId}`;
+    const fullTrackingUrl = `${shipmentTrackingUrl}?shipment=${shipment.id}`;
     window.open(fullTrackingUrl, '_blank');
   };
 
@@ -488,7 +537,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                 className="flex items-center gap-2"
               >
                 <Map className="h-4 w-4" />
-                Konfigurasi URL Tracking
+                Konfigurasi URL Tracking Default
               </Button>
             )}
           </div>
@@ -521,15 +570,27 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                   paginatedShipments.map((shipment) => (
                     <TableRow key={shipment.id}>
                       <TableCell>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="flex items-center gap-2"
-                          onClick={() => navigateToTracking(shipment.id)}
-                        >
-                          <MapPin className="h-4 w-4" />
-                          Lacak
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex items-center gap-2"
+                            onClick={() => navigateToTracking(shipment)}
+                          >
+                            <MapPin className="h-4 w-4" />
+                            Lacak
+                          </Button>
+                          {isAdmin && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenEditTrackingUrlDialog(shipment)}
+                              title="Edit URL Tracking"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>{shipment.perusahaan}</TableCell>
                       <TableCell>{shipment.tujuan}</TableCell>
@@ -634,6 +695,10 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                               <DropdownMenuItem onClick={(e) => {e.preventDefault(); handleStartQtyEdit(shipment, e);}}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit Qty
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleOpenEditTrackingUrlDialog(shipment)}>
+                                <Link className="mr-2 h-4 w-4" />
+                                Edit URL Tracking
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleOpenDeleteDialog(shipment)} className="text-red-600">
                                 <Trash2 className="mr-2 h-4 w-4" />
@@ -927,6 +992,38 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
             </Button>
             <Button variant="destructive" onClick={handleDeleteShipment} disabled={isLoading}>
               {isLoading ? "Menghapus..." : "Hapus"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Individual Tracking URL Dialog */}
+      <Dialog open={isEditTrackingUrlDialogOpen} onOpenChange={setIsEditTrackingUrlDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit URL Tracking</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="row-tracking-url">URL Tracking untuk {currentShipment?.noSuratJalan}</Label>
+              <Input
+                id="row-tracking-url"
+                value={rowTrackingUrl}
+                onChange={(e) => setRowTrackingUrl(e.target.value)}
+                placeholder="Masukkan URL tracking khusus untuk pengiriman ini"
+              />
+              <p className="text-sm text-muted-foreground">
+                URL ini akan digunakan untuk melacak pengiriman ini. 
+                Kosongkan untuk menggunakan URL tracking default.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditTrackingUrlDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={handleSaveRowTrackingUrl} disabled={isLoading}>
+              {isLoading ? "Menyimpan..." : "Simpan"}
             </Button>
           </DialogFooter>
         </DialogContent>

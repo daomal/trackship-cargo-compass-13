@@ -1,4 +1,4 @@
-export type ShipmentStatus = "terkirim" | "gagal" | "tertunda";
+export type ShipmentStatus = "terkirim" | "tertunda" | "gagal";
 
 export interface Shipment {
   id: string;
@@ -11,7 +11,9 @@ export interface Shipment {
   waktuTiba: string | null;
   status: ShipmentStatus;
   kendala: string | null;
+  updatedBy?: string | null;
   qty: number;
+  trackingUrl?: string | null;
 }
 
 export interface Driver {
