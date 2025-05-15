@@ -34,8 +34,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
-import { MoreHorizontal, Calendar, Edit, Trash2, FileText, Clock, Link } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
+import { MoreHorizontal, Calendar, Edit, Trash2, FileText, Clock, Link, MapPin, Map } from "lucide-react";
 import { format } from "date-fns";
 import { Shipment, ShipmentStatus } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
@@ -47,7 +47,8 @@ interface ShipmentTableProps {
 }
 
 const ITEMS_PER_PAGE = 10;
-const TRACKING_URL = "https://www.google.com/maps";
+// Default tracking URL that will be configurable
+const DEFAULT_TRACKING_URL = "https://www.google.com/maps";
 
 const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpdated }) => {
   const { isAdmin } = useAuth();
@@ -57,6 +58,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const [isEditDriverDialogOpen, setIsEditDriverDialogOpen] = useState(false);
+  const [isTrackingDialogOpen, setIsTrackingDialogOpen] = useState(false);
   const [currentShipment, setCurrentShipment] = useState<Shipment | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [kendala, setKendala] = useState("");
@@ -72,6 +74,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
   const [editableDriverName, setEditableDriverName] = useState("");
   const [qtyEditId, setQtyEditId] = useState<string | null>(null);
   const [editableQty, setEditableQty] = useState<number>(0);
+  const [trackingUrl, setTrackingUrl] = useState<string>(DEFAULT_TRACKING_URL);
   
   // Real-time updates
   useEffect(() => {
@@ -83,6 +86,12 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
     const unsubscribe = subscribeToShipments((updatedShipments) => {
       setLocalShipments(updatedShipments);
     });
+
+    // Load tracking URL from localStorage if available
+    const savedTrackingUrl = localStorage.getItem("trackingUrl");
+    if (savedTrackingUrl) {
+      setTrackingUrl(savedTrackingUrl);
+    }
 
     // Cleanup function
     return () => unsubscribe();
@@ -141,7 +150,10 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
         qty: editableQty
       });
       
-      toast.success("Qty berhasil diperbarui");
+      toast({
+        title: "Berhasil",
+        description: "Qty berhasil diperbarui",
+      });
       setQtyEditId(null);
       
       // Update data either through callback or local state
@@ -155,7 +167,11 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       }
     } catch (error) {
       console.error("Error updating qty:", error);
-      toast.error("Gagal memperbarui qty");
+      toast({
+        title: "Error",
+        description: "Gagal memperbarui qty",
+        variant: "destructive",
+      });
     }
   };
 
@@ -165,6 +181,21 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
     } else if (e.key === 'Escape') {
       setQtyEditId(null);
     }
+  };
+
+  // Handle tracking URL configuration
+  const handleOpenTrackingDialog = () => {
+    setIsTrackingDialogOpen(true);
+  };
+
+  const handleSaveTrackingUrl = () => {
+    // Save the trackingUrl to localStorage
+    localStorage.setItem("trackingUrl", trackingUrl);
+    toast({
+      title: "Berhasil",
+      description: "URL tracking berhasil disimpan",
+    });
+    setIsTrackingDialogOpen(false);
   };
 
   const handleOpenEditDialog = (shipment: Shipment) => {
@@ -202,7 +233,11 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       setStatusHistory(history);
     } catch (error) {
       console.error("Error fetching status history:", error);
-      toast.error("Gagal memuat riwayat status");
+      toast({
+        title: "Error",
+        description: "Gagal memuat riwayat status",
+        variant: "destructive",
+      });
     } finally {
       setIsLoadingHistory(false);
     }
@@ -210,7 +245,11 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
 
   const handleUpdateDriver = async () => {
     if (!currentShipment || !driverName.trim()) {
-      toast.error("Nama supir tidak boleh kosong");
+      toast({
+        title: "Error",
+        description: "Nama supir tidak boleh kosong",
+        variant: "destructive",
+      });
       return;
     }
     
@@ -223,7 +262,10 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       
       await updateShipment(currentShipment.id, updateData);
       
-      toast.success("Nama supir berhasil diperbarui");
+      toast({
+        title: "Berhasil",
+        description: "Nama supir berhasil diperbarui",
+      });
       setIsEditDriverDialogOpen(false);
       
       // Refresh data
@@ -237,7 +279,11 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       }
     } catch (error) {
       console.error("Error updating driver:", error);
-      toast.error("Gagal memperbarui nama supir");
+      toast({
+        title: "Error",
+        description: "Gagal memperbarui nama supir",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -251,7 +297,11 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
     try {
       // For "gagal" status, kendala is required
       if (newStatus === "gagal" && !kendala) {
-        toast.error("Kendala harus diisi jika status gagal");
+        toast({
+          title: "Error",
+          description: "Kendala harus diisi jika status gagal",
+          variant: "destructive",
+        });
         return;
       }
       
@@ -276,7 +326,10 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       
       await updateShipment(currentShipment.id, updateData);
       
-      toast.success(`Status pengiriman berhasil diubah ke ${newStatus}`);
+      toast({
+        title: "Berhasil",
+        description: `Status pengiriman berhasil diubah ke ${newStatus}`,
+      });
       setIsStatusDialogOpen(false);
       
       // Refresh data
@@ -285,7 +338,11 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       }
     } catch (error) {
       console.error("Error updating status:", error);
-      toast.error("Gagal mengubah status pengiriman");
+      toast({
+        title: "Error",
+        description: "Gagal mengubah status pengiriman",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -303,7 +360,10 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       
       await updateShipment(currentShipment.id, updateData);
       
-      toast.success("Data pengiriman berhasil diperbarui");
+      toast({
+        title: "Berhasil",
+        description: "Data pengiriman berhasil diperbarui",
+      });
       setIsEditDialogOpen(false);
       
       // Refresh data
@@ -312,7 +372,11 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       }
     } catch (error) {
       console.error("Error updating shipment:", error);
-      toast.error("Gagal memperbarui data pengiriman");
+      toast({
+        title: "Error",
+        description: "Gagal memperbarui data pengiriman",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -326,7 +390,10 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
     try {
       await deleteShipment(currentShipment.id);
       
-      toast.success("Data pengiriman berhasil dihapus");
+      toast({
+        title: "Berhasil",
+        description: "Data pengiriman berhasil dihapus",
+      });
       setIsDeleteDialogOpen(false);
       
       // Refresh data
@@ -335,7 +402,11 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       }
     } catch (error) {
       console.error("Error deleting shipment:", error);
-      toast.error("Gagal menghapus data pengiriman");
+      toast({
+        title: "Error",
+        description: "Gagal menghapus data pengiriman",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -363,7 +434,10 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
         supir: editableDriverName
       });
       
-      toast.success("Nama supir berhasil diperbarui");
+      toast({
+        title: "Berhasil",
+        description: "Nama supir berhasil diperbarui",
+      });
       setDriverEditId(null);
       
       // Update data either through callback or local state
@@ -377,7 +451,11 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       }
     } catch (error) {
       console.error("Error updating driver name:", error);
-      toast.error("Gagal memperbarui nama supir");
+      toast({
+        title: "Error",
+        description: "Gagal memperbarui nama supir",
+        variant: "destructive",
+      });
     }
   };
 
@@ -391,16 +469,29 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
 
   // Helper function to navigate to tracking URL
   const navigateToTracking = (shipmentId: string) => {
-    // You can customize this URL with specific parameters if needed
-    const trackingUrl = `${TRACKING_URL}?shipment=${shipmentId}`;
-    window.open(trackingUrl, '_blank');
+    // Create a tracking URL with the shipment ID as a parameter
+    const fullTrackingUrl = `${trackingUrl}?shipment=${shipmentId}`;
+    window.open(fullTrackingUrl, '_blank');
   };
 
   return (
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Daftar Pengiriman</CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle>Daftar Pengiriman</CardTitle>
+            {isAdmin && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleOpenTrackingDialog}
+                className="flex items-center gap-2"
+              >
+                <Map className="h-4 w-4" />
+                Konfigurasi URL Tracking
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="rounded-md border">
@@ -436,7 +527,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                           className="flex items-center gap-2"
                           onClick={() => navigateToTracking(shipment.id)}
                         >
-                          <Link className="h-4 w-4" />
+                          <MapPin className="h-4 w-4" />
                           Lacak
                         </Button>
                       </TableCell>
@@ -613,6 +704,38 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
           )}
         </CardContent>
       </Card>
+
+      {/* Tracking URL Configuration Dialog */}
+      <Dialog open={isTrackingDialogOpen} onOpenChange={setIsTrackingDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Konfigurasi URL Tracking</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="tracking-url">URL Tracking</Label>
+              <Input
+                id="tracking-url"
+                value={trackingUrl}
+                onChange={(e) => setTrackingUrl(e.target.value)}
+                placeholder="Masukkan URL tracking"
+              />
+              <p className="text-sm text-muted-foreground">
+                URL ini akan digunakan untuk tombol tracking pada semua data pengiriman.
+                Pastikan URL valid dan dapat diakses.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsTrackingDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={handleSaveTrackingUrl} disabled={isLoading}>
+              {isLoading ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Status Update Dialog */}
       <Dialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
