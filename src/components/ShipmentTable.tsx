@@ -225,7 +225,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
 
   const handleOpenEditTrackingUrlDialog = (shipment: Shipment) => {
     setCurrentShipment(shipment);
-    // Initialize with the shipment's tracking URL or the default
+    // Initialize with the shipment's tracking URL or empty string
     setRowTrackingUrl(shipment.trackingUrl || "");
     setIsEditTrackingUrlDialogOpen(true);
   };
@@ -243,6 +243,8 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       if (formattedUrl && !formattedUrl.startsWith('http') && formattedUrl.trim() !== '') {
         formattedUrl = `https://${formattedUrl}`;
       }
+      
+      console.log("Updating tracking URL for shipment:", currentShipment.id, "URL:", formattedUrl);
       
       // Update shipment with tracking URL
       await updateShipment(currentShipment.id, {

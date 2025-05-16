@@ -15,7 +15,8 @@ export const mapSupabaseShipment = (dbShipment: SupabaseShipment): Shipment => {
     waktuTiba: dbShipment.waktu_tiba,
     status: dbShipment.status,
     kendala: dbShipment.kendala,
-    qty: dbShipment.qty
+    qty: dbShipment.qty,
+    trackingUrl: dbShipment.tracking_url
   };
 };
 
@@ -33,6 +34,7 @@ export const mapToSupabaseShipment = (shipment: Partial<Shipment>) => {
     status?: string;
     kendala?: string | null;
     qty?: number;
+    tracking_url?: string | null;
   } = {};
   
   if (shipment.noSuratJalan !== undefined) supabaseShipment.no_surat_jalan = shipment.noSuratJalan;
@@ -45,6 +47,7 @@ export const mapToSupabaseShipment = (shipment: Partial<Shipment>) => {
   if (shipment.status !== undefined) supabaseShipment.status = shipment.status;
   if (shipment.kendala !== undefined) supabaseShipment.kendala = shipment.kendala;
   if (shipment.qty !== undefined) supabaseShipment.qty = shipment.qty;
+  if (shipment.trackingUrl !== undefined) supabaseShipment.tracking_url = shipment.trackingUrl;
   
   return supabaseShipment;
 };
@@ -70,12 +73,9 @@ export const getShipmentById = async (id: string): Promise<Shipment | null> => {
     .from('shipments')
     .select('*')
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
   if (error) {
-    if (error.code === 'PGRST116') { // Record not found
-      return null;
-    }
     console.error('Error fetching shipment:', error);
     throw error;
   }
@@ -99,14 +99,19 @@ export const createShipment = async (shipment: Omit<Shipment, 'id'>): Promise<Sh
       waktu_tiba: shipment.waktuTiba,
       status: shipment.status,
       kendala: shipment.kendala,
-      qty: shipment.qty
+      qty: shipment.qty,
+      tracking_url: shipment.trackingUrl || null
     })
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Error creating shipment:', error);
     throw error;
+  }
+
+  if (!data) {
+    throw new Error('No data returned from shipment creation');
   }
 
   return mapSupabaseShipment(data as SupabaseShipment);
@@ -121,11 +126,15 @@ export const updateShipment = async (id: string, shipment: Partial<Shipment>): P
     .update(supabaseShipment)
     .eq('id', id)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Error updating shipment:', error);
     throw error;
+  }
+
+  if (!data) {
+    throw new Error(`Shipment with ID ${id} not found`);
   }
 
   return mapSupabaseShipment(data as SupabaseShipment);
@@ -172,7 +181,8 @@ export const batchImportShipments = async (shipments: Omit<Shipment, 'id'>[]): P
     waktu_tiba: shipment.waktuTiba,
     status: shipment.status,
     kendala: shipment.kendala,
-    qty: shipment.qty
+    qty: shipment.qty,
+    tracking_url: shipment.trackingUrl || null
   }));
   
   const { data, error } = await supabase

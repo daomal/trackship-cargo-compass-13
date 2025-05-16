@@ -49,6 +49,7 @@ export interface SupabaseShipment {
   created_at: string;
   updated_at: string;
   updated_by: string | null;
+  tracking_url?: string | null;
 }
 
 export interface UserProfile {
