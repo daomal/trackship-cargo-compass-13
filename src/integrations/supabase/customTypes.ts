@@ -42,6 +42,7 @@ export interface ExtendedDatabase extends GeneratedDatabase {
           updated_at: string | null
           updated_by: string | null
           waktu_tiba: string | null
+          tracking_url: string | null
         }
         Insert: {
           created_at?: string | null
@@ -58,6 +59,7 @@ export interface ExtendedDatabase extends GeneratedDatabase {
           updated_at?: string | null
           updated_by?: string | null
           waktu_tiba?: string | null
+          tracking_url?: string | null
         }
         Update: {
           created_at?: string | null
@@ -74,6 +76,7 @@ export interface ExtendedDatabase extends GeneratedDatabase {
           updated_at?: string | null
           updated_by?: string | null
           waktu_tiba?: string | null
+          tracking_url?: string | null
         }
         Relationships: []
       }

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Shipment, SupabaseShipment, StatusHistoryItem } from '@/lib/types';
 
@@ -15,7 +14,8 @@ export const mapSupabaseShipment = (dbShipment: SupabaseShipment): Shipment => {
     waktuTiba: dbShipment.waktu_tiba,
     status: dbShipment.status,
     kendala: dbShipment.kendala,
-    qty: dbShipment.qty
+    qty: dbShipment.qty,
+    trackingUrl: dbShipment.tracking_url
   };
 };
 
@@ -33,6 +33,7 @@ export const mapToSupabaseShipment = (shipment: Partial<Shipment>) => {
     status?: string;
     kendala?: string | null;
     qty?: number;
+    tracking_url?: string | null;
   } = {};
   
   if (shipment.noSuratJalan !== undefined) supabaseShipment.no_surat_jalan = shipment.noSuratJalan;
@@ -45,6 +46,7 @@ export const mapToSupabaseShipment = (shipment: Partial<Shipment>) => {
   if (shipment.status !== undefined) supabaseShipment.status = shipment.status;
   if (shipment.kendala !== undefined) supabaseShipment.kendala = shipment.kendala;
   if (shipment.qty !== undefined) supabaseShipment.qty = shipment.qty;
+  if (shipment.trackingUrl !== undefined) supabaseShipment.tracking_url = shipment.trackingUrl;
   
   return supabaseShipment;
 };
@@ -115,6 +117,9 @@ export const createShipment = async (shipment: Omit<Shipment, 'id'>): Promise<Sh
 // Update an existing shipment
 export const updateShipment = async (id: string, shipment: Partial<Shipment>): Promise<Shipment> => {
   const supabaseShipment = mapToSupabaseShipment(shipment);
+  
+  console.log('Updating shipment with ID:', id);
+  console.log('Update data:', supabaseShipment);
 
   const { data, error } = await supabase
     .from('shipments')
@@ -128,6 +133,7 @@ export const updateShipment = async (id: string, shipment: Partial<Shipment>): P
     throw error;
   }
 
+  console.log('Shipment update successful:', data);
   return mapSupabaseShipment(data as SupabaseShipment);
 };
 

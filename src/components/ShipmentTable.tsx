@@ -34,7 +34,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { MoreHorizontal, Calendar, Edit, Trash2, FileText, Clock, Link, MapPin, Map } from "lucide-react";
 import { format } from "date-fns";
 import { Shipment, ShipmentStatus } from "@/lib/types";
@@ -212,6 +212,10 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
     setIsLoading(true);
     
     try {
+      console.log("Menyimpan URL tracking untuk pengiriman:", currentShipment.id);
+      console.log("URL tracking baru:", rowTrackingUrl);
+      
+      // Update the shipment with the new tracking URL
       await updateShipment(currentShipment.id, {
         trackingUrl: rowTrackingUrl
       });
@@ -520,6 +524,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
     
     // Create a tracking URL with the shipment ID as a parameter
     const fullTrackingUrl = `${shipmentTrackingUrl}?shipment=${shipment.id}`;
+    console.log("Navigating to tracking URL:", fullTrackingUrl);
     window.open(fullTrackingUrl, '_blank');
   };
 
