@@ -93,6 +93,10 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
     const savedTrackingUrl = localStorage.getItem("trackingUrl");
     if (savedTrackingUrl) {
       setTrackingUrl(savedTrackingUrl);
+    } else {
+      // Set default tracking URL if none is saved
+      localStorage.setItem("trackingUrl", DEFAULT_TRACKING_URL);
+      setTrackingUrl(DEFAULT_TRACKING_URL);
     }
 
     // Cleanup function
@@ -191,18 +195,38 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
   };
 
   const handleSaveTrackingUrl = () => {
-    // Save the trackingUrl to localStorage
-    localStorage.setItem("trackingUrl", trackingUrl);
-    toast({
-      title: "Berhasil",
-      description: "URL tracking berhasil disimpan",
-    });
-    setIsTrackingDialogOpen(false);
+    // Validate URL format
+    try {
+      // Basic URL validation
+      if (trackingUrl && !trackingUrl.startsWith('http')) {
+        // Add https:// prefix if missing
+        const updatedUrl = `https://${trackingUrl}`;
+        setTrackingUrl(updatedUrl);
+        localStorage.setItem("trackingUrl", updatedUrl);
+      } else {
+        // Save the trackingUrl to localStorage
+        localStorage.setItem("trackingUrl", trackingUrl);
+      }
+      
+      toast({
+        title: "Berhasil",
+        description: "URL tracking berhasil disimpan",
+      });
+      setIsTrackingDialogOpen(false);
+    } catch (error) {
+      console.error("Error saving tracking URL:", error);
+      toast({
+        title: "Error",
+        description: "URL tracking tidak valid",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleOpenEditTrackingUrlDialog = (shipment: Shipment) => {
     setCurrentShipment(shipment);
-    setRowTrackingUrl(shipment.trackingUrl || trackingUrl);
+    // Initialize with the shipment's tracking URL or the default
+    setRowTrackingUrl(shipment.trackingUrl || "");
     setIsEditTrackingUrlDialogOpen(true);
   };
 
@@ -212,8 +236,17 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
     setIsLoading(true);
     
     try {
+      // Format URL if needed
+      let formattedUrl = rowTrackingUrl;
+      
+      // Add https:// prefix if URL is provided but missing protocol
+      if (formattedUrl && !formattedUrl.startsWith('http') && formattedUrl.trim() !== '') {
+        formattedUrl = `https://${formattedUrl}`;
+      }
+      
+      // Update shipment with tracking URL
       await updateShipment(currentShipment.id, {
-        trackingUrl: rowTrackingUrl
+        trackingUrl: formattedUrl
       });
       
       toast({
@@ -229,7 +262,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       } else {
         // Update local data if no refresh callback provided
         setLocalShipments(prev => 
-          prev.map(s => s.id === currentShipment.id ? {...s, trackingUrl: rowTrackingUrl} : s)
+          prev.map(s => s.id === currentShipment.id ? {...s, trackingUrl: formattedUrl} : s)
         );
       }
     } catch (error) {
@@ -516,11 +549,26 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
   // Helper function to navigate to tracking URL
   const navigateToTracking = (shipment: Shipment) => {
     // Use the shipment-specific tracking URL if available, otherwise use the global one
-    const shipmentTrackingUrl = shipment.trackingUrl || trackingUrl;
+    let shipmentTrackingUrl = shipment.trackingUrl || trackingUrl;
     
-    // Create a tracking URL with the shipment ID as a parameter
-    const fullTrackingUrl = `${shipmentTrackingUrl}?shipment=${shipment.id}`;
-    window.open(fullTrackingUrl, '_blank');
+    // If URL doesn't start with http/https, add https://
+    if (shipmentTrackingUrl && !shipmentTrackingUrl.startsWith('http')) {
+      shipmentTrackingUrl = `https://${shipmentTrackingUrl}`;
+    }
+    
+    // Create a tracking URL with the shipment ID as a parameter if we have a base URL
+    if (shipmentTrackingUrl) {
+      // Add a question mark if the URL doesn't have any parameters yet
+      const separator = shipmentTrackingUrl.includes('?') ? '&' : '?';
+      const fullTrackingUrl = `${shipmentTrackingUrl}${separator}shipment=${shipment.id}`;
+      window.open(fullTrackingUrl, '_blank');
+    } else {
+      toast({
+        title: "Error",
+        description: "URL tracking belum dikonfigurasi",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -783,7 +831,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                 id="tracking-url"
                 value={trackingUrl}
                 onChange={(e) => setTrackingUrl(e.target.value)}
-                placeholder="Masukkan URL tracking"
+                placeholder="Masukkan URL tracking (contoh: https://maps.google.com)"
               />
               <p className="text-sm text-muted-foreground">
                 URL ini akan digunakan untuk tombol tracking pada semua data pengiriman.
