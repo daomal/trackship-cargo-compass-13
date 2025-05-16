@@ -59,6 +59,7 @@ export interface ExtendedDatabase extends Database {
           waktu_tiba?: string | null;
           tracking_url?: string | null;
         };
+        Relationships: [];
       };
       status_history: Database['public']['Tables']['status_history'];
     };
