@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   ColumnDef,
@@ -105,7 +104,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       accessorKey: "status",
       header: "Status",
       cell: ({ row }) => {
-        const status = row.getValue("status");
+        const status = row.getValue("status") as string;
         let badgeColor = "secondary";
         if (status === "terkirim") {
           badgeColor = "green";

@@ -1,9 +1,12 @@
+
 import { Database } from './types';
 
 // Extend the Database type to include custom fields
 export interface ExtendedDatabase extends Database {
   public: {
     Tables: {
+      notes: Database['public']['Tables']['notes'];
+      profiles: Database['public']['Tables']['profiles'];
       shipments: {
         Row: {
           created_at: string;
@@ -57,56 +60,11 @@ export interface ExtendedDatabase extends Database {
           tracking_url?: string | null;
         };
       };
-      status_history: {
-        Row: {
-          id: string;
-          shipment_id: string;
-          previous_status: string;
-          new_status: string;
-          notes: string | null;
-          created_at: string;
-          created_by: string | null;
-        };
-        Insert: {
-          id?: string;
-          shipment_id: string;
-          previous_status: string;
-          new_status: string;
-          notes?: string | null;
-          created_at?: string;
-          created_by?: string | null;
-        };
-        Update: {
-          id?: string;
-          shipment_id?: string;
-          previous_status?: string;
-          new_status?: string;
-          notes?: string | null;
-          created_at?: string;
-          created_by?: string | null;
-        };
-      };
+      status_history: Database['public']['Tables']['status_history'];
     };
-    Views: {
-      [_ in never]: never
-    };
-    Functions: {
-      get_company_summaries: {
-        Args: Record<PropertyKey, never>;
-        Returns: {
-          company: string;
-          total: number;
-          delivered: number;
-          pending: number;
-          failed: number;
-        }[];
-      };
-    };
-    Enums: {
-      [_ in never]: never
-    };
-    CompositeTypes: {
-      [_ in never]: never
-    };
+    Views: Database['public']['Views'];
+    Functions: Database['public']['Functions'];
+    Enums: Database['public']['Enums'];
+    CompositeTypes: Database['public']['CompositeTypes'];
   };
 }
