@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { MoreHorizontal, Edit } from "lucide-react";
+import { MoreHorizontal, Edit, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -115,6 +115,27 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
         }
         return (
           <Badge className={`bg-${badgeColor}-500 text-white`}>{status}</Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "trackingUrl",
+      header: "Lacak",
+      cell: ({ row }) => {
+        const trackingUrl = row.original.trackingUrl;
+        
+        return trackingUrl ? (
+          <a 
+            href={trackingUrl} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 underline"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Lacak
+          </a>
+        ) : (
+          <span className="text-gray-400">-</span>
         );
       },
     },
