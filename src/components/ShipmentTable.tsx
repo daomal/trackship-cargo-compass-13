@@ -1,10 +1,4 @@
-import React, { useState } from "react";
-import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
+import React, { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -12,451 +6,1029 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableFooter,
 } from "@/components/ui/table";
-import { MoreHorizontal, Edit, ExternalLink } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/hooks/use-toast";
-import { updateShipment, getShipmentStatusHistory } from "@/lib/shipmentService";
-import { Shipment, ShipmentStatus, StatusHistoryItem } from "@/lib/types";
-import { format } from 'date-fns';
-import { Calendar } from "@/components/ui/calendar"
-import { CalendarIcon } from "lucide-react"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { cn } from "@/lib/utils";
+import { toast } from "@/components/ui/use-toast";
+import { MoreHorizontal, Calendar, Edit, Trash2, FileText, Clock, Link, MapPin, Map } from "lucide-react";
+import { format } from "date-fns";
+import { Shipment, ShipmentStatus } from "@/lib/types";
+import { useAuth } from "@/contexts/AuthContext";
+import { updateShipment, deleteShipment, getShipmentStatusHistory, subscribeToShipments } from "@/lib/shipmentService";
 
 interface ShipmentTableProps {
   shipments: Shipment[];
-  onShipmentUpdated: () => void;
+  onShipmentUpdated?: () => void;
 }
 
+const ITEMS_PER_PAGE = 10;
+// Default tracking URL as fallback
+const DEFAULT_TRACKING_URL = "https://www.google.com/maps";
+
 const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpdated }) => {
-  const [isEditStatusDialogOpen, setIsEditStatusDialogOpen] = useState(false);
+  const { isAdmin } = useAuth();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
+  const [isEditDriverDialogOpen, setIsEditDriverDialogOpen] = useState(false);
+  const [isTrackingDialogOpen, setIsTrackingDialogOpen] = useState(false);
   const [isEditTrackingUrlDialogOpen, setIsEditTrackingUrlDialogOpen] = useState(false);
   const [currentShipment, setCurrentShipment] = useState<Shipment | null>(null);
-  const [rowStatus, setRowStatus] = useState<ShipmentStatus | undefined>(undefined);
-  const [rowNotes, setRowNotes] = useState<string>("");
-  const [rowTrackingUrl, setRowTrackingUrl] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [statusHistory, setStatusHistory] = useState<StatusHistoryItem[]>([]);
-	const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
-	const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(false);
+  const [kendala, setKendala] = useState("");
+  const [driverName, setDriverName] = useState("");
+  const [newStatus, setNewStatus] = useState<ShipmentStatus>("tertunda");
+  const [statusHistory, setStatusHistory] = useState<any[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [localShipments, setLocalShipments] = useState<Shipment[]>(shipments);
+  const [currentTime, setCurrentTime] = useState<string>(
+    new Date().toTimeString().substring(0, 5)
+  );
+  const [driverEditId, setDriverEditId] = useState<string | null>(null);
+  const [editableDriverName, setEditableDriverName] = useState("");
+  const [qtyEditId, setQtyEditId] = useState<string | null>(null);
+  const [editableQty, setEditableQty] = useState<number>(0);
+  const [trackingUrl, setTrackingUrl] = useState<string>(DEFAULT_TRACKING_URL);
+  const [rowTrackingUrl, setRowTrackingUrl] = useState<string>("");
+  
+  // Real-time updates
+  useEffect(() => {
+    setLocalShipments(shipments);
+  }, [shipments]);
 
-  const columns: ColumnDef<Shipment>[] = [
-    {
-      accessorKey: "noSuratJalan",
-      header: "No. Surat Jalan",
-    },
-    {
-      accessorKey: "perusahaan",
-      header: "Perusahaan",
-    },
-    {
-      accessorKey: "tujuan",
-      header: "Tujuan",
-    },
-    {
-      accessorKey: "supir",
-      header: "Supir",
-    },
-		{
-			accessorKey: "tanggalKirim",
-			header: "Tanggal Kirim",
-			cell: ({ row }) => {
-				const date = new Date(row.getValue("tanggalKirim"));
-				return format(date, 'dd/MM/yyyy');
-			},
-		},
-    {
-      accessorKey: "tanggalTiba",
-      header: "Tanggal Tiba",
-			cell: ({ row }) => {
-				const tanggalTiba = row.original.tanggalTiba;
-				if (!tanggalTiba) return '-';
-				const date = new Date(tanggalTiba);
-				return format(date, 'dd/MM/yyyy');
-			},
-    },
-    {
-      accessorKey: "qty",
-      header: "Kuantitas",
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }) => {
-        const status = row.getValue("status") as string;
-        let badgeColor = "secondary";
-        if (status === "terkirim") {
-          badgeColor = "green";
-        } else if (status === "tertunda") {
-          badgeColor = "yellow";
-        } else if (status === "gagal") {
-          badgeColor = "red";
-        }
-        return (
-          <Badge className={`bg-${badgeColor}-500 text-white`}>{status}</Badge>
-        );
-      },
-    },
-    {
-      accessorKey: "trackingUrl",
-      header: "Lacak",
-      cell: ({ row }) => {
-        const trackingUrl = row.original.trackingUrl;
-        
-        return trackingUrl ? (
-          <a 
-            href={trackingUrl} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 underline"
-          >
-            <ExternalLink className="h-4 w-4" />
-            Lacak
-          </a>
-        ) : (
-          <span className="text-gray-400">-</span>
-        );
-      },
-    },
-    {
-      id: "actions",
-      cell: ({ row }) => {
-        const shipment = row.original;
+  useEffect(() => {
+    // Subscribe to real-time updates
+    const unsubscribe = subscribeToShipments((updatedShipments) => {
+      setLocalShipments(updatedShipments);
+    });
 
-        const handleEditStatus = () => {
-          setCurrentShipment(shipment);
-          setRowStatus(shipment.status);
-          setIsEditStatusDialogOpen(true);
-        };
+    // Load tracking URL from localStorage if available
+    const savedTrackingUrl = localStorage.getItem("trackingUrl");
+    if (savedTrackingUrl) {
+      setTrackingUrl(savedTrackingUrl);
+    }
 
-        const handleEditTrackingUrl = () => {
-          setCurrentShipment(shipment);
-          setRowTrackingUrl(shipment.trackingUrl || null);
-          setIsEditTrackingUrlDialogOpen(true);
-        };
+    // Cleanup function
+    return () => unsubscribe();
+  }, []);
+  
+  // Calculate total pages
+  const totalPages = Math.ceil(localShipments.length / ITEMS_PER_PAGE);
+  
+  // Calculate current items
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, localShipments.length);
+  const paginatedShipments = localShipments.slice(startIndex, endIndex);
 
-				const handleShowHistory = async () => {
-					setCurrentShipment(shipment);
-					try {
-						const history = await getShipmentStatusHistory(shipment.id);
-						setStatusHistory(history);
-						setIsHistoryDialogOpen(true);
-					} catch (error) {
-						console.error("Error fetching status history:", error);
-						toast({
-							title: "Gagal memuat riwayat status",
-							description: "Terjadi kesalahan saat memuat riwayat status pengiriman ini.",
-							variant: "destructive",
-						});
-					}
-				};
+  // Calculate total quantity
+  const totalQuantity = localShipments.reduce((total, shipment) => total + shipment.qty, 0);
 
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-              <DropdownMenuItem onClick={handleEditStatus}>
-                <Edit className="mr-2 h-4 w-4" /> Edit Status
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleEditTrackingUrl}>
-                <Edit className="mr-2 h-4 w-4" /> Edit URL Dilacak
-              </DropdownMenuItem>
-							<DropdownMenuItem onClick={handleShowHistory}>
-								Lihat Riwayat Status
-							</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Unduh</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
-    },
-  ];
+  // Helper function for status badge
+  const renderStatusBadge = (status: ShipmentStatus) => {
+    const statusClasses = {
+      terkirim: "bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium",
+      tertunda: "bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium",
+      gagal: "bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium",
+    };
 
-  const table = useReactTable({
-    data: shipments,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
+    const statusText = {
+      terkirim: "Terkirim",
+      tertunda: "Tertunda",
+      gagal: "Gagal",
+    };
 
-  const handleStatusSave = async () => {
-    setIsProcessing(true);
-    try {
-      if (!currentShipment) {
-        throw new Error("No shipment selected");
-      }
-      
-      const updatedShipment = await updateShipment(currentShipment.id, {
-        status: rowStatus,
-      });
-      
-      setIsEditStatusDialogOpen(false);
-      if (onShipmentUpdated) {
-        onShipmentUpdated();
-      }
-      
-      toast({
-        title: "Status diperbarui",
-        description: "Status pengiriman telah berhasil diperbarui.",
-      });
-    } catch (error) {
-      console.error("Error updating shipment status:", error);
-      toast({
-        title: "Gagal memperbarui status",
-        description: "Terjadi kesalahan saat memperbarui status pengiriman.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
+    return <span className={statusClasses[status]}>{statusText[status]}</span>;
+  };
+
+  // Function for in-place qty editing
+  const handleStartQtyEdit = (shipment: Shipment, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setQtyEditId(shipment.id);
+    setEditableQty(shipment.qty);
+  };
+
+  const handleQtyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value) && value >= 0) {
+      setEditableQty(value);
     }
   };
 
-  const handleSaveTrackingUrl = async () => {
-    setIsProcessing(true);
+  const handleQtySave = async () => {
+    if (!qtyEditId) {
+      return;
+    }
+    
     try {
-      // Make sure we have a current shipment
-      if (!currentShipment) {
-        throw new Error("No shipment selected");
-      }
-      
-      // Format URL if needed (add https:// if missing)
-      let formattedUrl = rowTrackingUrl ? rowTrackingUrl.trim() : null;
-      if (formattedUrl && !formattedUrl.startsWith('http') && formattedUrl.trim() !== '') {
-        formattedUrl = `https://${formattedUrl}`;
-      }
-      
-      console.log("Updating tracking URL for shipment:", currentShipment.id, "URL:", formattedUrl);
-      
-      // Update shipment with tracking URL
-      const updatedShipment = await updateShipment(currentShipment.id, {
-        trackingUrl: formattedUrl
+      await updateShipment(qtyEditId, {
+        qty: editableQty
       });
-      
-      console.log("Shipment updated successfully:", updatedShipment);
-      
-      // Close dialog and refresh data
-      setIsEditTrackingUrlDialogOpen(false);
-      if (onShipmentUpdated) {
-        onShipmentUpdated();
-      }
       
       toast({
-        title: "URL dilacak diperbarui",
-        description: formattedUrl ? "URL dilacak telah disimpan" : "URL dilacak telah dihapus",
+        title: "Berhasil",
+        description: "Qty berhasil diperbarui",
       });
+      setQtyEditId(null);
+      
+      // Update data either through callback or local state
+      if (onShipmentUpdated) {
+        onShipmentUpdated();
+      } else {
+        // Update local data if no refresh callback provided
+        setLocalShipments(prev => 
+          prev.map(s => s.id === qtyEditId ? {...s, qty: editableQty} : s)
+        );
+      }
+    } catch (error) {
+      console.error("Error updating qty:", error);
+      toast({
+        title: "Error",
+        description: "Gagal memperbarui qty",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleQtyKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleQtySave();
+    } else if (e.key === 'Escape') {
+      setQtyEditId(null);
+    }
+  };
+
+  // Handle tracking URL configuration
+  const handleOpenTrackingDialog = () => {
+    setIsTrackingDialogOpen(true);
+  };
+
+  const handleSaveTrackingUrl = () => {
+    // Save the trackingUrl to localStorage
+    localStorage.setItem("trackingUrl", trackingUrl);
+    toast({
+      title: "Berhasil",
+      description: "URL tracking berhasil disimpan",
+    });
+    setIsTrackingDialogOpen(false);
+  };
+
+  const handleOpenEditTrackingUrlDialog = (shipment: Shipment) => {
+    setCurrentShipment(shipment);
+    setRowTrackingUrl(shipment.trackingUrl || trackingUrl);
+    setIsEditTrackingUrlDialogOpen(true);
+  };
+
+  const handleSaveRowTrackingUrl = async () => {
+    if (!currentShipment) return;
+    
+    setIsLoading(true);
+    
+    try {
+      await updateShipment(currentShipment.id, {
+        trackingUrl: rowTrackingUrl
+      });
+      
+      toast({
+        title: "Berhasil",
+        description: "URL tracking berhasil disimpan",
+      });
+      
+      setIsEditTrackingUrlDialogOpen(false);
+      
+      // Update data either through callback or local state
+      if (onShipmentUpdated) {
+        onShipmentUpdated();
+      } else {
+        // Update local data if no refresh callback provided
+        setLocalShipments(prev => 
+          prev.map(s => s.id === currentShipment.id ? {...s, trackingUrl: rowTrackingUrl} : s)
+        );
+      }
     } catch (error) {
       console.error("Error updating tracking URL:", error);
       toast({
-        title: "Gagal memperbarui URL dilacak",
-        description: "Terjadi kesalahan saat menyimpan URL dilacak",
+        title: "Error",
+        description: "Gagal memperbarui URL tracking",
         variant: "destructive",
       });
     } finally {
-      setIsProcessing(false);
+      setIsLoading(false);
     }
   };
 
+  const handleOpenEditDialog = (shipment: Shipment) => {
+    setCurrentShipment(shipment);
+    setKendala(shipment.kendala || "");
+    setIsEditDialogOpen(true);
+  };
+
+  const handleOpenDeleteDialog = (shipment: Shipment) => {
+    setCurrentShipment(shipment);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleOpenStatusDialog = (shipment: Shipment) => {
+    setCurrentShipment(shipment);
+    setNewStatus(shipment.status);
+    setKendala(shipment.kendala || "");
+    setCurrentTime(new Date().toTimeString().substring(0, 5));
+    setIsStatusDialogOpen(true);
+  };
+
+  const handleOpenEditDriverDialog = (shipment: Shipment) => {
+    setCurrentShipment(shipment);
+    setDriverName(shipment.supir);
+    setIsEditDriverDialogOpen(true);
+  };
+  
+  const handleOpenHistoryDialog = async (shipment: Shipment) => {
+    setCurrentShipment(shipment);
+    setIsHistoryDialogOpen(true);
+    
+    try {
+      setIsLoadingHistory(true);
+      const history = await getShipmentStatusHistory(shipment.id);
+      setStatusHistory(history);
+    } catch (error) {
+      console.error("Error fetching status history:", error);
+      toast({
+        title: "Error",
+        description: "Gagal memuat riwayat status",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  const handleUpdateDriver = async () => {
+    if (!currentShipment || !driverName.trim()) {
+      toast({
+        title: "Error",
+        description: "Nama supir tidak boleh kosong",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const updateData: Partial<Shipment> = {
+        supir: driverName
+      };
+      
+      await updateShipment(currentShipment.id, updateData);
+      
+      toast({
+        title: "Berhasil",
+        description: "Nama supir berhasil diperbarui",
+      });
+      setIsEditDriverDialogOpen(false);
+      
+      // Refresh data
+      if (onShipmentUpdated) {
+        onShipmentUpdated();
+      } else {
+        // Update local data if no refresh callback provided
+        setLocalShipments(prev => 
+          prev.map(s => s.id === currentShipment.id ? {...s, supir: driverName} : s)
+        );
+      }
+    } catch (error) {
+      console.error("Error updating driver:", error);
+      toast({
+        title: "Error",
+        description: "Gagal memperbarui nama supir",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdateStatus = async () => {
+    if (!currentShipment) return;
+    
+    setIsLoading(true);
+    
+    try {
+      // For "gagal" status, kendala is required
+      if (newStatus === "gagal" && !kendala) {
+        toast({
+          title: "Error",
+          description: "Kendala harus diisi jika status gagal",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Prepare update data
+      const updateData: Partial<Shipment> = {
+        status: newStatus,
+      };
+      
+      // Update kendala and tanggalTiba based on status
+      if (newStatus === "gagal") {
+        updateData.kendala = kendala;
+      } else if (newStatus === "terkirim") {
+        const today = format(new Date(), "yyyy-MM-dd");
+        updateData.tanggalTiba = today;
+        updateData.waktuTiba = currentTime;
+        updateData.kendala = null;
+      } else if (newStatus === "tertunda") {
+        updateData.tanggalTiba = null;
+        updateData.waktuTiba = null;
+        updateData.kendala = kendala || null;
+      }
+      
+      await updateShipment(currentShipment.id, updateData);
+      
+      toast({
+        title: "Berhasil",
+        description: `Status pengiriman berhasil diubah ke ${newStatus}`,
+      });
+      setIsStatusDialogOpen(false);
+      
+      // Refresh data
+      if (onShipmentUpdated) {
+        onShipmentUpdated();
+      }
+    } catch (error) {
+      console.error("Error updating status:", error);
+      toast({
+        title: "Error",
+        description: "Gagal mengubah status pengiriman",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdateShipment = async () => {
+    if (!currentShipment) return;
+    
+    setIsLoading(true);
+    
+    try {
+      const updateData: Partial<Shipment> = {
+        kendala: kendala || null
+      };
+      
+      await updateShipment(currentShipment.id, updateData);
+      
+      toast({
+        title: "Berhasil",
+        description: "Data pengiriman berhasil diperbarui",
+      });
+      setIsEditDialogOpen(false);
+      
+      // Refresh data
+      if (onShipmentUpdated) {
+        onShipmentUpdated();
+      }
+    } catch (error) {
+      console.error("Error updating shipment:", error);
+      toast({
+        title: "Error",
+        description: "Gagal memperbarui data pengiriman",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteShipment = async () => {
+    if (!currentShipment) return;
+    
+    setIsLoading(true);
+    
+    try {
+      await deleteShipment(currentShipment.id);
+      
+      toast({
+        title: "Berhasil",
+        description: "Data pengiriman berhasil dihapus",
+      });
+      setIsDeleteDialogOpen(false);
+      
+      // Refresh data
+      if (onShipmentUpdated) {
+        onShipmentUpdated();
+      }
+    } catch (error) {
+      console.error("Error deleting shipment:", error);
+      toast({
+        title: "Error",
+        description: "Gagal menghapus data pengiriman",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Function to handle in-place driver editing
+  const handleStartDriverEdit = (shipment: Shipment, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDriverEditId(shipment.id);
+    setEditableDriverName(shipment.supir);
+  };
+
+  const handleDriverNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditableDriverName(e.target.value);
+  };
+
+  const handleDriverNameSave = async () => {
+    if (!driverEditId || !editableDriverName.trim()) {
+      return;
+    }
+    
+    try {
+      await updateShipment(driverEditId, {
+        supir: editableDriverName
+      });
+      
+      toast({
+        title: "Berhasil",
+        description: "Nama supir berhasil diperbarui",
+      });
+      setDriverEditId(null);
+      
+      // Update data either through callback or local state
+      if (onShipmentUpdated) {
+        onShipmentUpdated();
+      } else {
+        // Update local data if no refresh callback provided
+        setLocalShipments(prev => 
+          prev.map(s => s.id === driverEditId ? {...s, supir: editableDriverName} : s)
+        );
+      }
+    } catch (error) {
+      console.error("Error updating driver name:", error);
+      toast({
+        title: "Error",
+        description: "Gagal memperbarui nama supir",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDriverNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleDriverNameSave();
+    } else if (e.key === 'Escape') {
+      setDriverEditId(null);
+    }
+  };
+
+  // Helper function to navigate to tracking URL
+  const navigateToTracking = (shipment: Shipment) => {
+    // Use the shipment-specific tracking URL if available, otherwise use the global one
+    const shipmentTrackingUrl = shipment.trackingUrl || trackingUrl;
+    
+    // Create a tracking URL with the shipment ID as a parameter
+    const fullTrackingUrl = `${shipmentTrackingUrl}?shipment=${shipment.id}`;
+    window.open(fullTrackingUrl, '_blank');
+  };
+
   return (
-    <div>
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => {
-                return (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                );
-              })}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.map((row) => (
-            <TableRow key={row.id}>
-              {row.getVisibleCells().map((cell) => {
-                return (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                );
-              })}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-
-      {/* Edit Status Dialog */}
-      <Dialog open={isEditStatusDialogOpen} onOpenChange={setIsEditStatusDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Status Pengiriman</DialogTitle>
-            <DialogDescription>
-              Ubah status pengiriman dan berikan catatan.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="status" className="text-right">
-                Status
-              </Label>
-              <select
-                id="status"
-                value={rowStatus}
-                onChange={(e) =>
-                  setRowStatus(e.target.value as ShipmentStatus)
-                }
-                className="col-span-3 rounded-md border shadow-sm focus:border-primary-500 focus:ring-primary-500"
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle>Daftar Pengiriman</CardTitle>
+            {isAdmin && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleOpenTrackingDialog}
+                className="flex items-center gap-2"
               >
-                <option value="terkirim">Terkirim</option>
-                <option value="tertunda">Tertunda</option>
-                <option value="gagal">Gagal</option>
-              </select>
-            </div>
-            <div className="grid grid-cols-4 items-start gap-4">
-              <Label htmlFor="notes" className="text-right mt-2">
-                Catatan
-              </Label>
-              <Textarea
-                id="notes"
-                value={rowNotes}
-                onChange={(e) => setRowNotes(e.target.value)}
-                className="col-span-3 rounded-md border shadow-sm focus:border-primary-500 focus:ring-primary-500"
-              />
-            </div>
+                <Map className="h-4 w-4" />
+                Konfigurasi URL Tracking Default
+              </Button>
+            )}
           </div>
-          <div className="flex justify-end">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setIsEditStatusDialogOpen(false)}
-              className="mr-2"
-            >
-              Batal
-            </Button>
-            <Button type="button" onClick={handleStatusSave} disabled={isProcessing}>
-              Simpan
-            </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[150px]">Track Lokasi</TableHead>
+                  <TableHead>Perusahaan</TableHead>
+                  <TableHead>Tujuan</TableHead>
+                  <TableHead>Supir</TableHead>
+                  <TableHead>Tanggal Kirim</TableHead>
+                  <TableHead>Tanggal & Waktu Tiba</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Kendala</TableHead>
+                  <TableHead className="text-right">Qty</TableHead>
+                  {isAdmin && <TableHead className="w-[60px]">Aksi</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedShipments.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={isAdmin ? 10 : 9} className="text-center h-32">
+                      Tidak ada data pengiriman
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  paginatedShipments.map((shipment) => (
+                    <TableRow key={shipment.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex items-center gap-2"
+                            onClick={() => navigateToTracking(shipment)}
+                          >
+                            <MapPin className="h-4 w-4" />
+                            Lacak
+                          </Button>
+                          {isAdmin && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenEditTrackingUrlDialog(shipment)}
+                              title="Edit URL Tracking"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{shipment.perusahaan}</TableCell>
+                      <TableCell>{shipment.tujuan}</TableCell>
+                      <TableCell>
+                        {isAdmin ? (
+                          driverEditId === shipment.id ? (
+                            <div className="flex items-center gap-2">
+                              <Input 
+                                value={editableDriverName}
+                                onChange={(e) => setEditableDriverName(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handleDriverNameSave();
+                                  } else if (e.key === 'Escape') {
+                                    setDriverEditId(null);
+                                  }
+                                }}
+                                onBlur={handleDriverNameSave}
+                                autoFocus
+                                className="py-1 h-8"
+                              />
+                            </div>
+                          ) : (
+                            <Button 
+                              variant="ghost" 
+                              className="p-0 h-auto text-blue-600 hover:text-blue-800 hover:underline"
+                              onClick={(e) => handleStartDriverEdit(shipment, e)}
+                            >
+                              {shipment.supir}
+                            </Button>
+                          )
+                        ) : (
+                          shipment.supir
+                        )}
+                      </TableCell>
+                      <TableCell>{shipment.tanggalKirim}</TableCell>
+                      <TableCell>
+                        {shipment.tanggalTiba 
+                          ? (shipment.waktuTiba 
+                            ? `${shipment.tanggalTiba} ${shipment.waktuTiba}` 
+                            : shipment.tanggalTiba) 
+                          : "-"}
+                      </TableCell>
+                      <TableCell>
+                        {renderStatusBadge(shipment.status)}
+                      </TableCell>
+                      <TableCell>
+                        {shipment.kendala || "-"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {isAdmin ? (
+                          qtyEditId === shipment.id ? (
+                            <div className="flex items-center justify-end gap-2">
+                              <Input 
+                                type="number"
+                                value={editableQty}
+                                onChange={handleQtyChange}
+                                onKeyDown={handleQtyKeyDown}
+                                onBlur={handleQtySave}
+                                autoFocus
+                                className="py-1 h-8 w-20 text-right"
+                              />
+                            </div>
+                          ) : (
+                            <Button 
+                              variant="ghost" 
+                              className="p-0 h-auto text-blue-600 hover:text-blue-800 hover:underline"
+                              onClick={(e) => handleStartQtyEdit(shipment, e)}
+                            >
+                              {shipment.qty}
+                            </Button>
+                          )
+                        ) : (
+                          shipment.qty
+                        )}
+                      </TableCell>
+                      {isAdmin && (
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleOpenStatusDialog(shipment)}>
+                                <Calendar className="mr-2 h-4 w-4" />
+                                Update Status
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleOpenHistoryDialog(shipment)}>
+                                <FileText className="mr-2 h-4 w-4" />
+                                Riwayat Status
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleOpenEditDialog(shipment)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit Keterangan
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={(e) => {e.preventDefault(); handleStartDriverEdit(shipment, e);}}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit Supir
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={(e) => {e.preventDefault(); handleStartQtyEdit(shipment, e);}}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit Qty
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleOpenEditTrackingUrlDialog(shipment)}>
+                                <Link className="mr-2 h-4 w-4" />
+                                Edit URL Tracking
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleOpenDeleteDialog(shipment)} className="text-red-600">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Hapus Data
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+              <TableFooter>
+                <TableRow>
+                  <TableCell colSpan={isAdmin ? 8 : 8} className="text-right font-medium">
+                    Total Qty:
+                  </TableCell>
+                  <TableCell className="text-right font-medium">{totalQuantity}</TableCell>
+                  {isAdmin && <TableCell></TableCell>}
+                </TableRow>
+              </TableFooter>
+            </Table>
           </div>
-        </DialogContent>
-      </Dialog>
 
-      {/* Edit Tracking URL Dialog */}
-      <Dialog open={isEditTrackingUrlDialogOpen} onOpenChange={setIsEditTrackingUrlDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+          {totalPages > 1 && (
+            <div className="mt-4 flex justify-center">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNumber: number;
+                    if (totalPages <= 5) {
+                      pageNumber = i + 1;
+                    } else {
+                      // For more pages, show window around current page
+                      const start = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
+                      pageNumber = start + i;
+                    }
+                    
+                    return (
+                      <PaginationItem key={pageNumber}>
+                        <PaginationLink
+                          onClick={() => setCurrentPage(pageNumber)}
+                          isActive={currentPage === pageNumber}
+                        >
+                          {pageNumber}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  })}
+                  
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Tracking URL Configuration Dialog */}
+      <Dialog open={isTrackingDialogOpen} onOpenChange={setIsTrackingDialogOpen}>
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit URL Dilacak</DialogTitle>
-            <DialogDescription>
-              Masukkan atau ubah URL untuk melacak pengiriman.
-            </DialogDescription>
+            <DialogTitle>Konfigurasi URL Tracking</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="trackingUrl" className="text-right">
-                URL Dilacak
-              </Label>
+            <div className="grid gap-2">
+              <Label htmlFor="tracking-url">URL Tracking</Label>
               <Input
-                id="trackingUrl"
-                value={rowTrackingUrl || ""}
-                onChange={(e) => setRowTrackingUrl(e.target.value)}
-                className="col-span-3"
+                id="tracking-url"
+                value={trackingUrl}
+                onChange={(e) => setTrackingUrl(e.target.value)}
+                placeholder="Masukkan URL tracking"
               />
+              <p className="text-sm text-muted-foreground">
+                URL ini akan digunakan untuk tombol tracking pada semua data pengiriman.
+                Pastikan URL valid dan dapat diakses.
+              </p>
             </div>
           </div>
-          <div className="flex justify-end">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setIsEditTrackingUrlDialogOpen(false)}
-              className="mr-2"
-            >
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsTrackingDialogOpen(false)}>
               Batal
             </Button>
-            <Button type="button" onClick={handleSaveTrackingUrl} disabled={isProcessing}>
-              Simpan
+            <Button onClick={handleSaveTrackingUrl} disabled={isLoading}>
+              {isLoading ? "Menyimpan..." : "Simpan"}
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-			{/* Status History Dialog */}
-			<Dialog open={isHistoryDialogOpen} onOpenChange={setIsHistoryDialogOpen}>
-				<DialogContent className="sm:max-w-md">
-					<DialogHeader>
-						<DialogTitle>Riwayat Status Pengiriman</DialogTitle>
-						<DialogDescription>
-							Riwayat perubahan status untuk pengiriman ini.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="grid gap-4 py-4">
-						{statusHistory.length > 0 ? (
-							statusHistory.map((item) => (
-								<div key={item.id} className="border rounded-md p-4">
-									<p className="text-sm text-muted-foreground">
-										Tanggal: {new Date(item.created_at).toLocaleDateString()}
-									</p>
-									<p>
-										Status Sebelumnya: {item.previous_status}
-									</p>
-									<p>
-										Status Baru: {item.new_status}
-									</p>
-									{item.notes && (
-										<p>
-											Catatan: {item.notes}
-										</p>
-									)}
-								</div>
-							))
-						) : (
-							<p>Tidak ada riwayat status untuk pengiriman ini.</p>
-						)}
-					</div>
-					<div className="flex justify-end">
-						<Button
-							type="button"
-							variant="secondary"
-							onClick={() => setIsHistoryDialogOpen(false)}
-						>
-							Tutup
-						</Button>
-					</div>
-				</DialogContent>
-			</Dialog>
-    </div>
+      {/* Status Update Dialog */}
+      <Dialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Status Pengiriman</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="status">Status</Label>
+              <Select value={newStatus} onValueChange={(value) => setNewStatus(value as ShipmentStatus)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="terkirim">Terkirim</SelectItem>
+                  <SelectItem value="tertunda">Tertunda</SelectItem>
+                  <SelectItem value="gagal">Gagal</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Show time input if status is "terkirim" */}
+            {newStatus === "terkirim" && (
+              <div className="grid gap-2">
+                <Label htmlFor="waktu-tiba">Waktu Tiba</Label>
+                <div className="flex items-center">
+                  <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    id="waktu-tiba"
+                    type="time"
+                    value={currentTime}
+                    onChange={(e) => setCurrentTime(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+            
+            {/* Show kendala field if status is "gagal" or "tertunda" */}
+            {(newStatus === "gagal" || newStatus === "tertunda") && (
+              <div className="grid gap-2">
+                <Label htmlFor="kendala">Kendala / Keterangan</Label>
+                <Textarea
+                  id="kendala"
+                  value={kendala}
+                  onChange={(e) => setKendala(e.target.value)}
+                  placeholder="Masukkan kendala atau keterangan"
+                  rows={3}
+                />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsStatusDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={handleUpdateStatus} disabled={isLoading}>
+              {isLoading ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Driver Dialog */}
+      <Dialog open={isEditDriverDialogOpen} onOpenChange={setIsEditDriverDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Nama Supir</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="driver-name">Nama Supir</Label>
+              <Input
+                id="driver-name"
+                value={driverName}
+                onChange={(e) => setDriverName(e.target.value)}
+                placeholder="Masukkan nama supir"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDriverDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={handleUpdateDriver} disabled={isLoading}>
+              {isLoading ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Status History Dialog */}
+      <Dialog open={isHistoryDialogOpen} onOpenChange={setIsHistoryDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Riwayat Status Pengiriman</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="text-sm mb-2">
+              <strong>No. Surat Jalan:</strong> {currentShipment?.noSuratJalan}
+            </div>
+            <div className="text-sm mb-4">
+              <strong>Perusahaan:</strong> {currentShipment?.perusahaan}
+            </div>
+            
+            {isLoadingHistory ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+              </div>
+            ) : statusHistory.length > 0 ? (
+              <div className="border rounded-md overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tanggal</TableHead>
+                      <TableHead>Status Lama</TableHead>
+                      <TableHead>Status Baru</TableHead>
+                      <TableHead>Catatan</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {statusHistory.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>{new Date(item.created_at).toLocaleString()}</TableCell>
+                        <TableCell>{renderStatusBadge(item.previous_status as ShipmentStatus)}</TableCell>
+                        <TableCell>{renderStatusBadge(item.new_status as ShipmentStatus)}</TableCell>
+                        <TableCell>{item.notes || "-"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                Tidak ada riwayat status untuk pengiriman ini
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsHistoryDialogOpen(false)}>
+              Tutup
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Keterangan Pengiriman</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="kendala-edit">Kendala / Keterangan</Label>
+              <Textarea
+                id="kendala-edit"
+                value={kendala}
+                onChange={(e) => setKendala(e.target.value)}
+                placeholder="Masukkan kendala atau keterangan"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={handleUpdateShipment} disabled={isLoading}>
+              {isLoading ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Konfirmasi Hapus Data</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>Apakah Anda yakin ingin menghapus data pengiriman ini?</p>
+            <p className="font-medium mt-2">No. Surat Jalan: {currentShipment?.noSuratJalan}</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteShipment} disabled={isLoading}>
+              {isLoading ? "Menghapus..." : "Hapus"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Individual Tracking URL Dialog */}
+      <Dialog open={isEditTrackingUrlDialogOpen} onOpenChange={setIsEditTrackingUrlDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit URL Tracking</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="row-tracking-url">URL Tracking untuk {currentShipment?.noSuratJalan}</Label>
+              <Input
+                id="row-tracking-url"
+                value={rowTrackingUrl}
+                onChange={(e) => setRowTrackingUrl(e.target.value)}
+                placeholder="Masukkan URL tracking khusus untuk pengiriman ini"
+              />
+              <p className="text-sm text-muted-foreground">
+                URL ini akan digunakan untuk melacak pengiriman ini. 
+                Kosongkan untuk menggunakan URL tracking default.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditTrackingUrlDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={handleSaveRowTrackingUrl} disabled={isLoading}>
+              {isLoading ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

@@ -66,7 +66,6 @@ export type Database = {
           supir: string
           tanggal_kirim: string
           tanggal_tiba: string | null
-          tracking_url: string | null
           tujuan: string
           updated_at: string | null
           updated_by: string | null
@@ -83,7 +82,6 @@ export type Database = {
           supir: string
           tanggal_kirim: string
           tanggal_tiba?: string | null
-          tracking_url?: string | null
           tujuan: string
           updated_at?: string | null
           updated_by?: string | null
@@ -100,7 +98,6 @@ export type Database = {
           supir?: string
           tanggal_kirim?: string
           tanggal_tiba?: string | null
-          tracking_url?: string | null
           tujuan?: string
           updated_at?: string | null
           updated_by?: string | null
