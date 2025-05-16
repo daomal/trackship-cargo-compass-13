@@ -1,169 +1,112 @@
+import { Database } from './types';
 
-import { Database as GeneratedDatabase } from './types';
-
-// Extend the Database with our custom types
-export interface ExtendedDatabase extends GeneratedDatabase {
+// Extend the Database type to include custom fields
+export interface ExtendedDatabase extends Database {
   public: {
     Tables: {
-      profiles: {
-        Row: {
-          created_at: string | null
-          id: string
-          name: string | null
-          role: "admin" | "user"
-        }
-        Insert: {
-          created_at?: string | null
-          id: string
-          name?: string | null
-          role?: "admin" | "user"
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          name?: string | null
-          role?: "admin" | "user"
-        }
-        Relationships: []
-      }
       shipments: {
         Row: {
-          created_at: string | null
-          id: string
-          kendala: string | null
-          no_surat_jalan: string
-          perusahaan: string
-          qty: number
-          status: string
-          supir: string
-          tanggal_kirim: string
-          tanggal_tiba: string | null
-          tujuan: string
-          updated_at: string | null
-          updated_by: string | null
-          waktu_tiba: string | null
-        }
+          created_at: string;
+          id: string;
+          kendala: string;
+          no_surat_jalan: string;
+          perusahaan: string;
+          qty: number;
+          status: string;
+          supir: string;
+          tanggal_kirim: string;
+          tanggal_tiba: string;
+          tujuan: string;
+          updated_at: string;
+          updated_by: string;
+          waktu_tiba: string;
+          tracking_url: string | null;
+        };
         Insert: {
-          created_at?: string | null
-          id?: string
-          kendala?: string | null
-          no_surat_jalan: string
-          perusahaan: string
-          qty?: number
-          status: string
-          supir: string
-          tanggal_kirim: string
-          tanggal_tiba?: string | null
-          tujuan: string
-          updated_at?: string | null
-          updated_by?: string | null
-          waktu_tiba?: string | null
-        }
+          created_at?: string;
+          id?: string;
+          kendala?: string | null;
+          no_surat_jalan: string;
+          perusahaan: string;
+          qty: number;
+          status: string;
+          supir: string;
+          tanggal_kirim: string;
+          tanggal_tiba?: string | null;
+          tujuan: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          waktu_tiba?: string | null;
+          tracking_url?: string | null;
+        };
         Update: {
-          created_at?: string | null
-          id?: string
-          kendala?: string | null
-          no_surat_jalan?: string
-          perusahaan?: string
-          qty?: number
-          status?: string
-          supir?: string
-          tanggal_kirim?: string
-          tanggal_tiba?: string | null
-          tujuan?: string
-          updated_at?: string | null
-          updated_by?: string | null
-          waktu_tiba?: string | null
-        }
-        Relationships: []
-      }
+          created_at?: string;
+          id?: string;
+          kendala?: string | null;
+          no_surat_jalan?: string;
+          perusahaan?: string;
+          qty?: number;
+          status?: string;
+          supir?: string;
+          tanggal_kirim?: string;
+          tanggal_tiba?: string | null;
+          tujuan?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          waktu_tiba?: string | null;
+          tracking_url?: string | null;
+        };
+      };
       status_history: {
         Row: {
-          id: string
-          shipment_id: string
-          previous_status: string
-          new_status: string
-          notes: string | null
-          created_at: string | null
-          created_by: string | null
-        }
+          id: string;
+          shipment_id: string;
+          previous_status: string;
+          new_status: string;
+          notes: string | null;
+          created_at: string;
+          created_by: string | null;
+        };
         Insert: {
-          id?: string
-          shipment_id: string
-          previous_status: string
-          new_status: string
-          notes?: string | null
-          created_at?: string | null
-          created_by?: string | null
-        }
+          id?: string;
+          shipment_id: string;
+          previous_status: string;
+          new_status: string;
+          notes?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+        };
         Update: {
-          id?: string
-          shipment_id?: string
-          previous_status?: string
-          new_status?: string
-          notes?: string | null
-          created_at?: string | null
-          created_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "status_history_shipment_id_fkey"
-            columns: ["shipment_id"]
-            isOneToOne: false
-            referencedRelation: "shipments"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      notes: {
-        Row: {
-          id: string
-          content: string
-          author_name: string
-          user_id: string | null
-          created_at: string | null
-        }
-        Insert: {
-          id?: string
-          content: string
-          author_name?: string
-          user_id?: string | null
-          created_at?: string | null
-        }
-        Update: {
-          id?: string
-          content?: string
-          author_name?: string
-          user_id?: string | null
-          created_at?: string | null
-        }
-        Relationships: []
-      }
-    }
+          id?: string;
+          shipment_id?: string;
+          previous_status?: string;
+          new_status?: string;
+          notes?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+        };
+      };
+    };
     Views: {
       [_ in never]: never
-    }
+    };
     Functions: {
       get_company_summaries: {
-        Args: Record<PropertyKey, never>
+        Args: Record<PropertyKey, never>;
         Returns: {
-          company: string
-          total: number
-          delivered: number
-          pending: number
-          failed: number
-        }[]
-      }
-      is_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-    }
+          company: string;
+          total: number;
+          delivered: number;
+          pending: number;
+          failed: number;
+        }[];
+      };
+    };
     Enums: {
-      user_role: "admin" | "user"
-    }
+      [_ in never]: never
+    };
     CompositeTypes: {
       [_ in never]: never
-    }
-  }
+    };
+  };
 }
