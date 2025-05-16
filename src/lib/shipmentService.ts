@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Shipment, SupabaseShipment, StatusHistoryItem } from '@/lib/types';
 
@@ -85,8 +84,6 @@ export const getShipmentById = async (id: string): Promise<Shipment | null> => {
 
 // Create a new shipment
 export const createShipment = async (shipment: Omit<Shipment, 'id'>): Promise<Shipment> => {
-  const supabaseShipment = mapToSupabaseShipment(shipment);
-
   const { data, error } = await supabase
     .from('shipments')
     .insert({
@@ -120,6 +117,8 @@ export const createShipment = async (shipment: Omit<Shipment, 'id'>): Promise<Sh
 // Update an existing shipment
 export const updateShipment = async (id: string, shipment: Partial<Shipment>): Promise<Shipment> => {
   const supabaseShipment = mapToSupabaseShipment(shipment);
+  
+  console.log("Updating shipment with data:", id, supabaseShipment);
 
   const { data, error } = await supabase
     .from('shipments')
