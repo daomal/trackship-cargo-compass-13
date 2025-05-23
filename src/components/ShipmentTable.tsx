@@ -452,11 +452,13 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
     }
   };
 
+  // Modified function to handle tracking URL correctly
   const navigateToTracking = (shipment: Shipment) => {
     const shipmentTrackingUrl = shipment.trackingUrl || trackingUrl;
-    const fullTrackingUrl = `${shipmentTrackingUrl}?shipment=${shipment.id}`;
-    console.log("Navigating to tracking URL:", fullTrackingUrl);
-    window.open(fullTrackingUrl, '_blank');
+    
+    // Don't append any parameters to the URL, just open it as is
+    console.log("Navigating to tracking URL:", shipmentTrackingUrl);
+    window.open(shipmentTrackingUrl, '_blank');
   };
 
   return (
