@@ -152,8 +152,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
         qty: editableQty
       });
       
-      toast({
-        title: "Berhasil",
+      toast("Berhasil", {
         description: "Qty berhasil diperbarui",
       });
       setQtyEditId(null);
@@ -169,8 +168,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       }
     } catch (error) {
       console.error("Error updating qty:", error);
-      toast({
-        title: "Error",
+      toast("Error", {
         description: "Gagal memperbarui qty",
         variant: "destructive",
       });
@@ -193,8 +191,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
   const handleSaveTrackingUrl = () => {
     // Save the trackingUrl to localStorage
     localStorage.setItem("trackingUrl", trackingUrl);
-    toast({
-      title: "Berhasil",
+    toast("Berhasil", {
       description: "URL tracking berhasil disimpan",
     });
     setIsTrackingDialogOpen(false);
@@ -220,8 +217,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
         trackingUrl: rowTrackingUrl
       });
       
-      toast({
-        title: "Berhasil",
+      toast("Berhasil", {
         description: "URL tracking berhasil disimpan",
       });
       
@@ -238,8 +234,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       }
     } catch (error) {
       console.error("Error updating tracking URL:", error);
-      toast({
-        title: "Error",
+      toast("Error", {
         description: "Gagal memperbarui URL tracking",
         variant: "destructive",
       });
@@ -283,8 +278,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       setStatusHistory(history);
     } catch (error) {
       console.error("Error fetching status history:", error);
-      toast({
-        title: "Error",
+      toast("Error", {
         description: "Gagal memuat riwayat status",
         variant: "destructive",
       });
@@ -295,8 +289,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
 
   const handleUpdateDriver = async () => {
     if (!currentShipment || !driverName.trim()) {
-      toast({
-        title: "Error",
+      toast("Error", {
         description: "Nama supir tidak boleh kosong",
         variant: "destructive",
       });
@@ -312,8 +305,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       
       await updateShipment(currentShipment.id, updateData);
       
-      toast({
-        title: "Berhasil",
+      toast("Berhasil", {
         description: "Nama supir berhasil diperbarui",
       });
       setIsEditDriverDialogOpen(false);
@@ -329,8 +321,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       }
     } catch (error) {
       console.error("Error updating driver:", error);
-      toast({
-        title: "Error",
+      toast("Error", {
         description: "Gagal memperbarui nama supir",
         variant: "destructive",
       });
@@ -347,8 +338,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
     try {
       // For "gagal" status, kendala is required
       if (newStatus === "gagal" && !kendala) {
-        toast({
-          title: "Error",
+        toast("Error", {
           description: "Kendala harus diisi jika status gagal",
           variant: "destructive",
         });
@@ -376,8 +366,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       
       await updateShipment(currentShipment.id, updateData);
       
-      toast({
-        title: "Berhasil",
+      toast("Berhasil", {
         description: `Status pengiriman berhasil diubah ke ${newStatus}`,
       });
       setIsStatusDialogOpen(false);
@@ -388,8 +377,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       }
     } catch (error) {
       console.error("Error updating status:", error);
-      toast({
-        title: "Error",
+      toast("Error", {
         description: "Gagal mengubah status pengiriman",
         variant: "destructive",
       });
@@ -410,8 +398,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       
       await updateShipment(currentShipment.id, updateData);
       
-      toast({
-        title: "Berhasil",
+      toast("Berhasil", {
         description: "Data pengiriman berhasil diperbarui",
       });
       setIsEditDialogOpen(false);
@@ -422,8 +409,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       }
     } catch (error) {
       console.error("Error updating shipment:", error);
-      toast({
-        title: "Error",
+      toast("Error", {
         description: "Gagal memperbarui data pengiriman",
         variant: "destructive",
       });
@@ -440,8 +426,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
     try {
       await deleteShipment(currentShipment.id);
       
-      toast({
-        title: "Berhasil",
+      toast("Berhasil", {
         description: "Data pengiriman berhasil dihapus",
       });
       setIsDeleteDialogOpen(false);
@@ -452,8 +437,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       }
     } catch (error) {
       console.error("Error deleting shipment:", error);
-      toast({
-        title: "Error",
+      toast("Error", {
         description: "Gagal menghapus data pengiriman",
         variant: "destructive",
       });
@@ -484,8 +468,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
         supir: editableDriverName
       });
       
-      toast({
-        title: "Berhasil",
+      toast("Berhasil", {
         description: "Nama supir berhasil diperbarui",
       });
       setDriverEditId(null);
@@ -501,8 +484,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       }
     } catch (error) {
       console.error("Error updating driver name:", error);
-      toast({
-        title: "Error",
+      toast("Error", {
         description: "Gagal memperbarui nama supir",
         variant: "destructive",
       });
