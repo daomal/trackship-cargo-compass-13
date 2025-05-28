@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Note } from "@/lib/types";
+import ImageUpload from "./ImageUpload";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -23,6 +24,7 @@ const NoteForm: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [content, setContent] = useState("");
   const [authorName, setAuthorName] = useState("");
+  const [imageUrl, setImageUrl] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const { user } = useAuth();
@@ -78,13 +80,15 @@ const NoteForm: React.FC = () => {
         .insert([{ 
           content,
           author_name: authorName || 'Anonim',
-          user_id: user?.id
+          user_id: user?.id,
+          image_url: imageUrl || null
         }]);
         
       if (error) throw error;
       
       toast.success('Catatan berhasil ditambahkan');
       setContent("");
+      setImageUrl("");
       fetchNotes();
     } catch (error) {
       console.error('Error adding note:', error);
@@ -92,6 +96,14 @@ const NoteForm: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleImageUploaded = (url: string) => {
+    setImageUrl(url);
+  };
+
+  const handleImageRemoved = () => {
+    setImageUrl("");
   };
   
   // Calculate total pages
@@ -132,12 +144,19 @@ const NoteForm: React.FC = () => {
                 className="w-full"
               />
               <div className="flex gap-4">
-                <Textarea
-                  placeholder="Tuliskan catatan anda disini..."
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  className="min-h-[80px] flex-1"
-                />
+                <div className="flex-1 space-y-3">
+                  <Textarea
+                    placeholder="Tuliskan catatan anda disini..."
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    className="min-h-[80px]"
+                  />
+                  <ImageUpload
+                    onImageUploaded={handleImageUploaded}
+                    onImageRemoved={handleImageRemoved}
+                    currentImageUrl={imageUrl}
+                  />
+                </div>
                 <Button type="submit" disabled={isLoading} className="self-end">
                   {isLoading ? "Mengirim..." : "Kirim"}
                 </Button>
@@ -163,7 +182,17 @@ const NoteForm: React.FC = () => {
                       {formatDate(note.created_at)}
                     </span>
                   </div>
-                  <p className="text-gray-700 whitespace-pre-wrap">{note.content}</p>
+                  <p className="text-gray-700 whitespace-pre-wrap mb-3">{note.content}</p>
+                  {note.image_url && (
+                    <div className="mt-3">
+                      <img
+                        src={note.image_url}
+                        alt="Gambar catatan"
+                        className="max-w-full h-auto max-h-64 object-cover rounded-lg border cursor-pointer"
+                        onClick={() => window.open(note.image_url, '_blank')}
+                      />
+                    </div>
+                  )}
                 </div>
               ))
             )}

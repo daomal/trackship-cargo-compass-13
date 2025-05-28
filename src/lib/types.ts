@@ -1,4 +1,3 @@
-
 export type ShipmentStatus = "terkirim" | "tertunda" | "gagal";
 
 export interface Shipment {
@@ -77,6 +76,7 @@ export interface Note {
   author_name: string;
   user_id?: string | null;
   created_at: string;
+  image_url?: string | null;
 }
 
 // Analytics interfaces
