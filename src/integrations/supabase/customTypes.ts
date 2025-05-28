@@ -125,6 +125,7 @@ export interface ExtendedDatabase extends GeneratedDatabase {
           author_name: string
           user_id: string | null
           created_at: string | null
+          image_url: string | null
         }
         Insert: {
           id?: string
@@ -132,6 +133,7 @@ export interface ExtendedDatabase extends GeneratedDatabase {
           author_name?: string
           user_id?: string | null
           created_at?: string | null
+          image_url?: string | null
         }
         Update: {
           id?: string
@@ -139,6 +141,7 @@ export interface ExtendedDatabase extends GeneratedDatabase {
           author_name?: string
           user_id?: string | null
           created_at?: string | null
+          image_url?: string | null
         }
         Relationships: []
       }
