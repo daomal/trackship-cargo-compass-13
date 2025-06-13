@@ -71,6 +71,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
+  // Redirect logic after profile is loaded
+  useEffect(() => {
+    if (profile && user) {
+      const currentPath = window.location.pathname;
+      
+      // Don't redirect if already on the correct page
+      if (profile.role === 'admin' && currentPath === '/admin') return;
+      if (profile.driver_id && currentPath === '/dashboard-supir') return;
+      
+      // Redirect based on user role after successful login
+      if (profile.role === 'admin') {
+        navigate('/admin');
+      } else if (profile.driver_id) {
+        navigate('/dashboard-supir');
+      }
+    }
+  }, [profile, user, navigate]);
+
   const fetchUserProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
