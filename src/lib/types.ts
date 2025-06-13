@@ -1,3 +1,4 @@
+
 export type ShipmentStatus = "terkirim" | "tertunda" | "gagal";
 
 export interface Shipment {
@@ -5,7 +6,7 @@ export interface Shipment {
   noSuratJalan: string;
   perusahaan: string;
   tujuan: string;
-  supir: string;
+  driverId: string | null;
   tanggalKirim: string;
   tanggalTiba: string | null;
   waktuTiba: string | null;
@@ -14,11 +15,14 @@ export interface Shipment {
   updatedBy?: string | null;
   qty: number;
   trackingUrl?: string | null;
+  currentLat?: number | null;
+  currentLng?: number | null;
 }
 
 export interface Driver {
   id: string;
   name: string;
+  licensePlate: string;
 }
 
 export interface FilterOptions {
@@ -39,7 +43,7 @@ export interface SupabaseShipment {
   no_surat_jalan: string;
   perusahaan: string;
   tujuan: string;
-  supir: string;
+  driver_id: string | null;
   tanggal_kirim: string;
   tanggal_tiba: string | null;
   waktu_tiba: string | null;
@@ -50,6 +54,8 @@ export interface SupabaseShipment {
   updated_at: string;
   updated_by: string | null;
   tracking_url: string | null;
+  current_lat: number | null;
+  current_lng: number | null;
 }
 
 export interface UserProfile {
@@ -57,6 +63,7 @@ export interface UserProfile {
   role: 'admin' | 'user';
   name: string | null;
   created_at: string;
+  driver_id: string | null;
 }
 
 export interface StatusHistoryItem {

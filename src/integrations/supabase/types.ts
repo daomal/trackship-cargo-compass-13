@@ -9,6 +9,24 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      drivers: {
+        Row: {
+          id: string
+          license_plate: string
+          name: string
+        }
+        Insert: {
+          id?: string
+          license_plate: string
+          name: string
+        }
+        Update: {
+          id?: string
+          license_plate?: string
+          name?: string
+        }
+        Relationships: []
+      }
       notes: {
         Row: {
           author_name: string
@@ -39,34 +57,47 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string | null
+          driver_id: string | null
           id: string
           name: string | null
           role: Database["public"]["Enums"]["user_role"] | null
         }
         Insert: {
           created_at?: string | null
+          driver_id?: string | null
           id: string
           name?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
         }
         Update: {
           created_at?: string | null
+          driver_id?: string | null
           id?: string
           name?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shipments: {
         Row: {
           created_at: string | null
+          current_lat: number | null
+          current_lng: number | null
+          driver_id: string | null
           id: string
           kendala: string | null
           no_surat_jalan: string
           perusahaan: string
           qty: number
           status: string
-          supir: string
           tanggal_kirim: string
           tanggal_tiba: string | null
           tracking_url: string | null
@@ -77,13 +108,15 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          current_lat?: number | null
+          current_lng?: number | null
+          driver_id?: string | null
           id?: string
           kendala?: string | null
           no_surat_jalan: string
           perusahaan: string
           qty?: number
           status: string
-          supir: string
           tanggal_kirim: string
           tanggal_tiba?: string | null
           tracking_url?: string | null
@@ -94,13 +127,15 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          current_lat?: number | null
+          current_lng?: number | null
+          driver_id?: string | null
           id?: string
           kendala?: string | null
           no_surat_jalan?: string
           perusahaan?: string
           qty?: number
           status?: string
-          supir?: string
           tanggal_kirim?: string
           tanggal_tiba?: string | null
           tracking_url?: string | null
@@ -109,7 +144,15 @@ export type Database = {
           updated_by?: string | null
           waktu_tiba?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "shipments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       status_history: {
         Row: {

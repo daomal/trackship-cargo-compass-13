@@ -1,204 +1,238 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription,
-  CardFooter 
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from 'sonner';
-import { registerUser, loginUser } from '@/utils/supabaseUtils';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { Truck, LogIn, UserPlus } from 'lucide-react';
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>('login');
+  const { signIn, signUp, user, profile, isLoading } = useAuth();
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [isSigningUp, setIsSigningUp] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  // Form states
+  const [signInData, setSignInData] = useState({
+    email: '',
+    password: ''
+  });
+
+  const [signUpData, setSignUpData] = useState({
+    email: '',
+    password: '',
+    name: ''
+  });
 
   useEffect(() => {
-    // Redirect if user is already logged in
-    if (user) {
-      console.log("User already logged in, redirecting to home");
-      navigate('/');
-    }
-  }, [user, navigate]);
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!email || !password) {
-      toast.error('Harap isi email dan password');
-      return;
-    }
-    
-    setIsLoading(true);
-    console.log(`Attempting to login with email: ${email}`);
-    
-    try {
-      const result = await loginUser(email, password);
-      
-      if (!result.success) {
-        console.error('Login failed:', result.message);
-        toast.error(result.message || 'Gagal login. Pastikan email dan password benar.');
+    if (user && profile) {
+      // Redirect based on user role and driver status
+      if (profile.driver_id) {
+        // User is a driver, redirect to driver dashboard
+        navigate('/dashboard-supir');
+      } else if (profile.role === 'admin') {
+        // User is admin, redirect to main dashboard
+        navigate('/');
       } else {
-        toast.success(result.message);
+        // Regular user, redirect to main dashboard
         navigate('/');
       }
-    } catch (error: any) {
-      console.error('Login exception:', error);
-      toast.error(error.message || 'Gagal login');
-    } finally {
-      setIsLoading(false);
     }
+  }, [user, profile, navigate]);
+
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSigningIn(true);
+    setError('');
+    setSuccess('');
+
+    const { error } = await signIn(signInData.email, signInData.password);
+
+    if (error) {
+      setError(error.message || 'Gagal login. Periksa email dan password Anda.');
+    } else {
+      setSuccess('Login berhasil! Mengalihkan...');
+    }
+
+    setIsSigningIn(false);
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!email || !password || !name) {
-      toast.error('Harap isi semua field');
-      return;
+    setIsSigningUp(true);
+    setError('');
+    setSuccess('');
+
+    const { error } = await signUp(signUpData.email, signUpData.password, signUpData.name);
+
+    if (error) {
+      setError(error.message || 'Gagal mendaftar. Silakan coba lagi.');
+    } else {
+      setSuccess('Pendaftaran berhasil! Silakan cek email Anda untuk verifikasi.');
     }
-    
-    setIsLoading(true);
-    console.log(`Attempting to register with email: ${email}`);
-    
-    try {
-      const result = await registerUser(email, password, name);
-      
-      if (!result.success) {
-        console.error('Registration failed:', result.message);
-        toast.error(result.message);
-      } else {
-        toast.success(result.message);
-        setActiveTab('login');
-        toast.info('Silakan login dengan akun baru Anda');
-      }
-    } catch (error: any) {
-      console.error('Signup exception:', error);
-      toast.error(error.message || 'Gagal mendaftar');
-    } finally {
-      setIsLoading(false);
-    }
+
+    setIsSigningUp(false);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="animate-spin h-12 w-12 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md p-4">
-        <Card>
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">
-              Sistem Monitoring Pengiriman
-            </CardTitle>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center mb-4">
+            <Truck className="h-12 w-12 text-blue-600" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-800">Sistem Pengiriman</h1>
+          <p className="text-gray-600 mt-2">Masuk atau daftar untuk melanjutkan</p>
+        </div>
+
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-center text-2xl">Selamat Datang</CardTitle>
             <CardDescription className="text-center">
-              Masuk atau daftar untuk melanjutkan
+              Akses dashboard pengiriman Anda
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab}>
+            <Tabs defaultValue="signin" className="space-y-4">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="register">Daftar</TabsTrigger>
+                <TabsTrigger value="signin" className="flex items-center gap-2">
+                  <LogIn className="h-4 w-4" />
+                  Masuk
+                </TabsTrigger>
+                <TabsTrigger value="signup" className="flex items-center gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  Daftar
+                </TabsTrigger>
               </TabsList>
-              
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4 mt-4">
+
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              {success && (
+                <Alert className="border-green-200 bg-green-50 text-green-800">
+                  <AlertDescription>{success}</AlertDescription>
+                </Alert>
+              )}
+
+              <TabsContent value="signin">
+                <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="signin-email">Email</Label>
                     <Input
-                      id="email"
+                      id="signin-email"
                       type="email"
-                      placeholder="Email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="nama@email.com"
+                      value={signInData.email}
+                      onChange={(e) => setSignInData(prev => ({
+                        ...prev,
+                        email: e.target.value
+                      }))}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
+                    <Label htmlFor="signin-password">Password</Label>
                     <Input
-                      id="password"
+                      id="signin-password"
                       type="password"
-                      placeholder="Password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Masukkan password"
+                      value={signInData.password}
+                      onChange={(e) => setSignInData(prev => ({
+                        ...prev,
+                        password: e.target.value
+                      }))}
                       required
                     />
                   </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full"
-                    disabled={isLoading}
+                  <Button
+                    type="submit"
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    disabled={isSigningIn}
                   >
-                    {isLoading ? 'Memproses...' : 'Login'}
+                    {isSigningIn ? 'Memproses...' : 'Masuk'}
                   </Button>
                 </form>
               </TabsContent>
-              
-              <TabsContent value="register">
-                <form onSubmit={handleSignUp} className="space-y-4 mt-4">
+
+              <TabsContent value="signup">
+                <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Nama</Label>
+                    <Label htmlFor="signup-name">Nama Lengkap</Label>
                     <Input
-                      id="name"
+                      id="signup-name"
                       type="text"
-                      placeholder="Nama lengkap"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Masukkan nama lengkap"
+                      value={signUpData.name}
+                      onChange={(e) => setSignUpData(prev => ({
+                        ...prev,
+                        name: e.target.value
+                      }))}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="register-email">Email</Label>
+                    <Label htmlFor="signup-email">Email</Label>
                     <Input
-                      id="register-email"
+                      id="signup-email"
                       type="email"
-                      placeholder="Email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="nama@email.com"
+                      value={signUpData.email}
+                      onChange={(e) => setSignUpData(prev => ({
+                        ...prev,
+                        email: e.target.value
+                      }))}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="register-password">Password</Label>
+                    <Label htmlFor="signup-password">Password</Label>
                     <Input
-                      id="register-password"
+                      id="signup-password"
                       type="password"
-                      placeholder="Password (minimal 6 karakter)"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Minimal 6 karakter"
+                      value={signUpData.password}
+                      onChange={(e) => setSignUpData(prev => ({
+                        ...prev,
+                        password: e.target.value
+                      }))}
                       required
                       minLength={6}
                     />
                   </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full"
-                    disabled={isLoading}
+                  <Button
+                    type="submit"
+                    className="w-full bg-green-600 hover:bg-green-700"
+                    disabled={isSigningUp}
                   >
-                    {isLoading ? 'Memproses...' : 'Daftar'}
+                    {isSigningUp ? 'Memproses...' : 'Daftar'}
                   </Button>
                 </form>
               </TabsContent>
             </Tabs>
           </CardContent>
-          <CardFooter className="text-center text-sm text-gray-500">
-            <p className="w-full">
-              Dengan login, Anda menyetujui syarat dan ketentuan yang berlaku.
-            </p>
-          </CardFooter>
         </Card>
+
+        <div className="text-center mt-6 text-sm text-gray-600">
+          <p>Sistem Manajemen Pengiriman</p>
+          <p className="mt-1">Untuk supir dan admin</p>
+        </div>
       </div>
     </div>
   );

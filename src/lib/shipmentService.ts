@@ -1,5 +1,6 @@
+
 import { supabase } from '@/integrations/supabase/client';
-import { Shipment, SupabaseShipment, StatusHistoryItem } from '@/lib/types';
+import { Shipment, SupabaseShipment, StatusHistoryItem, Driver } from '@/lib/types';
 
 // Convert from Supabase format to our app format
 export const mapSupabaseShipment = (dbShipment: SupabaseShipment): Shipment => {
@@ -8,14 +9,16 @@ export const mapSupabaseShipment = (dbShipment: SupabaseShipment): Shipment => {
     noSuratJalan: dbShipment.no_surat_jalan,
     perusahaan: dbShipment.perusahaan,
     tujuan: dbShipment.tujuan,
-    supir: dbShipment.supir,
+    driverId: dbShipment.driver_id,
     tanggalKirim: dbShipment.tanggal_kirim,
     tanggalTiba: dbShipment.tanggal_tiba,
     waktuTiba: dbShipment.waktu_tiba,
     status: dbShipment.status,
     kendala: dbShipment.kendala,
     qty: dbShipment.qty,
-    trackingUrl: dbShipment.tracking_url
+    trackingUrl: dbShipment.tracking_url,
+    currentLat: dbShipment.current_lat,
+    currentLng: dbShipment.current_lng
   };
 };
 
@@ -26,7 +29,7 @@ export const mapToSupabaseShipment = (shipment: Partial<Shipment>) => {
     no_surat_jalan?: string;
     perusahaan?: string;
     tujuan?: string;
-    supir?: string;
+    driver_id?: string | null;
     tanggal_kirim?: string;
     tanggal_tiba?: string | null;
     waktu_tiba?: string | null;
@@ -34,12 +37,14 @@ export const mapToSupabaseShipment = (shipment: Partial<Shipment>) => {
     kendala?: string | null;
     qty?: number;
     tracking_url?: string | null;
+    current_lat?: number | null;
+    current_lng?: number | null;
   } = {};
   
   if (shipment.noSuratJalan !== undefined) supabaseShipment.no_surat_jalan = shipment.noSuratJalan;
   if (shipment.perusahaan !== undefined) supabaseShipment.perusahaan = shipment.perusahaan;
   if (shipment.tujuan !== undefined) supabaseShipment.tujuan = shipment.tujuan;
-  if (shipment.supir !== undefined) supabaseShipment.supir = shipment.supir;
+  if (shipment.driverId !== undefined) supabaseShipment.driver_id = shipment.driverId;
   if (shipment.tanggalKirim !== undefined) supabaseShipment.tanggal_kirim = shipment.tanggalKirim;
   if (shipment.tanggalTiba !== undefined) supabaseShipment.tanggal_tiba = shipment.tanggalTiba;
   if (shipment.waktuTiba !== undefined) supabaseShipment.waktu_tiba = shipment.waktuTiba;
@@ -47,8 +52,29 @@ export const mapToSupabaseShipment = (shipment: Partial<Shipment>) => {
   if (shipment.kendala !== undefined) supabaseShipment.kendala = shipment.kendala;
   if (shipment.qty !== undefined) supabaseShipment.qty = shipment.qty;
   if (shipment.trackingUrl !== undefined) supabaseShipment.tracking_url = shipment.trackingUrl;
+  if (shipment.currentLat !== undefined) supabaseShipment.current_lat = shipment.currentLat;
+  if (shipment.currentLng !== undefined) supabaseShipment.current_lng = shipment.currentLng;
   
   return supabaseShipment;
+};
+
+// Get all drivers
+export const getDrivers = async (): Promise<Driver[]> => {
+  const { data, error } = await supabase
+    .from('drivers')
+    .select('*')
+    .order('name', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching drivers:', error);
+    throw error;
+  }
+
+  return data.map(driver => ({
+    id: driver.id,
+    name: driver.name,
+    licensePlate: driver.license_plate
+  }));
 };
 
 // Get all shipments
@@ -87,21 +113,22 @@ export const getShipmentById = async (id: string): Promise<Shipment | null> => {
 
 // Create a new shipment
 export const createShipment = async (shipment: Omit<Shipment, 'id'>): Promise<Shipment> => {
-  const supabaseShipment = mapToSupabaseShipment(shipment);
-
   const { data, error } = await supabase
     .from('shipments')
     .insert({
       no_surat_jalan: shipment.noSuratJalan,
       perusahaan: shipment.perusahaan,
       tujuan: shipment.tujuan,
-      supir: shipment.supir,
+      driver_id: shipment.driverId,
       tanggal_kirim: shipment.tanggalKirim,
       tanggal_tiba: shipment.tanggalTiba,
       waktu_tiba: shipment.waktuTiba,
       status: shipment.status,
       kendala: shipment.kendala,
-      qty: shipment.qty
+      qty: shipment.qty,
+      tracking_url: shipment.trackingUrl,
+      current_lat: shipment.currentLat,
+      current_lng: shipment.currentLng
     })
     .select()
     .single();
@@ -172,13 +199,16 @@ export const batchImportShipments = async (shipments: Omit<Shipment, 'id'>[]): P
     no_surat_jalan: shipment.noSuratJalan,
     perusahaan: shipment.perusahaan,
     tujuan: shipment.tujuan,
-    supir: shipment.supir,
+    driver_id: shipment.driverId,
     tanggal_kirim: shipment.tanggalKirim,
     tanggal_tiba: shipment.tanggalTiba,
     waktu_tiba: shipment.waktuTiba,
     status: shipment.status,
     kendala: shipment.kendala,
-    qty: shipment.qty
+    qty: shipment.qty,
+    tracking_url: shipment.trackingUrl,
+    current_lat: shipment.currentLat,
+    current_lng: shipment.currentLng
   }));
   
   const { data, error } = await supabase
@@ -207,7 +237,7 @@ export const getCompanySummaries = async () => {
   return data;
 };
 
-// Tambahkan fungsi untuk mendengarkan perubahan real-time
+// Subscribe to shipments changes
 export const subscribeToShipments = (callback: (shipments: Shipment[]) => void) => {
   const channel = supabase
     .channel('public:shipments')
@@ -216,7 +246,7 @@ export const subscribeToShipments = (callback: (shipments: Shipment[]) => void) 
       schema: 'public', 
       table: 'shipments' 
     }, async () => {
-      // Ketika ada perubahan, ambil data terbaru dan panggil callback
+      // When there's a change, fetch latest data and call callback
       const { data } = await supabase
         .from('shipments')
         .select('*')

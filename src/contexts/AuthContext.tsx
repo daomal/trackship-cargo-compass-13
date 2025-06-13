@@ -75,7 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, name, role, created_at')
+        .select('id, name, role, created_at, driver_id')
         .eq('id', userId)
         .single();
 
@@ -102,9 +102,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log("Sign in response:", data, error);
       
       if (!error && data?.user) {
-        // Don't navigate here as it can cause issues with state updates
-        // Navigation will happen in the Auth component
-        
         // Fetch profile immediately after successful login
         setTimeout(() => {
           if (data.user) {
