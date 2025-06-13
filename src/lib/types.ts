@@ -17,6 +17,7 @@ export interface Shipment {
   trackingUrl?: string | null;
   currentLat?: number | null;
   currentLng?: number | null;
+  drivers?: { id: string; name: string; license_plate: string; } | null;
 }
 
 export interface Driver {
@@ -56,6 +57,7 @@ export interface SupabaseShipment {
   tracking_url: string | null;
   current_lat: number | null;
   current_lng: number | null;
+  drivers?: { id: string; name: string; license_plate: string; } | null;
 }
 
 export interface UserProfile {

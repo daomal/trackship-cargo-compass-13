@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { LogIn, User, UserCog, BarChart2, Truck, Menu, X } from "lucide-react";
@@ -80,7 +79,7 @@ const DashboardLayout = () => {
     
     // Filter by driver
     if (filters.driver !== "all") {
-      filtered = filtered.filter(shipment => shipment.supir === filters.driver);
+      filtered = filtered.filter(shipment => shipment.drivers?.name === filters.driver);
     }
 
     // Filter by company
@@ -95,7 +94,7 @@ const DashboardLayout = () => {
         shipment.noSuratJalan.toLowerCase().includes(query) ||
         shipment.perusahaan.toLowerCase().includes(query) ||
         shipment.tujuan.toLowerCase().includes(query) ||
-        shipment.supir.toLowerCase().includes(query)
+        (shipment.drivers?.name && shipment.drivers.name.toLowerCase().includes(query))
       );
     }
     
@@ -111,7 +110,7 @@ const DashboardLayout = () => {
   }, [searchQuery]);
 
   // Extract all drivers for filter
-  const drivers = Array.from(new Set(shipments.map(s => s.supir))).filter(Boolean);
+  const drivers = Array.from(new Set(shipments.map(s => s.drivers?.name).filter(Boolean))) as string[];
   
   // Extract all companies for filter
   const companies = Array.from(new Set(shipments.map(s => s.perusahaan))).filter(Boolean);

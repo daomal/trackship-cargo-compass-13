@@ -37,9 +37,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/sonner";
 import { MoreHorizontal, Calendar, Edit, Trash2, FileText, Clock, Link, MapPin, Map } from "lucide-react";
 import { format } from "date-fns";
-import { Shipment, ShipmentStatus } from "@/lib/types";
+import { Shipment, ShipmentStatus, Driver } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
-import { updateShipment, deleteShipment, getShipmentStatusHistory, subscribeToShipments } from "@/lib/shipmentService";
+import { updateShipment, deleteShipment, getShipmentStatusHistory, subscribeToShipments, getDrivers } from "@/lib/shipmentService";
 
 interface ShipmentTableProps {
   shipments: Shipment[];
@@ -62,7 +62,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
   const [currentShipment, setCurrentShipment] = useState<Shipment | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [kendala, setKendala] = useState("");
-  const [driverName, setDriverName] = useState("");
+  const [selectedDriverId, setSelectedDriverId] = useState("");
   const [newStatus, setNewStatus] = useState<ShipmentStatus>("tertunda");
   const [statusHistory, setStatusHistory] = useState<any[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
@@ -71,11 +71,12 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
     new Date().toTimeString().substring(0, 5)
   );
   const [driverEditId, setDriverEditId] = useState<string | null>(null);
-  const [editableDriverName, setEditableDriverName] = useState("");
+  const [editableDriverId, setEditableDriverId] = useState<string>("");
   const [qtyEditId, setQtyEditId] = useState<string | null>(null);
   const [editableQty, setEditableQty] = useState<number>(0);
   const [trackingUrl, setTrackingUrl] = useState<string>(DEFAULT_TRACKING_URL);
   const [rowTrackingUrl, setRowTrackingUrl] = useState<string>("");
+  const [drivers, setDrivers] = useState<Driver[]>([]);
 
   useEffect(() => {
     setLocalShipments(shipments);
@@ -91,8 +92,19 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       setTrackingUrl(savedTrackingUrl);
     }
 
+    fetchDrivers();
+
     return () => unsubscribe();
   }, []);
+
+  const fetchDrivers = async () => {
+    try {
+      const driversData = await getDrivers();
+      setDrivers(driversData);
+    } catch (error) {
+      console.error("Error fetching drivers:", error);
+    }
+  };
 
   const totalPages = Math.ceil(localShipments.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -240,7 +252,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
 
   const handleOpenEditDriverDialog = (shipment: Shipment) => {
     setCurrentShipment(shipment);
-    setDriverName(shipment.supir);
+    setSelectedDriverId(shipment.driverId || "");
     setIsEditDriverDialogOpen(true);
   };
   
@@ -263,9 +275,9 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
   };
 
   const handleUpdateDriver = async () => {
-    if (!currentShipment || !driverName.trim()) {
+    if (!currentShipment || !selectedDriverId.trim()) {
       toast("Error", {
-        description: "Nama supir tidak boleh kosong",
+        description: "Supir harus dipilih",
       });
       return;
     }
@@ -274,25 +286,21 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
     
     try {
       await updateShipment(currentShipment.id, {
-        supir: driverName
+        driverId: selectedDriverId
       });
       
       toast("Berhasil", {
-        description: "Nama supir berhasil diperbarui",
+        description: "Supir berhasil diperbarui",
       });
       setIsEditDriverDialogOpen(false);
       
       if (onShipmentUpdated) {
         onShipmentUpdated();
-      } else {
-        setLocalShipments(prev => 
-          prev.map(s => s.id === currentShipment.id ? {...s, supir: driverName} : s)
-        );
       }
     } catch (error) {
       console.error("Error updating driver:", error);
       toast("Error", {
-        description: "Gagal memperbarui nama supir",
+        description: "Gagal memperbarui supir",
       });
     } finally {
       setIsLoading(false);
@@ -407,48 +415,36 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
     e.preventDefault();
     e.stopPropagation();
     setDriverEditId(shipment.id);
-    setEditableDriverName(shipment.supir);
+    setEditableDriverId(shipment.driverId || "");
   };
 
-  const handleDriverNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEditableDriverName(e.target.value);
+  const handleDriverIdChange = (value: string) => {
+    setEditableDriverId(value);
   };
 
-  const handleDriverNameSave = async () => {
-    if (!driverEditId || !editableDriverName.trim()) {
+  const handleDriverIdSave = async () => {
+    if (!driverEditId || !editableDriverId.trim()) {
       return;
     }
     
     try {
       await updateShipment(driverEditId, {
-        supir: editableDriverName
+        driverId: editableDriverId
       });
       
       toast("Berhasil", {
-        description: "Nama supir berhasil diperbarui",
+        description: "Supir berhasil diperbarui",
       });
       setDriverEditId(null);
       
       if (onShipmentUpdated) {
         onShipmentUpdated();
-      } else {
-        setLocalShipments(prev => 
-          prev.map(s => s.id === driverEditId ? {...s, supir: editableDriverName} : s)
-        );
       }
     } catch (error) {
-      console.error("Error updating driver name:", error);
+      console.error("Error updating driver:", error);
       toast("Error", {
-        description: "Gagal memperbarui nama supir",
+        description: "Gagal memperbarui supir",
       });
-    }
-  };
-
-  const handleDriverNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleDriverNameSave();
-    } else if (e.key === 'Escape') {
-      setDriverEditId(null);
     }
   };
 
@@ -536,20 +532,27 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                         {isAdmin ? (
                           driverEditId === shipment.id ? (
                             <div className="flex items-center gap-2">
-                              <Input 
-                                value={editableDriverName}
-                                onChange={(e) => setEditableDriverName(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    handleDriverNameSave();
-                                  } else if (e.key === 'Escape') {
-                                    setDriverEditId(null);
-                                  }
-                                }}
-                                onBlur={handleDriverNameSave}
-                                autoFocus
-                                className="py-1 h-8"
-                              />
+                              <Select 
+                                value={editableDriverId}
+                                onValueChange={handleDriverIdChange}
+                              >
+                                <SelectTrigger className="py-1 h-8">
+                                  <SelectValue placeholder="Pilih Supir" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {drivers.map((driver) => (
+                                    <SelectItem key={driver.id} value={driver.id}>
+                                      {driver.name} - {driver.licensePlate}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Button 
+                                size="sm"
+                                onClick={handleDriverIdSave}
+                              >
+                                Simpan
+                              </Button>
                             </div>
                           ) : (
                             <Button 
@@ -557,11 +560,11 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                               className="p-0 h-auto text-blue-600 hover:text-blue-800 hover:underline"
                               onClick={(e) => handleStartDriverEdit(shipment, e)}
                             >
-                              {shipment.supir}
+                              {shipment.drivers?.name || "Belum dipilih"}
                             </Button>
                           )
                         ) : (
-                          shipment.supir
+                          shipment.drivers?.name || "Belum dipilih"
                         )}
                       </TableCell>
                       <TableCell>{shipment.tanggalKirim}</TableCell>
@@ -800,17 +803,26 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       <Dialog open={isEditDriverDialogOpen} onOpenChange={setIsEditDriverDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Nama Supir</DialogTitle>
+            <DialogTitle>Edit Supir</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="driver-name">Nama Supir</Label>
-              <Input
-                id="driver-name"
-                value={driverName}
-                onChange={(e) => setDriverName(e.target.value)}
-                placeholder="Masukkan nama supir"
-              />
+              <Label htmlFor="driver-select">Pilih Supir</Label>
+              <Select
+                value={selectedDriverId}
+                onValueChange={setSelectedDriverId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih Supir" />
+                </SelectTrigger>
+                <SelectContent>
+                  {drivers.map((driver) => (
+                    <SelectItem key={driver.id} value={driver.id}>
+                      {driver.name} - {driver.licensePlate}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>

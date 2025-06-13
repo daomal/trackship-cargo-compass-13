@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,24 +11,38 @@ import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { createShipment } from "@/lib/shipmentService";
-import { Shipment } from "@/lib/types";
+import { createShipment, getDrivers } from "@/lib/shipmentService";
+import { Shipment, Driver } from "@/lib/types";
 
 interface ShipmentFormProps {
   onShipmentCreated: () => void;
-  drivers: string[];
 }
 
-const ShipmentForm: React.FC<ShipmentFormProps> = ({ onShipmentCreated, drivers }) => {
+const ShipmentForm: React.FC<ShipmentFormProps> = ({ onShipmentCreated }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
   const [formData, setFormData] = useState({
     noSuratJalan: "",
     perusahaan: "",
     tujuan: "",
-    supir: "",
+    driverId: "",
     tanggalKirim: new Date(),
     qty: 0
   });
+
+  useEffect(() => {
+    fetchDrivers();
+  }, []);
+
+  const fetchDrivers = async () => {
+    try {
+      const driversData = await getDrivers();
+      setDrivers(driversData);
+    } catch (error) {
+      console.error("Error fetching drivers:", error);
+      toast.error("Gagal memuat data supir");
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -58,7 +72,7 @@ const ShipmentForm: React.FC<ShipmentFormProps> = ({ onShipmentCreated, drivers 
     e.preventDefault();
     
     // Validation
-    if (!formData.noSuratJalan || !formData.perusahaan || !formData.tujuan || !formData.supir) {
+    if (!formData.noSuratJalan || !formData.perusahaan || !formData.tujuan || !formData.driverId) {
       toast.error("Mohon lengkapi semua field wajib");
       return;
     }
@@ -70,13 +84,16 @@ const ShipmentForm: React.FC<ShipmentFormProps> = ({ onShipmentCreated, drivers 
         noSuratJalan: formData.noSuratJalan,
         perusahaan: formData.perusahaan,
         tujuan: formData.tujuan,
-        supir: formData.supir,
+        driverId: formData.driverId,
         tanggalKirim: format(formData.tanggalKirim, "yyyy-MM-dd"),
         tanggalTiba: null,
         waktuTiba: null,
         status: "tertunda",
         kendala: null,
-        qty: formData.qty
+        qty: formData.qty,
+        trackingUrl: null,
+        currentLat: null,
+        currentLng: null
       };
       
       await createShipment(newShipment);
@@ -88,7 +105,7 @@ const ShipmentForm: React.FC<ShipmentFormProps> = ({ onShipmentCreated, drivers 
         noSuratJalan: "",
         perusahaan: "",
         tujuan: "",
-        supir: "",
+        driverId: "",
         tanggalKirim: new Date(),
         qty: 0
       });
@@ -143,18 +160,18 @@ const ShipmentForm: React.FC<ShipmentFormProps> = ({ onShipmentCreated, drivers 
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="supir">Supir*</Label>
+          <Label htmlFor="driverId">Supir*</Label>
           <Select
-            value={formData.supir}
-            onValueChange={(value) => handleSelectChange("supir", value)}
+            value={formData.driverId}
+            onValueChange={(value) => handleSelectChange("driverId", value)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Pilih Supir" />
             </SelectTrigger>
             <SelectContent>
               {drivers.map((driver) => (
-                <SelectItem key={driver} value={driver}>
-                  {driver}
+                <SelectItem key={driver.id} value={driver.id}>
+                  {driver.name} - {driver.licensePlate}
                 </SelectItem>
               ))}
             </SelectContent>

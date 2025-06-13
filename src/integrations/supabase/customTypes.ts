@@ -5,26 +5,55 @@ import { Database as GeneratedDatabase } from './types';
 export interface ExtendedDatabase extends GeneratedDatabase {
   public: {
     Tables: {
+      drivers: {
+        Row: {
+          id: string
+          name: string
+          license_plate: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          license_plate: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          license_plate?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
           id: string
           name: string | null
           role: "admin" | "user"
+          driver_id: string | null
         }
         Insert: {
           created_at?: string | null
           id: string
           name?: string | null
           role?: "admin" | "user"
+          driver_id?: string | null
         }
         Update: {
           created_at?: string | null
           id?: string
           name?: string | null
           role?: "admin" | "user"
+          driver_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       shipments: {
         Row: {
@@ -35,7 +64,7 @@ export interface ExtendedDatabase extends GeneratedDatabase {
           perusahaan: string
           qty: number
           status: string
-          supir: string
+          driver_id: string | null
           tanggal_kirim: string
           tanggal_tiba: string | null
           tujuan: string
@@ -43,6 +72,8 @@ export interface ExtendedDatabase extends GeneratedDatabase {
           updated_by: string | null
           waktu_tiba: string | null
           tracking_url: string | null
+          current_lat: number | null
+          current_lng: number | null
         }
         Insert: {
           created_at?: string | null
@@ -52,7 +83,7 @@ export interface ExtendedDatabase extends GeneratedDatabase {
           perusahaan: string
           qty?: number
           status: string
-          supir: string
+          driver_id?: string | null
           tanggal_kirim: string
           tanggal_tiba?: string | null
           tujuan: string
@@ -60,6 +91,8 @@ export interface ExtendedDatabase extends GeneratedDatabase {
           updated_by?: string | null
           waktu_tiba?: string | null
           tracking_url?: string | null
+          current_lat?: number | null
+          current_lng?: number | null
         }
         Update: {
           created_at?: string | null
@@ -69,7 +102,7 @@ export interface ExtendedDatabase extends GeneratedDatabase {
           perusahaan?: string
           qty?: number
           status?: string
-          supir?: string
+          driver_id?: string | null
           tanggal_kirim?: string
           tanggal_tiba?: string | null
           tujuan?: string
@@ -77,8 +110,18 @@ export interface ExtendedDatabase extends GeneratedDatabase {
           updated_by?: string | null
           waktu_tiba?: string | null
           tracking_url?: string | null
+          current_lat?: number | null
+          current_lng?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "shipments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       status_history: {
         Row: {

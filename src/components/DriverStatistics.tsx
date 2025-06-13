@@ -30,7 +30,7 @@ const DriverStatistics: React.FC<DriverStatisticsProps> = ({ shipments }) => {
     const driverMap = new Map<string, DriverStats>();
     
     shipments.forEach((shipment) => {
-      const driverName = shipment.supir;
+      const driverName = shipment.drivers?.name;
       
       // Skip if driver name is empty
       if (!driverName) return;

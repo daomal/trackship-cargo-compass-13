@@ -1,12 +1,12 @@
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
-import { Shipment } from "@/lib/types";
+import { Shipment, Driver } from "@/lib/types";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { useAuth } from "@/contexts/AuthContext";
-import { batchImportShipments } from "@/lib/shipmentService";
+import { batchImportShipments, getDrivers } from "@/lib/shipmentService";
 import {
   Dialog,
   DialogClose,
@@ -27,6 +27,22 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onUploadSuccess }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [previewData, setPreviewData] = useState<Omit<Shipment, 'id'>[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchDrivers();
+    }
+  }, [isAdmin]);
+
+  const fetchDrivers = async () => {
+    try {
+      const driversData = await getDrivers();
+      setDrivers(driversData);
+    } catch (error) {
+      console.error("Error fetching drivers:", error);
+    }
+  };
 
   if (!isAdmin) {
     return null; // Only show for admins
@@ -58,17 +74,24 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onUploadSuccess }) => {
             tanggalKirim = `${date.y}-${String(date.m).padStart(2, "0")}-${String(date.d).padStart(2, "0")}`;
           }
           
+          // Find driver ID by name
+          const driverName = row["Supir"];
+          const driver = drivers.find(d => d.name.toLowerCase() === driverName?.toLowerCase());
+          
           return {
             noSuratJalan: row["Nomor Surat Jalan"] || `UNKNOWN-${Math.random().toString(36).substring(2, 7)}`,
             perusahaan: row["Nama Perusahaan"] || "Unknown Company",
             tujuan: row["Tujuan"] || "Unknown Destination",
-            supir: row["Supir"] || "Unknown Driver",
+            driverId: driver?.id || null,
             tanggalKirim: tanggalKirim || new Date().toISOString().split("T")[0],
             tanggalTiba: null,
             waktuTiba: null,
             status: "tertunda",
             kendala: null,
-            qty: row["Jumlah Qty"] || 0
+            qty: row["Jumlah Qty"] || 0,
+            trackingUrl: null,
+            currentLat: null,
+            currentLng: null
           };
         });
         

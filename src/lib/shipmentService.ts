@@ -18,7 +18,8 @@ export const mapSupabaseShipment = (dbShipment: SupabaseShipment): Shipment => {
     qty: dbShipment.qty,
     trackingUrl: dbShipment.tracking_url,
     currentLat: dbShipment.current_lat,
-    currentLng: dbShipment.current_lng
+    currentLng: dbShipment.current_lng,
+    drivers: dbShipment.drivers
   };
 };
 
@@ -77,11 +78,11 @@ export const getDrivers = async (): Promise<Driver[]> => {
   }));
 };
 
-// Get all shipments
+// Get all shipments with driver data
 export const getShipments = async (): Promise<Shipment[]> => {
   const { data, error } = await supabase
     .from('shipments')
-    .select('*')
+    .select('*, drivers (id, name, license_plate)')
     .order('tanggal_kirim', { ascending: false });
 
   if (error) {
@@ -92,11 +93,11 @@ export const getShipments = async (): Promise<Shipment[]> => {
   return (data as SupabaseShipment[]).map(mapSupabaseShipment);
 };
 
-// Get a single shipment by ID
+// Get a single shipment by ID with driver data
 export const getShipmentById = async (id: string): Promise<Shipment | null> => {
   const { data, error } = await supabase
     .from('shipments')
-    .select('*')
+    .select('*, drivers (id, name, license_plate)')
     .eq('id', id)
     .single();
 
@@ -130,7 +131,7 @@ export const createShipment = async (shipment: Omit<Shipment, 'id'>): Promise<Sh
       current_lat: shipment.currentLat,
       current_lng: shipment.currentLng
     })
-    .select()
+    .select('*, drivers (id, name, license_plate)')
     .single();
 
   if (error) {
@@ -152,7 +153,7 @@ export const updateShipment = async (id: string, shipment: Partial<Shipment>): P
     .from('shipments')
     .update(supabaseShipment)
     .eq('id', id)
-    .select()
+    .select('*, drivers (id, name, license_plate)')
     .single();
 
   if (error) {
@@ -214,7 +215,7 @@ export const batchImportShipments = async (shipments: Omit<Shipment, 'id'>[]): P
   const { data, error } = await supabase
     .from('shipments')
     .insert(supabaseShipments)
-    .select();
+    .select('*, drivers (id, name, license_plate)');
 
   if (error) {
     console.error('Error batch importing shipments:', error);
@@ -249,7 +250,7 @@ export const subscribeToShipments = (callback: (shipments: Shipment[]) => void) 
       // When there's a change, fetch latest data and call callback
       const { data } = await supabase
         .from('shipments')
-        .select('*')
+        .select('*, drivers (id, name, license_plate)')
         .order('tanggal_kirim', { ascending: false });
         
       if (data) {
