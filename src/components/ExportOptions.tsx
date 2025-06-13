@@ -1,3 +1,4 @@
+
 import React, { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -48,7 +49,7 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
           `"${shipment.noSuratJalan}"`,
           `"${shipment.perusahaan}"`,
           `"${shipment.tujuan}"`,
-          `"${shipment.supir}"`,
+          `"${shipment.drivers?.name || ""}"`,
           `"${shipment.tanggalKirim}"`,
           `"${shipment.tanggalTiba || ""}"`,
           `"${shipment.waktuTiba || ""}"`,
@@ -110,7 +111,7 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
         shipment.noSuratJalan,
         shipment.perusahaan,
         shipment.tujuan,
-        shipment.supir,
+        shipment.drivers?.name || "",
         shipment.tanggalKirim,
         shipment.tanggalTiba || "-",
         shipment.waktuTiba || "-",
@@ -188,7 +189,7 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
           const row = [
             `"${shipment.noSuratJalan}"`,
             `"${shipment.tujuan}"`,
-            `"${shipment.supir}"`,
+            `"${shipment.drivers?.name || ""}"`,
             `"${shipment.tanggalKirim}"`,
             `"${shipment.tanggalTiba || ""}"`,
             `"${shipment.waktuTiba || ""}"`,
@@ -270,7 +271,7 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
         const tableRows = shipments.map((shipment) => [
           shipment.noSuratJalan,
           shipment.tujuan,
-          shipment.supir,
+          shipment.drivers?.name || "",
           shipment.tanggalKirim,
           shipment.tanggalTiba || "-",
           shipment.waktuTiba || "-",
@@ -559,7 +560,7 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
       
       // Prepare driver statistics
       const driverStats = data.reduce((acc, shipment) => {
-        const driverName = shipment.supir;
+        const driverName = shipment.drivers?.name;
         if (!driverName) return acc;
         
         if (!acc[driverName]) {
@@ -653,7 +654,7 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({ data }) => {
         shipment.noSuratJalan,
         shipment.perusahaan,
         shipment.tujuan,
-        shipment.supir,
+        shipment.drivers?.name || "",
         shipment.tanggalKirim,
         shipment.status,
         shipment.qty.toString()

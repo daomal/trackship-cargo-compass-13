@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -112,7 +113,7 @@ const Admin = () => {
         shipment.noSuratJalan.toLowerCase().includes(searchTerm) ||
         shipment.perusahaan.toLowerCase().includes(searchTerm) ||
         shipment.tujuan.toLowerCase().includes(searchTerm) ||
-        shipment.supir.toLowerCase().includes(searchTerm) ||
+        (shipment.drivers?.name && shipment.drivers.name.toLowerCase().includes(searchTerm)) ||
         (shipment.kendala && shipment.kendala.toLowerCase().includes(searchTerm))
       );
     }
@@ -135,7 +136,7 @@ const Admin = () => {
     
     // Filter by driver
     if (filters.driver !== "all") {
-      filtered = filtered.filter(shipment => shipment.supir === filters.driver);
+      filtered = filtered.filter(shipment => shipment.drivers?.name === filters.driver);
     }
     
     // Filter by company
@@ -153,7 +154,7 @@ const Admin = () => {
   };
 
   // Extract all drivers for filter and form
-  const drivers = Array.from(new Set(shipments.map(s => s.supir))).filter(Boolean);
+  const drivers = Array.from(new Set(shipments.map(s => s.drivers?.name).filter(Boolean)));
   
   // Extract all companies for filter
   const companies = Array.from(new Set(shipments.map(s => s.perusahaan))).filter(Boolean);
@@ -248,8 +249,7 @@ const Admin = () => {
                   </CardHeader>
                   <CardContent>
                     <ShipmentForm 
-                      onShipmentCreated={fetchShipments} 
-                      drivers={drivers}
+                      onShipmentCreated={fetchShipments}
                     />
                   </CardContent>
                 </Card>
@@ -274,7 +274,6 @@ const Admin = () => {
               fetchShipments();
               setIsAddDialogOpen(false);
             }}
-            drivers={drivers}
           />
         </DialogContent>
       </Dialog>

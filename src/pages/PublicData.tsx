@@ -84,7 +84,7 @@ const PublicData = () => {
     
     // Filter by driver
     if (filters.driver !== "all") {
-      filtered = filtered.filter(shipment => shipment.supir === filters.driver);
+      filtered = filtered.filter(shipment => shipment.drivers?.name === filters.driver);
     }
 
     // Filter by company
@@ -99,7 +99,7 @@ const PublicData = () => {
         shipment.noSuratJalan.toLowerCase().includes(query) ||
         shipment.perusahaan.toLowerCase().includes(query) ||
         shipment.tujuan.toLowerCase().includes(query) ||
-        shipment.supir.toLowerCase().includes(query)
+        (shipment.drivers?.name && shipment.drivers.name.toLowerCase().includes(query))
       );
     }
     
@@ -107,7 +107,7 @@ const PublicData = () => {
   };
 
   // Extract all drivers for filter
-  const drivers = Array.from(new Set(shipments.map(s => s.supir))).filter(Boolean);
+  const drivers = Array.from(new Set(shipments.map(s => s.drivers?.name).filter(Boolean)));
   
   // Extract all companies for filter
   const companies = Array.from(new Set(shipments.map(s => s.perusahaan))).filter(Boolean);
@@ -240,7 +240,7 @@ const PublicData = () => {
                                   </TableCell>
                                   <TableCell className="text-black">{shipment.perusahaan}</TableCell>
                                   <TableCell className="text-black">{shipment.tujuan}</TableCell>
-                                  <TableCell className="text-black">{shipment.supir}</TableCell>
+                                  <TableCell className="text-black">{shipment.drivers?.name || ""}</TableCell>
                                   <TableCell className="text-black">{shipment.tanggalKirim}</TableCell>
                                   <TableCell className="text-black">
                                     {shipment.tanggalTiba 
