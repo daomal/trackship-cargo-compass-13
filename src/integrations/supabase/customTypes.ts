@@ -123,6 +123,44 @@ export interface ExtendedDatabase extends GeneratedDatabase {
           }
         ]
       }
+      kendala_reports: {
+        Row: {
+          id: string
+          created_at: string
+          shipment_id: string
+          user_id: string | null
+          author_name: string
+          message: string
+          photo_url: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          shipment_id: string
+          user_id?: string | null
+          author_name: string
+          message: string
+          photo_url?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          shipment_id?: string
+          user_id?: string | null
+          author_name?: string
+          message?: string
+          photo_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kendala_reports_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "shipments"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       status_history: {
         Row: {
           id: string
