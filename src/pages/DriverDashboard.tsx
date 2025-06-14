@@ -16,7 +16,7 @@ const DriverDashboard = () => {
   const navigate = useNavigate();
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [gpsStatus, setGpsStatus] = useState<string>('Meminta izin...');
+  const [gpsStatus, setGpsStatus] = useState<string>('Memulai GPS...');
   const [trackingShipments, setTrackingShipments] = useState<Set<string>>(new Set());
   const [gpsPermissionGranted, setGpsPermissionGranted] = useState(false);
 
@@ -33,33 +33,42 @@ const DriverDashboard = () => {
   }, [profile, navigate]);
 
   const initializeGPSAndFetchShipments = async () => {
-    // First request GPS permissions
+    // First fetch shipments, then try GPS
+    await fetchDriverShipments();
+    
+    // Start GPS tracking without explicit permission request
     try {
-      setGpsStatus('Meminta izin...');
-      const permissions = await Geolocation.requestPermissions();
+      setGpsStatus('Mencari lokasi...');
       
-      if (permissions.location === 'granted') {
-        setGpsPermissionGranted(true);
-        setGpsStatus('Mencari lokasi...');
-        
-        // Fetch shipments after GPS permission is granted
-        await fetchDriverShipments();
-        
-        // Start automatic tracking if there are shipments
-        setTimeout(() => {
-          startAutoTracking();
-        }, 1000);
-      } else {
-        setGpsStatus('Izin GPS ditolak ❌');
-        toast.error('Izin lokasi diperlukan untuk pelacakan GPS');
-        // Still fetch shipments even without GPS
-        await fetchDriverShipments();
-      }
+      // Try to start GPS watch directly - this will trigger browser permission automatically
+      const watchId = await Geolocation.watchPosition(
+        { 
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 3000
+        }, 
+        (position, err) => {
+          if (err || !position) {
+            console.error('GPS Error:', err);
+            setGpsStatus('Gagal mendapatkan lokasi ❌');
+            setGpsPermissionGranted(false);
+            return;
+          }
+          
+          setGpsStatus('GPS Terhubung ✅');
+          setGpsPermissionGranted(true);
+          
+          // Start auto tracking after GPS is working
+          setTimeout(() => {
+            startAutoTracking();
+          }, 1000);
+        }
+      );
+      
     } catch (error) {
-      console.error('GPS Permission Error:', error);
-      setGpsStatus('Izin GPS ditolak ❌');
-      // Still fetch shipments even with GPS error
-      await fetchDriverShipments();
+      console.error('GPS Permission/Watch Error:', error);
+      setGpsStatus('Izin GPS ditolak atau tidak tersedia ❌');
+      setGpsPermissionGranted(false);
     }
   };
 
@@ -168,7 +177,7 @@ const DriverDashboard = () => {
 
   const handleStartTracking = async (shipmentId: string) => {
     if (!gpsPermissionGranted) {
-      toast.error('Izin GPS diperlukan untuk memulai pelacakan');
+      toast.error('GPS belum tersedia atau izin ditolak');
       return;
     }
 

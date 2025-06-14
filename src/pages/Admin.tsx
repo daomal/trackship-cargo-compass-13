@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Database, LogOut, Settings } from "lucide-react";
@@ -12,26 +12,38 @@ const Admin = () => {
   const { isAdmin, user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      toast({
-        title: "Akses ditolak",
-        description: "Silakan login terlebih dahulu",
-        variant: "destructive",
-      });
-      navigate('/auth');
-      return;
-    }
-    
-    if (!isAdmin) {
-      toast({
-        title: "Akses ditolak",
-        description: "Anda tidak memiliki akses admin",
-        variant: "destructive",
-      });
-      navigate('/');
-    }
+    // Wait for auth context to be fully loaded before checking
+    const checkAuth = async () => {
+      // Give a small delay to ensure auth context is initialized
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      if (!user) {
+        toast({
+          title: "Akses ditolak",
+          description: "Silakan login terlebih dahulu",
+          variant: "destructive",
+        });
+        navigate('/auth');
+        return;
+      }
+      
+      if (!isAdmin) {
+        toast({
+          title: "Akses ditolak",
+          description: "Anda tidak memiliki akses admin",
+          variant: "destructive",
+        });
+        navigate('/');
+        return;
+      }
+      
+      setAuthChecked(true);
+    };
+
+    checkAuth();
   }, [isAdmin, user, navigate, toast]);
 
   const handleDataManagement = () => {
@@ -45,6 +57,15 @@ const Admin = () => {
   const handleLogout = () => {
     signOut();
   };
+
+  // Show loading while auth is being checked
+  if (!authChecked) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="animate-spin h-12 w-12 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
