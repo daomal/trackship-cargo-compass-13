@@ -11,29 +11,24 @@ const Admin = () => {
   const navigate = useNavigate();
 
   React.useEffect(() => {
-    if (!isLoading) {
-      if (!user) {
-        navigate('/auth');
-      } else if (!isAdmin) {
-        toast.error("Akses Ditolak: Anda tidak memiliki hak akses admin.");
-        navigate('/');
-      }
+    if (isLoading) return; // Jangan lakukan apa-apa jika masih loading
+
+    if (!user) {
+      navigate('/auth');
+    } else if (!isAdmin) {
+      toast.error("Akses Ditolak", { description: "Anda bukan admin." });
+      navigate('/');
     }
   }, [isLoading, user, isAdmin, navigate]);
 
-  if (isLoading) {
-    return <div className="p-4">Memuat data...</div>;
+  if (isLoading || !isAdmin) {
+    return <div className="flex h-screen w-full items-center justify-center"><p>Memvalidasi akses...</p></div>;
   }
 
   return (
-    <div className="relative h-screen w-screen">
-      <div className="absolute top-4 right-4 z-[1000] space-x-2">
-        <Button onClick={() => navigate('/admin/data')}>
-          Manajemen Data
-        </Button>
-        <Button onClick={() => navigate('/admin/kendala')}>
-          Laporan Kendala
-        </Button>
+    <div style={{ height: '100vh', width: '100vw', position: 'relative' }}>
+      <div className="absolute top-4 right-4 z-[1000] flex space-x-2">
+        <Button onClick={() => navigate('/admin/data')}>Manajemen Data</Button>
       </div>
       <TrackingMap />
     </div>
