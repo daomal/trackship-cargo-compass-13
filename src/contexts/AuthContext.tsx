@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Session } from '@supabase/supabase-js';
@@ -36,28 +37,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let mounted = true;
 
-    const initializeAuth = () => {
-      supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-        if (!mounted) return;
+    const initializeAuth = async () => {
+      try {
+        // Get existing session first
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
         console.log("Initial session check:", currentSession);
         
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-        
-        if (currentSession?.user) {
-          fetchUserProfile(currentSession.user.id);
-          ensureUserInProfiles();
-        } else {
-          setIsLoading(false);
+        if (mounted) {
+          setSession(currentSession);
+          setUser(currentSession?.user ?? null);
+          
+          if (currentSession?.user) {
+            await fetchUserProfile(currentSession.user.id);
+            ensureUserInProfiles();
+          } else {
+            setIsLoading(false);
+          }
+          setIsInitialized(true);
         }
-        setIsInitialized(true);
-      }).catch(error => {
+      } catch (error) {
         console.error('Error initializing auth:', error);
         if (mounted) {
           setIsLoading(false);
           setIsInitialized(true);
         }
-      });
+      }
     };
 
     // Initialize auth
@@ -65,7 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Listen for authentication state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log("Auth state changed:", event, session);
         
         if (!mounted) return;
@@ -74,7 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          fetchUserProfile(session.user.id);
+          await fetchUserProfile(session.user.id);
           ensureUserInProfiles();
         } else {
           setProfile(null);
@@ -134,15 +138,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('Error fetching user profile:', error);
-        setProfile(null);
-      } else {
-        console.log('User profile fetched:', data);
-        setProfile(data as UserProfile);
+        setIsLoading(false);
+        return;
       }
+
+      console.log('User profile fetched:', data);
+      setProfile(data as UserProfile);
+      setIsLoading(false);
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
-      setProfile(null);
-    } finally {
       setIsLoading(false);
     }
   };
