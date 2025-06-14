@@ -2,7 +2,7 @@
 import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Database, LogOut, Settings } from "lucide-react";
+import { Database, LogOut, Settings, FileText, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -24,35 +24,66 @@ const Admin = () => {
 
   // 2. Handle auth checks after loading is complete
   useEffect(() => {
-    // Only run checks if loading is finished
+    console.log('Admin page - checking auth:', { isLoading, user: !!user, isAdmin });
+    
     if (!isLoading) {
       if (!user) {
-        // If no user at all, redirect to auth
+        console.log('No user, redirecting to auth');
         navigate('/auth');
       } else if (!isAdmin) {
-        // If user exists but not admin, redirect to home
+        console.log('User is not admin, redirecting to home');
         toast({
           title: "Akses Ditolak",
           description: "Anda tidak memiliki hak akses admin.",
           variant: "destructive",
         });
         navigate('/');
+      } else {
+        console.log('User is admin, staying on admin page');
       }
-      // If user exists and is admin, do nothing (let page render)
     }
   }, [isLoading, user, isAdmin, navigate, toast]);
 
   const handleDataManagement = () => {
+    console.log('Navigating to admin data management');
     navigate('/admin/data');
   };
 
   const handleReportsView = () => {
+    console.log('Viewing reports');
+    toast({
+      title: "Laporan Kendala",
+      description: "Navigasi ke halaman laporan kendala",
+    });
+    navigate('/admin/data');
+  };
+
+  const handleExportData = () => {
+    console.log('Exporting data');
+    toast({
+      title: "Export Data",
+      description: "Fitur export akan segera tersedia",
+    });
+  };
+
+  const handleForumChat = () => {
+    console.log('Opening forum chat');
+    toast({
+      title: "Forum Chat",
+      description: "Navigasi ke forum komunikasi",
+    });
     navigate('/admin/data');
   };
 
   const handleLogout = () => {
+    console.log('Admin logging out');
     signOut();
   };
+
+  // Don't render anything if we're still checking auth or user is not admin
+  if (!user || !isAdmin) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -102,14 +133,26 @@ const Admin = () => {
                 <Button 
                   variant="outline"
                   onClick={handleReportsView}
+                  className="bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-300"
                 >
+                  <FileText className="h-4 w-4 mr-2" />
                   Lihat Laporan Kendala
                 </Button>
                 <Button 
                   variant="outline"
-                  onClick={handleDataManagement}
+                  onClick={handleExportData}
+                  className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
                 >
+                  <Download className="h-4 w-4 mr-2" />
                   Export Data
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={handleForumChat}
+                  className="bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-300"
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Forum Chat
                 </Button>
               </div>
             </CardContent>

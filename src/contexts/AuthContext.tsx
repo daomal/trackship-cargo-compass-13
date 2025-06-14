@@ -33,27 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Listen for authentication state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log("Auth state changed:", event, session);
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Schedule the profile fetch to avoid recursive policy issues
-          setTimeout(() => {
-            fetchUserProfile(session.user.id);
-            // Ensure the user exists in the profiles table
-            ensureUserInProfiles();
-          }, 0);
-        } else {
-          setProfile(null);
-        }
-      }
-    );
-
-    // Check for existing session
+    // Check for existing session first
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log("Initial session check:", session);
       setSession(session);
@@ -61,10 +41,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (session?.user) {
         fetchUserProfile(session.user.id);
+      } else {
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
     });
+
+    // Listen for authentication state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log("Auth state changed:", event, session);
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Fetch profile immediately after auth state change
+          await fetchUserProfile(session.user.id);
+          // Ensure the user exists in the profiles table
+          ensureUserInProfiles();
+        } else {
+          setProfile(null);
+          setIsLoading(false);
+        }
+      }
+    );
 
     return () => {
       subscription.unsubscribe();
@@ -73,7 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Redirect logic after profile is loaded
   useEffect(() => {
-    if (profile && user) {
+    if (profile && user && !isLoading) {
       const currentPath = window.location.pathname;
       
       // Don't redirect if already on the correct page
@@ -82,15 +81,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Redirect based on user role after successful login
       if (profile.role === 'admin') {
+        console.log('User is admin, redirecting to admin panel');
         navigate('/admin');
       } else if (profile.driver_id) {
+        console.log('User is driver, redirecting to driver dashboard');
         navigate('/dashboard-supir');
       }
     }
-  }, [profile, user, navigate]);
+  }, [profile, user, isLoading, navigate]);
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      console.log('Fetching profile for user:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('id, name, role, created_at, driver_id')
@@ -99,38 +101,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('Error fetching user profile:', error);
+        setIsLoading(false);
         return;
       }
 
       console.log('User profile fetched:', data);
       setProfile(data as UserProfile);
+      setIsLoading(false);
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
+      setIsLoading(false);
     }
   };
 
   const signIn = async (email: string, password: string) => {
     try {
       console.log("Attempting sign in with:", email);
+      setIsLoading(true);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       console.log("Sign in response:", data, error);
-      
-      if (!error && data?.user) {
-        // Fetch profile immediately after successful login
-        setTimeout(() => {
-          if (data.user) {
-            fetchUserProfile(data.user.id);
-          }
-        }, 0);
-      }
 
       return { data, error };
     } catch (error) {
       console.error('Sign in error:', error);
+      setIsLoading(false);
       return { error, data: null };
     }
   };
@@ -169,8 +168,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Always check if the profile has admin role
+  // Check if the profile has admin role - only return true if profile is loaded and role is admin
   const isAdmin = profile?.role === 'admin';
+
+  console.log('Auth context state:', { user: !!user, profile, isAdmin, isLoading });
 
   return (
     <AuthContext.Provider
