@@ -15,6 +15,7 @@ L.Icon.Default.mergeOptions({
 
 const TrackingMap = () => {
   const [activeShipments, setActiveShipments] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const mapCenter: [number, number] = [-2.548926, 118.0148634];
 
   useEffect(() => {
@@ -28,14 +29,17 @@ const TrackingMap = () => {
         
         if (error) {
           console.error('Error fetching shipments:', error);
+          setIsLoading(false);
           return;
         }
         
         if (data) {
           setActiveShipments(data);
         }
+        setIsLoading(false);
       } catch (error) {
         console.error('Error in fetchActiveShipments:', error);
+        setIsLoading(false);
       }
     };
 
@@ -57,25 +61,45 @@ const TrackingMap = () => {
     };
   }, []);
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full w-full bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Memuat peta...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <MapContainer center={mapCenter} zoom={5} style={{ height: '100%', width: '100%' }}>
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      />
-      {activeShipments.map(shipment => {
-        if (!shipment.current_lat || !shipment.current_lng) return null;
-        
-        return (
-          <Marker key={shipment.id} position={[shipment.current_lat, shipment.current_lng]}>
-            <Popup>
-              <b>{shipment.drivers?.name || 'Driver Unknown'}</b> ({shipment.drivers?.license_plate || 'Unknown Plate'})<br/>
-              Tujuan: {shipment.tujuan}
-            </Popup>
-          </Marker>
-        );
-      })}
-    </MapContainer>
+    <div className="h-full w-full">
+      <MapContainer 
+        center={mapCenter} 
+        zoom={5} 
+        style={{ height: '100%', width: '100%' }}
+        key="tracking-map"
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        />
+        {activeShipments.map(shipment => {
+          if (!shipment.current_lat || !shipment.current_lng) return null;
+          
+          return (
+            <Marker key={shipment.id} position={[shipment.current_lat, shipment.current_lng]}>
+              <Popup>
+                <div>
+                  <b>{shipment.drivers?.name || 'Driver Unknown'}</b> ({shipment.drivers?.license_plate || 'Unknown Plate'})<br/>
+                  Tujuan: {shipment.tujuan}
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+      </MapContainer>
+    </div>
   );
 };
 
