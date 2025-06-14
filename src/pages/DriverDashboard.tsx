@@ -12,30 +12,35 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
 const DriverDashboard = () => {
-  const { user, profile } = useAuth();
+  const { user, profile, isLoading } = useAuth();
   const navigate = useNavigate();
   const [shipments, setShipments] = useState<Shipment[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [gpsStatus, setGpsStatus] = useState<string>('Memulai GPS...');
+  const [isLoadingShipments, setIsLoadingShipments] = useState(true);
+  const [gpsStatus, setGpsStatus] = useState<string>('Belum dimulai');
   const [trackingShipments, setTrackingShipments] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    // Wait for auth to be ready
+    if (isLoading) return;
+    
     // Redirect if not a driver
-    if (profile && !profile.driver_id) {
+    if (!profile?.driver_id) {
+      console.log('User is not a driver, redirecting to home');
       navigate('/');
       return;
     }
 
-    if (profile?.driver_id) {
-      fetchDriverShipments();
-    }
-  }, [profile, navigate]);
+    console.log('Driver dashboard initializing for driver:', profile.driver_id);
+    fetchDriverShipments();
+  }, [profile, isLoading, navigate]);
 
   const fetchDriverShipments = async () => {
     if (!profile?.driver_id) return;
 
-    setIsLoading(true);
+    setIsLoadingShipments(true);
     try {
+      console.log('Fetching shipments for driver:', profile.driver_id);
+      
       const { data, error } = await supabase
         .from('shipments')
         .select('*')
@@ -49,19 +54,23 @@ const DriverDashboard = () => {
         return;
       }
 
+      console.log('Fetched shipments:', data?.length || 0);
       const mappedShipments = (data as SupabaseShipment[]).map(mapSupabaseShipment);
       setShipments(mappedShipments);
 
       // Auto-start tracking for the first shipment
       if (mappedShipments.length > 0) {
         const firstShipment = mappedShipments[0];
-        handleStartTracking(firstShipment.id);
+        console.log('Auto-starting GPS for first shipment:', firstShipment.id);
+        setTimeout(() => {
+          handleStartTracking(firstShipment.id);
+        }, 1000); // Small delay to ensure UI is ready
       }
     } catch (error) {
       console.error('Error:', error);
       toast.error('Terjadi kesalahan saat memuat data');
     } finally {
-      setIsLoading(false);
+      setIsLoadingShipments(false);
     }
   };
 
@@ -125,11 +134,19 @@ const DriverDashboard = () => {
 
   const handleStartTracking = async (shipmentId: string) => {
     try {
-      await locationTracker.startTracking(shipmentId, setGpsStatus);
+      console.log('Starting GPS tracking for shipment:', shipmentId);
+      setGpsStatus('Memulai GPS...');
+      
+      await locationTracker.startTracking(shipmentId, (status) => {
+        console.log('GPS status update:', status);
+        setGpsStatus(status);
+      });
+      
       setTrackingShipments(prev => new Set(prev).add(shipmentId));
-      toast.success('GPS tracking dimulai');
+      console.log('GPS tracking started successfully');
     } catch (error) {
       console.error('Error starting tracking:', error);
+      setGpsStatus('Error GPS ❌');
       toast.error('Gagal memulai pelacakan GPS');
     }
   };
@@ -153,10 +170,13 @@ const DriverDashboard = () => {
     navigate(`/forum-kendala/${shipmentId}`);
   };
 
-  if (isLoading) {
+  if (isLoading || isLoadingShipments) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
-        <div className="animate-spin h-12 w-12 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+        <div className="text-center">
+          <div className="animate-spin h-12 w-12 border-4 border-blue-500 rounded-full border-t-transparent mx-auto mb-4"></div>
+          <p>Memuat dashboard supir...</p>
+        </div>
       </div>
     );
   }

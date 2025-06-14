@@ -13,71 +13,47 @@ const Admin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Show loading state while auth is being checked
-  if (isLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <div className="animate-spin h-12 w-12 border-4 border-blue-500 rounded-full border-t-transparent"></div>
-      </div>
-    );
-  }
-
   // Handle auth checks after loading is complete
   useEffect(() => {
-    if (!isLoading) {
-      console.log('Admin page - auth state:', { user: !!user, isAdmin });
-      
-      if (!user) {
-        console.log('No user found, redirecting to auth');
-        navigate('/auth');
-        return;
-      }
-      
-      if (!isAdmin) {
-        console.log('User is not admin, showing access denied');
-        toast({
-          title: "Akses Ditolak",
-          description: "Anda tidak memiliki hak akses admin.",
-          variant: "destructive",
-        });
-        return;
-      }
+    if (isLoading) return; // Don't do anything while loading
+    
+    console.log('Admin page - auth state:', { user: !!user, isAdmin, isLoading });
+    
+    if (!user) {
+      console.log('No user found, redirecting to auth');
+      navigate('/auth');
+      return;
+    }
+    
+    if (!isAdmin) {
+      console.log('User is not admin, showing access denied');
+      toast({
+        title: "Akses Ditolak",
+        description: "Anda tidak memiliki hak akses admin.",
+        variant: "destructive",
+      });
+      navigate('/');
+      return;
     }
   }, [isLoading, user, isAdmin, navigate, toast]);
 
   const handleDataManagement = () => {
     console.log('Navigating to admin data management');
-    toast({
-      title: "Menuju Manajemen Data",
-      description: "Membuka halaman manajemen data pengiriman",
-    });
     navigate('/admin/data');
   };
 
   const handleReportsView = () => {
     console.log('Viewing reports');
-    toast({
-      title: "Menuju Laporan Kendala",
-      description: "Membuka halaman laporan kendala pengiriman",
-    });
     navigate('/admin/data');
   };
 
   const handleExportData = () => {
     console.log('Exporting data');
-    toast({
-      title: "Export Data",
-      description: "Membuka halaman export data pengiriman",
-    });
     navigate('/admin/data');
   };
 
   const handleForumChat = () => {
     console.log('Opening forum chat');
-    toast({
-      title: "Forum Chat",
-      description: "Membuka halaman manajemen forum komunikasi",
-    });
     navigate('/admin/data');
   };
 
@@ -99,7 +75,19 @@ const Admin = () => {
     }
   };
 
-  // Show access denied if not admin but don't redirect
+  // Show loading while auth is being determined
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin h-12 w-12 border-4 border-blue-500 rounded-full border-t-transparent mx-auto mb-4"></div>
+          <p>Memvalidasi akses admin...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show access denied if not authenticated
   if (!user) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -112,6 +100,7 @@ const Admin = () => {
     );
   }
 
+  // Show access denied if not admin
   if (!isAdmin) {
     return (
       <div className="flex h-screen w-full items-center justify-center">

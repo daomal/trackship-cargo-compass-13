@@ -13,8 +13,9 @@ class LocationTracker {
 
   async requestPermissions(): Promise<boolean> {
     try {
+      console.log('Requesting location permissions...');
       const permissions = await Geolocation.requestPermissions();
-      console.log('Location permissions:', permissions);
+      console.log('Location permissions result:', permissions);
       return permissions.location === 'granted';
     } catch (error) {
       console.error('Error requesting location permissions:', error);
@@ -23,6 +24,8 @@ class LocationTracker {
   }
 
   async startTracking(shipmentId: string, onStatusChange?: StatusCallback): Promise<void> {
+    console.log('Starting GPS tracking for shipment:', shipmentId);
+    
     if (this.isTracking && this.currentShipmentId === shipmentId) {
       console.log('Already tracking this shipment');
       return;
@@ -37,22 +40,22 @@ class LocationTracker {
     this.statusCallback = onStatusChange || null;
     this.updateStatus('Meminta izin lokasi...');
 
-    const hasPermission = await this.requestPermissions();
-    if (!hasPermission) {
-      this.updateStatus('Izin lokasi ditolak ❌');
-      toast.error('Izin lokasi diperlukan untuk pelacakan GPS');
-      return;
-    }
-
-    this.updateStatus('Mencari lokasi...');
-    console.log('Starting location tracking for shipment:', shipmentId);
-
     try {
+      const hasPermission = await this.requestPermissions();
+      if (!hasPermission) {
+        this.updateStatus('Izin lokasi ditolak ❌');
+        toast.error('Izin lokasi diperlukan untuk pelacakan GPS');
+        return;
+      }
+
+      this.updateStatus('Memulai GPS...');
+      console.log('Starting location watch...');
+
       this.watchId = await Geolocation.watchPosition(
         {
           enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 30000, // 30 seconds
+          timeout: 10000,
+          maximumAge: 5000,
         },
         (position, err) => {
           if (err) {
@@ -63,7 +66,7 @@ class LocationTracker {
           }
 
           if (position && this.currentShipmentId) {
-            console.log('New GPS position:', {
+            console.log('New GPS position received:', {
               lat: position.coords.latitude,
               lng: position.coords.longitude,
               accuracy: position.coords.accuracy,
@@ -75,14 +78,16 @@ class LocationTracker {
               position.coords.latitude, 
               position.coords.longitude
             );
+            
             this.updateStatus(`GPS Aktif ✅ (±${Math.round(position.coords.accuracy)}m)`);
           }
         }
       );
 
       this.isTracking = true;
-      toast.success('Pelacakan GPS dimulai untuk pengiriman ini');
-      console.log('GPS tracking started successfully');
+      console.log('GPS tracking started successfully with watchId:', this.watchId);
+      toast.success('GPS tracking berhasil dimulai');
+      
     } catch (error) {
       console.error('Error starting location tracking:', error);
       this.updateStatus('Gagal memulai GPS ❌');
@@ -99,8 +104,8 @@ class LocationTracker {
         this.isTracking = false;
         this.currentShipmentId = null;
         this.updateStatus('GPS Dihentikan');
-        toast.success('Pelacakan GPS dihentikan');
         console.log('GPS tracking stopped successfully');
+        toast.success('Pelacakan GPS dihentikan');
       } catch (error) {
         console.error('Error stopping location tracking:', error);
         toast.error('Error saat menghentikan GPS');
@@ -130,11 +135,9 @@ class LocationTracker {
 
       if (error) {
         console.error('Error updating shipment location:', error);
-        toast.error('Gagal update lokasi ke database: ' + error.message);
+        toast.error('Gagal update lokasi: ' + error.message);
       } else {
         console.log('✅ Location successfully updated in database');
-        // Tambahkan feedback visual bahwa data tersimpan
-        toast.success('📍 Lokasi tersimpan ke database', { duration: 2000 });
       }
     } catch (error) {
       console.error('Error updating location:', error);
