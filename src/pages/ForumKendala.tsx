@@ -117,7 +117,10 @@ const ForumKendala = () => {
       return;
     }
 
-    if (!user || !shipmentId) return;
+    if (!user || !shipmentId) {
+      toast.error('Anda harus login untuk mengirim pesan');
+      return;
+    }
 
     setIsSending(true);
 

@@ -16,7 +16,7 @@ const DriverDashboard = () => {
   const navigate = useNavigate();
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [gpsStatus, setGpsStatus] = useState<string>('Meminta Izin GPS...');
+  const [gpsStatus, setGpsStatus] = useState<string>('Meminta izin...');
   const [trackingShipments, setTrackingShipments] = useState<Set<string>>(new Set());
   const [gpsPermissionGranted, setGpsPermissionGranted] = useState(false);
 
@@ -35,12 +35,12 @@ const DriverDashboard = () => {
   const initializeGPSAndFetchShipments = async () => {
     // First request GPS permissions
     try {
-      setGpsStatus('Meminta Izin GPS...');
+      setGpsStatus('Meminta izin...');
       const permissions = await Geolocation.requestPermissions();
       
       if (permissions.location === 'granted') {
         setGpsPermissionGranted(true);
-        setGpsStatus('GPS Siap Digunakan 🟢');
+        setGpsStatus('Mencari lokasi...');
         
         // Fetch shipments after GPS permission is granted
         await fetchDriverShipments();
@@ -50,14 +50,14 @@ const DriverDashboard = () => {
           startAutoTracking();
         }, 1000);
       } else {
-        setGpsStatus('Izin GPS Ditolak ❌');
+        setGpsStatus('Izin GPS ditolak ❌');
         toast.error('Izin lokasi diperlukan untuk pelacakan GPS');
         // Still fetch shipments even without GPS
         await fetchDriverShipments();
       }
     } catch (error) {
-      console.error('Error requesting GPS permissions:', error);
-      setGpsStatus('Error GPS ⚠️');
+      console.error('GPS Permission Error:', error);
+      setGpsStatus('Izin GPS ditolak ❌');
       // Still fetch shipments even with GPS error
       await fetchDriverShipments();
     }
@@ -99,8 +99,10 @@ const DriverDashboard = () => {
         try {
           await locationTracker.startTracking(activeShipment.id, setGpsStatus);
           setTrackingShipments(prev => new Set(prev).add(activeShipment.id));
+          setGpsStatus('GPS Terhubung ✅');
         } catch (error) {
           console.error('Error starting auto tracking:', error);
+          setGpsStatus('Error GPS ⚠️');
         }
       }
     }
@@ -173,6 +175,7 @@ const DriverDashboard = () => {
     try {
       await locationTracker.startTracking(shipmentId, setGpsStatus);
       setTrackingShipments(prev => new Set(prev).add(shipmentId));
+      setGpsStatus('GPS Terhubung ✅');
     } catch (error) {
       console.error('Error starting tracking:', error);
       toast.error('Gagal memulai pelacakan GPS');
@@ -198,29 +201,7 @@ const DriverDashboard = () => {
   };
 
   const handleLaporKendala = async (shipmentId: string) => {
-    const kendala = prompt('Pilih kendala:\n1. Ban Bocor\n2. Macet\n3. Mesin Rusak\n4. Lainnya\n\nMasukkan nomor (1-4):');
-    if (kendala) {
-      const kendalaOptions = ["Ban Bocor", "Macet", "Mesin Rusak", "Lainnya"];
-      const kendalaIndex = parseInt(kendala) - 1;
-      if (kendalaIndex >= 0 && kendalaIndex < kendalaOptions.length) {
-        const { error } = await supabase
-          .from('shipments')
-          .update({
-            status: 'gagal',
-            kendala: kendalaOptions[kendalaIndex],
-            updated_at: new Date().toISOString(),
-            updated_by: user?.id
-          })
-          .eq('id', shipmentId);
-
-        if (!error) {
-          toast.success(`Kendala dilaporkan: ${kendalaOptions[kendalaIndex]}`);
-          fetchDriverShipments();
-        } else {
-          toast.error('Gagal melaporkan kendala');
-        }
-      }
-    }
+    navigate(`/forum-kendala/${shipmentId}`);
   };
 
   if (isLoading) {
@@ -251,7 +232,7 @@ const DriverDashboard = () => {
                   <Navigation className="h-5 w-5 text-blue-600" />
                   <span className="font-semibold">Status GPS:</span>
                 </div>
-                <Badge variant={gpsStatus.includes('✅') || gpsStatus.includes('🟢') ? 'default' : 'secondary'}>
+                <Badge variant={gpsStatus.includes('✅') || gpsStatus.includes('Terhubung') ? 'default' : 'secondary'}>
                   {gpsStatus}
                 </Badge>
               </div>
