@@ -13,7 +13,7 @@ const DriverDashboard = () => {
   const navigate = useNavigate();
   const [myShipments, setMyShipments] = useState<any[]>([]);
   const [gpsStatus, setGpsStatus] = useState('Menunggu...');
-  const [trackingId, setTrackingId] = useState<string | null>(null);
+  const [activeWatchId, setActiveWatchId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!profile || !profile.driver_id) return;
@@ -30,53 +30,44 @@ const DriverDashboard = () => {
       } else if (data && data.length > 0) {
         setMyShipments(data);
         const activeShipmentId = data[0].id;
-        startTracking(activeShipmentId, setGpsStatus).then(setTrackingId);
+        const id = await startTracking(activeShipmentId, setGpsStatus);
+        if (id) setActiveWatchId(id);
       }
     };
 
     fetchMyShipments();
 
     return () => {
-      if (trackingId) {
-        stopTracking();
-      }
+      if (activeWatchId) stopTracking();
     };
   }, [profile]);
 
-  const handleStatusUpdate = async (shipment: any, newStatus: string, kendala: string | null = null) => {
-    const updateObject: any = { status: newStatus, kendala: kendala };
-    if (newStatus === 'terkirim') {
-      updateObject.tanggal_tiba = new Date().toISOString();
-      updateObject.waktu_tiba = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-      if (trackingId) stopTracking();
-    }
-    const { error } = await supabase.from('shipments').update(updateObject).eq('id', shipment.id);
-    if (error) toast.error('Gagal update status');
-    else {
-      toast.success('Status berhasil diperbarui!');
-      setMyShipments(prev => prev.filter(s => s.id !== shipment.id));
-    }
-  };
+  const handleCompleteShipment = async (shipment) => {
+      if (activeWatchId) stopTracking();
+      const { error } = await supabase.from('shipments').update({ status: 'terkirim', tanggal_tiba: new Date().toISOString() }).eq('id', shipment.id);
+      if(error) toast.error('Gagal update status');
+      else {
+          toast.success('Pengiriman Selesai!');
+          setMyShipments(prev => prev.filter(s => s.id !== shipment.id));
+      }
+  }
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="p-2 bg-gray-100 rounded-md text-center font-semibold">
-        Status GPS: {gpsStatus}
+    <div className="p-4 space-y-4 max-w-lg mx-auto">
+      <div className="p-3 bg-blue-100 text-blue-800 rounded-lg text-center font-bold shadow-sm">
+          Status GPS: {gpsStatus}
       </div>
       <h1 className="text-2xl font-bold">Tugas Pengiriman Anda</h1>
+      {!myShipments.length && <p>Tidak ada tugas pengiriman aktif.</p>}
       {myShipments.map(shipment => (
         <Card key={shipment.id}>
           <CardHeader>
             <CardTitle>{shipment.tujuan}</CardTitle>
             <p>No. SJ: {shipment.no_surat_jalan}</p>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <Button className="w-full bg-green-600" onClick={() => handleStatusUpdate(shipment, 'terkirim')}>
-              ✅ Sampai Tujuan
-            </Button>
-            <Button className="w-full bg-red-600" onClick={() => navigate(`/forum-kendala/${shipment.id}`)}>
-              ⚠️ Lapor Kendala
-            </Button>
+          <CardContent className="grid grid-cols-2 gap-3">
+            <Button className="py-6 bg-green-600 hover:bg-green-700" onClick={() => handleCompleteShipment(shipment)}>✅ Sampai Tujuan</Button>
+            <Button className="py-6 bg-red-600 hover:bg-red-700" onClick={() => navigate(`/forum-kendala/${shipment.id}`)}>⚠️ Lapor Kendala</Button>
           </CardContent>
         </Card>
       ))}
