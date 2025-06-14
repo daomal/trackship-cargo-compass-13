@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,14 +9,16 @@ import { Shipment, SupabaseShipment } from '@/lib/types';
 import { locationTracker } from '@/services/locationTracker';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { Geolocation } from '@capacitor/geolocation';
 
 const DriverDashboard = () => {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [gpsStatus, setGpsStatus] = useState<string>('GPS Tidak Aktif');
+  const [gpsStatus, setGpsStatus] = useState<string>('Meminta Izin GPS...');
   const [trackingShipments, setTrackingShipments] = useState<Set<string>>(new Set());
+  const [gpsPermissionGranted, setGpsPermissionGranted] = useState(false);
 
   useEffect(() => {
     // Redirect if not a driver
@@ -27,11 +28,40 @@ const DriverDashboard = () => {
     }
 
     if (profile?.driver_id) {
-      fetchDriverShipments();
-      // Start automatic GPS tracking for all pending shipments
-      startAutoTracking();
+      initializeGPSAndFetchShipments();
     }
   }, [profile, navigate]);
+
+  const initializeGPSAndFetchShipments = async () => {
+    // First request GPS permissions
+    try {
+      setGpsStatus('Meminta Izin GPS...');
+      const permissions = await Geolocation.requestPermissions();
+      
+      if (permissions.location === 'granted') {
+        setGpsPermissionGranted(true);
+        setGpsStatus('GPS Siap Digunakan 🟢');
+        
+        // Fetch shipments after GPS permission is granted
+        await fetchDriverShipments();
+        
+        // Start automatic tracking if there are shipments
+        setTimeout(() => {
+          startAutoTracking();
+        }, 1000);
+      } else {
+        setGpsStatus('Izin GPS Ditolak ❌');
+        toast.error('Izin lokasi diperlukan untuk pelacakan GPS');
+        // Still fetch shipments even without GPS
+        await fetchDriverShipments();
+      }
+    } catch (error) {
+      console.error('Error requesting GPS permissions:', error);
+      setGpsStatus('Error GPS ⚠️');
+      // Still fetch shipments even with GPS error
+      await fetchDriverShipments();
+    }
+  };
 
   const fetchDriverShipments = async () => {
     if (!profile?.driver_id) return;
@@ -62,7 +92,7 @@ const DriverDashboard = () => {
   };
 
   const startAutoTracking = async () => {
-    if (shipments.length > 0) {
+    if (shipments.length > 0 && gpsPermissionGranted) {
       // Start tracking for the first active shipment
       const activeShipment = shipments[0];
       if (activeShipment) {
@@ -135,6 +165,11 @@ const DriverDashboard = () => {
   };
 
   const handleStartTracking = async (shipmentId: string) => {
+    if (!gpsPermissionGranted) {
+      toast.error('Izin GPS diperlukan untuk memulai pelacakan');
+      return;
+    }
+
     try {
       await locationTracker.startTracking(shipmentId, setGpsStatus);
       setTrackingShipments(prev => new Set(prev).add(shipmentId));
@@ -155,6 +190,36 @@ const DriverDashboard = () => {
       });
     } catch (error) {
       console.error('Error stopping tracking:', error);
+    }
+  };
+
+  const handleForumKendala = (shipmentId: string) => {
+    navigate(`/forum-kendala/${shipmentId}`);
+  };
+
+  const handleLaporKendala = async (shipmentId: string) => {
+    const kendala = prompt('Pilih kendala:\n1. Ban Bocor\n2. Macet\n3. Mesin Rusak\n4. Lainnya\n\nMasukkan nomor (1-4):');
+    if (kendala) {
+      const kendalaOptions = ["Ban Bocor", "Macet", "Mesin Rusak", "Lainnya"];
+      const kendalaIndex = parseInt(kendala) - 1;
+      if (kendalaIndex >= 0 && kendalaIndex < kendalaOptions.length) {
+        const { error } = await supabase
+          .from('shipments')
+          .update({
+            status: 'gagal',
+            kendala: kendalaOptions[kendalaIndex],
+            updated_at: new Date().toISOString(),
+            updated_by: user?.id
+          })
+          .eq('id', shipmentId);
+
+        if (!error) {
+          toast.success(`Kendala dilaporkan: ${kendalaOptions[kendalaIndex]}`);
+          fetchDriverShipments();
+        } else {
+          toast.error('Gagal melaporkan kendala');
+        }
+      }
     }
   };
 
@@ -186,7 +251,7 @@ const DriverDashboard = () => {
                   <Navigation className="h-5 w-5 text-blue-600" />
                   <span className="font-semibold">Status GPS:</span>
                 </div>
-                <Badge variant={gpsStatus.includes('✅') ? 'default' : 'secondary'}>
+                <Badge variant={gpsStatus.includes('✅') || gpsStatus.includes('🟢') ? 'default' : 'secondary'}>
                   {gpsStatus}
                 </Badge>
               </div>
@@ -256,6 +321,7 @@ const DriverDashboard = () => {
                         onClick={() => handleStartTracking(shipment.id)}
                         variant="outline"
                         className="flex items-center gap-2 bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100"
+                        disabled={!gpsPermissionGranted}
                       >
                         <Navigation className="h-4 w-4" />
                         Aktifkan GPS
@@ -274,7 +340,7 @@ const DriverDashboard = () => {
                     </Button>
                     
                     <Button
-                      onClick={() => navigate(`/forum-kendala/${shipment.id}`)}
+                      onClick={() => handleForumKendala(shipment.id)}
                       variant="outline"
                       className="bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-300 h-14 text-lg font-semibold flex items-center justify-center gap-2 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-105"
                     >
@@ -283,28 +349,7 @@ const DriverDashboard = () => {
                     </Button>
                     
                     <Button
-                      onClick={() => {
-                        const kendala = prompt('Pilih kendala:\n1. Ban Bocor\n2. Macet\n3. Mesin Rusak\n4. Lainnya\n\nMasukkan nomor (1-4):');
-                        if (kendala) {
-                          const kendalaOptions = ["Ban Bocor", "Macet", "Mesin Rusak",  "Lainnya"];
-                          const kendalaIndex = parseInt(kendala) - 1;
-                          if (kendalaIndex >= 0 && kendalaIndex < kendalaOptions.length) {
-                            supabase
-                              .from('shipments')
-                              .update({
-                                status: 'gagal',
-                                kendala: kendalaOptions[kendalaIndex],
-                                updated_at: new Date().toISOString(),
-                                updated_by: user?.id
-                              })
-                              .eq('id', shipment.id)
-                              .then(() => {
-                                toast.success(`Kendala dilaporkan: ${kendalaOptions[kendalaIndex]}`);
-                                fetchDriverShipments();
-                              });
-                          }
-                        }
-                      }}
+                      onClick={() => handleLaporKendala(shipment.id)}
                       variant="destructive"
                       className="bg-red-600 hover:bg-red-700 text-white h-14 text-lg font-semibold flex items-center justify-center gap-2 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-105"
                     >

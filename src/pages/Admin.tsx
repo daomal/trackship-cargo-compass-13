@@ -34,6 +34,18 @@ const Admin = () => {
     }
   }, [isAdmin, user, navigate, toast]);
 
+  const handleDataManagement = () => {
+    navigate('/admin/data');
+  };
+
+  const handleReportsView = () => {
+    navigate('/admin/data');
+  };
+
+  const handleLogout = () => {
+    signOut();
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="container mx-auto py-6 px-4 md:px-6">
@@ -49,13 +61,13 @@ const Admin = () => {
             <div className="flex gap-4">
               <Button 
                 variant="outline" 
-                onClick={() => navigate('/admin/data')}
+                onClick={handleDataManagement}
                 className="flex items-center gap-2"
               >
                 <Database className="h-4 w-4" />
                 Manajemen Data
               </Button>
-              <Button variant="outline" onClick={() => signOut()}>
+              <Button variant="outline" onClick={handleLogout}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
               </Button>
@@ -73,7 +85,7 @@ const Admin = () => {
             <CardContent>
               <div className="flex flex-wrap gap-4">
                 <Button 
-                  onClick={() => navigate('/admin/data')}
+                  onClick={handleDataManagement}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
                   <Database className="h-4 w-4 mr-2" />
@@ -81,13 +93,13 @@ const Admin = () => {
                 </Button>
                 <Button 
                   variant="outline"
-                  onClick={() => navigate('/admin/data')}
+                  onClick={handleReportsView}
                 >
                   Lihat Laporan Kendala
                 </Button>
                 <Button 
                   variant="outline"
-                  onClick={() => navigate('/admin/data')}
+                  onClick={handleDataManagement}
                 >
                   Export Data
                 </Button>
