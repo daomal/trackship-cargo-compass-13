@@ -1,9 +1,17 @@
-
 import { Geolocation } from '@capacitor/geolocation';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 type StatusCallback = (status: string) => void;
+
+// Declare Capacitor interface to fix TypeScript error
+declare global {
+  interface Window {
+    Capacitor?: {
+      isNativePlatform(): boolean;
+    };
+  }
+}
 
 class LocationTracker {
   private watchId: string | number | null = null;
@@ -16,6 +24,7 @@ class LocationTracker {
     // Check if we're in a Capacitor environment
     this.isCapacitorAvailable = typeof window !== 'undefined' && 
       window.Capacitor !== undefined && 
+      window.Capacitor.isNativePlatform && 
       window.Capacitor.isNativePlatform();
     
     console.log('LocationTracker initialized, Capacitor available:', this.isCapacitorAvailable);
@@ -26,26 +35,31 @@ class LocationTracker {
       console.log('Requesting location permissions...');
       
       if (this.isCapacitorAvailable) {
-        const permissions = await Geolocation.requestPermissions();
-        console.log('Capacitor location permissions result:', permissions);
-        return permissions.location === 'granted';
-      } else {
-        // Fallback to browser geolocation API
-        if (!navigator.geolocation) {
-          console.error('Geolocation is not supported by this browser');
-          return false;
+        try {
+          const permissions = await Geolocation.requestPermissions();
+          console.log('Capacitor location permissions result:', permissions);
+          return permissions.location === 'granted';
+        } catch (error) {
+          console.log('Capacitor permissions failed, falling back to browser API:', error);
+          // Fall back to browser API if Capacitor fails
         }
-        
-        // Check if permission is already granted
-        if ('permissions' in navigator) {
-          const permission = await navigator.permissions.query({ name: 'geolocation' });
-          console.log('Browser geolocation permission:', permission.state);
-          return permission.state === 'granted' || permission.state === 'prompt';
-        }
-        
-        // If permissions API is not available, assume we can request it
-        return true;
       }
+      
+      // Use browser geolocation API (fallback or primary)
+      if (!navigator.geolocation) {
+        console.error('Geolocation is not supported by this browser');
+        return false;
+      }
+      
+      // Check if permission is already granted
+      if ('permissions' in navigator) {
+        const permission = await navigator.permissions.query({ name: 'geolocation' });
+        console.log('Browser geolocation permission:', permission.state);
+        return permission.state === 'granted' || permission.state === 'prompt';
+      }
+      
+      // If permissions API is not available, assume we can request it
+      return true;
     } catch (error) {
       console.error('Error requesting location permissions:', error);
       return false;
@@ -81,49 +95,24 @@ class LocationTracker {
       console.log('Starting location watch...');
 
       if (this.isCapacitorAvailable) {
-        // Use Capacitor Geolocation
-        this.watchId = await Geolocation.watchPosition(
-          {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 5000,
-          },
-          (position, err) => {
-            this.handleLocationUpdate(position, err);
-          }
-        );
-      } else {
-        // Use browser geolocation API
-        this.watchId = navigator.geolocation.watchPosition(
-          (position) => {
-            console.log('Browser GPS position received:', {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-              accuracy: position.coords.accuracy,
-              timestamp: new Date(position.timestamp)
-            });
-            
-            if (this.currentShipmentId) {
-              this.updateShipmentLocation(
-                this.currentShipmentId, 
-                position.coords.latitude, 
-                position.coords.longitude
-              );
-              
-              this.updateStatus(`GPS Aktif ✅ (±${Math.round(position.coords.accuracy)}m)`);
+        try {
+          // Use Capacitor Geolocation
+          this.watchId = await Geolocation.watchPosition(
+            {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 5000,
+            },
+            (position, err) => {
+              this.handleLocationUpdate(position, err);
             }
-          },
-          (error) => {
-            console.error('Browser geolocation error:', error);
-            this.updateStatus('GPS Error ⚠️');
-            toast.error('Error GPS: ' + error.message);
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 5000,
-          }
-        );
+          );
+        } catch (error) {
+          console.log('Capacitor watchPosition failed, falling back to browser API:', error);
+          this.startBrowserTracking();
+        }
+      } else {
+        this.startBrowserTracking();
       }
 
       this.isTracking = true;
@@ -135,6 +124,40 @@ class LocationTracker {
       this.updateStatus('Gagal memulai GPS ❌');
       toast.error('Gagal memulai pelacakan GPS: ' + error);
     }
+  }
+
+  private startBrowserTracking(): void {
+    // Use browser geolocation API
+    this.watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        console.log('Browser GPS position received:', {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          timestamp: new Date(position.timestamp)
+        });
+        
+        if (this.currentShipmentId) {
+          this.updateShipmentLocation(
+            this.currentShipmentId, 
+            position.coords.latitude, 
+            position.coords.longitude
+          );
+          
+          this.updateStatus(`GPS Aktif ✅ (±${Math.round(position.coords.accuracy)}m)`);
+        }
+      },
+      (error) => {
+        console.error('Browser geolocation error:', error);
+        this.updateStatus('GPS Error ⚠️');
+        toast.error('Error GPS: ' + error.message);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 5000,
+      }
+    );
   }
 
   private handleLocationUpdate(position: any, err: any): void {
@@ -223,41 +246,45 @@ class LocationTracker {
       console.log('Getting current position...');
       
       if (this.isCapacitorAvailable) {
-        const position = await Geolocation.getCurrentPosition({
-          enableHighAccuracy: true,
-          timeout: 10000
-        });
+        try {
+          const position = await Geolocation.getCurrentPosition({
+            enableHighAccuracy: true,
+            timeout: 10000
+          });
 
-        const coords = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        };
-        
-        console.log('Current position obtained (Capacitor):', coords);
-        return coords;
-      } else {
-        // Use browser geolocation API
-        return new Promise((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              const coords = {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude
-              };
-              console.log('Current position obtained (Browser):', coords);
-              resolve(coords);
-            },
-            (error) => {
-              console.error('Error getting current position:', error);
-              reject(error);
-            },
-            {
-              enableHighAccuracy: true,
-              timeout: 10000
-            }
-          );
-        });
+          const coords = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          
+          console.log('Current position obtained (Capacitor):', coords);
+          return coords;
+        } catch (error) {
+          console.log('Capacitor getCurrentPosition failed, falling back to browser API:', error);
+        }
       }
+      
+      // Use browser geolocation API (fallback or primary)
+      return new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const coords = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            };
+            console.log('Current position obtained (Browser):', coords);
+            resolve(coords);
+          },
+          (error) => {
+            console.error('Error getting current position:', error);
+            reject(error);
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000
+          }
+        );
+      });
     } catch (error) {
       console.error('Error getting current position:', error);
       return null;

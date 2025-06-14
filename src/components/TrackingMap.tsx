@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin, Truck, Users, Navigation, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import RealTimeMap from './RealTimeMap';
 
 interface ShipmentLocation {
   id: string;
@@ -15,6 +16,7 @@ interface ShipmentLocation {
   current_lng: number | null;
   status: string;
   updated_at: string;
+  tanggal_kirim: string;
   drivers?: {
     name: string;
     license_plate: string;
@@ -25,12 +27,12 @@ const TrackingMap = () => {
   const [shipments, setShipments] = useState<ShipmentLocation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [activeShipments, setActiveShipments] = useState(0);
-  const [trackedShipments, setTrackedShipments] = useState(0);
+  const [todayDrivers, setTodayDrivers] = useState(0);
+  const [trackedDrivers, setTrackedDrivers] = useState(0);
 
   useEffect(() => {
-    fetchActiveShipments();
-    const interval = setInterval(fetchActiveShipments, 30000); // Refresh setiap 30 detik
+    fetchTodayDrivers();
+    const interval = setInterval(fetchTodayDrivers, 30000); // Refresh setiap 30 detik
     subscribeToLocationUpdates();
     
     return () => {
@@ -38,9 +40,11 @@ const TrackingMap = () => {
     };
   }, []);
 
-  const fetchActiveShipments = async () => {
-    console.log('Fetching active shipments with GPS data...');
+  const fetchTodayDrivers = async () => {
+    console.log('Fetching today drivers with GPS data...');
     try {
+      const today = new Date().toISOString().split('T')[0];
+
       const { data, error } = await supabase
         .from('shipments')
         .select(`
@@ -52,24 +56,26 @@ const TrackingMap = () => {
           current_lng, 
           status,
           updated_at,
+          tanggal_kirim,
           drivers (name, license_plate)
         `)
         .eq('status', 'tertunda')
+        .eq('tanggal_kirim', today)
         .order('updated_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching active shipments:', error);
-        toast.error('Gagal memuat data pengiriman aktif');
+        console.error('Error fetching today drivers:', error);
+        toast.error('Gagal memuat data driver hari ini');
         return;
       }
 
-      console.log('Fetched shipments data:', data);
+      console.log('Fetched today drivers data:', data);
       const shipmentData = data as ShipmentLocation[];
       setShipments(shipmentData);
-      setActiveShipments(shipmentData.length);
-      setTrackedShipments(shipmentData.filter(s => s.current_lat && s.current_lng).length);
+      setTodayDrivers(shipmentData.length);
+      setTrackedDrivers(shipmentData.filter(s => s.current_lat && s.current_lng).length);
       
-      toast.success(`Data diperbarui: ${shipmentData.length} pengiriman aktif`);
+      toast.success(`Data diperbarui: ${shipmentData.length} driver hari ini`);
     } catch (error) {
       console.error('Error:', error);
       toast.error('Terjadi kesalahan saat memuat data');
@@ -81,7 +87,7 @@ const TrackingMap = () => {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await fetchActiveShipments();
+    await fetchTodayDrivers();
   };
 
   const subscribeToLocationUpdates = () => {
@@ -94,7 +100,7 @@ const TrackingMap = () => {
         table: 'shipments'
       }, (payload) => {
         console.log('Realtime update received:', payload);
-        fetchActiveShipments();
+        fetchTodayDrivers();
         toast.success('Data lokasi diperbarui secara real-time!');
       })
       .subscribe();
@@ -129,7 +135,7 @@ const TrackingMap = () => {
     <div className="space-y-6">
       {/* Header with Refresh Button */}
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Pelacakan Real-time</h2>
+        <h2 className="text-2xl font-bold">Pelacakan Driver Hari Ini</h2>
         <Button 
           onClick={handleRefresh} 
           disabled={isRefreshing}
@@ -146,8 +152,8 @@ const TrackingMap = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-blue-600 text-sm font-medium">Total Aktif</p>
-                <p className="text-3xl font-bold text-blue-800">{activeShipments}</p>
+                <p className="text-blue-600 text-sm font-medium">Driver Hari Ini</p>
+                <p className="text-3xl font-bold text-blue-800">{todayDrivers}</p>
               </div>
               <Truck className="h-12 w-12 text-blue-600" />
             </div>
@@ -159,7 +165,7 @@ const TrackingMap = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-green-600 text-sm font-medium">GPS Terhubung</p>
-                <p className="text-3xl font-bold text-green-800">{trackedShipments}</p>
+                <p className="text-3xl font-bold text-green-800">{trackedDrivers}</p>
               </div>
               <Navigation className="h-12 w-12 text-green-600" />
             </div>
@@ -171,7 +177,7 @@ const TrackingMap = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-orange-600 text-sm font-medium">Tanpa GPS</p>
-                <p className="text-3xl font-bold text-orange-800">{activeShipments - trackedShipments}</p>
+                <p className="text-3xl font-bold text-orange-800">{todayDrivers - trackedDrivers}</p>
               </div>
               <MapPin className="h-12 w-12 text-orange-600" />
             </div>
@@ -179,119 +185,77 @@ const TrackingMap = () => {
         </Card>
       </div>
 
-      {/* Map and Shipments List */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Map Placeholder dengan Data Koordinat */}
-        <Card className="bg-gray-50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-blue-600" />
-              Peta Pelacakan Real-time
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-96 bg-gradient-to-br from-blue-100 to-green-100 rounded-lg border-2 border-dashed border-gray-300 p-4 overflow-y-auto">
-              <div className="space-y-2">
-                <h4 className="font-semibold text-gray-700 mb-4">Koordinat GPS Aktif:</h4>
-                {shipments.filter(s => s.current_lat && s.current_lng).length === 0 ? (
-                  <div className="text-center py-8">
-                    <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">Tidak ada GPS aktif saat ini</p>
-                  </div>
-                ) : (
-                  shipments
-                    .filter(s => s.current_lat && s.current_lng)
-                    .map((shipment) => (
-                      <div key={shipment.id} className="bg-white p-3 rounded-lg shadow-sm border">
-                        <div className="font-medium text-sm text-gray-800">
-                          {shipment.drivers?.name || 'Driver Tidak Diketahui'}
-                        </div>
-                        <div className="text-xs text-gray-600">
-                          {shipment.drivers?.license_plate} → {shipment.tujuan}
-                        </div>
-                        <div className="text-xs text-green-600 font-mono">
-                          📍 Lat: {shipment.current_lat?.toFixed(6)}, Lng: {shipment.current_lng?.toFixed(6)}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          Update: {formatLastUpdate(shipment.updated_at)}
-                        </div>
-                      </div>
-                    ))
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Real-time Map Component */}
+      <RealTimeMap />
 
-        {/* Active Shipments List */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-blue-600" />
-              Pengiriman Aktif ({activeShipments})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4 max-h-96 overflow-y-auto">
-              {shipments.length === 0 ? (
-                <div className="text-center py-8">
-                  <Truck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600">Tidak ada pengiriman aktif</p>
-                </div>
-              ) : (
-                shipments.map((shipment) => (
-                  <div
-                    key={shipment.id}
-                    className={`p-4 rounded-lg border transition-colors ${
-                      shipment.current_lat && shipment.current_lng 
-                        ? 'bg-green-50 border-green-200' 
-                        : 'bg-gray-50 border-gray-200'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="font-semibold text-gray-800">
-                          {shipment.drivers?.name || 'Supir Tidak Diketahui'}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {shipment.drivers?.license_plate || 'No. Polisi Tidak Diketahui'}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {shipment.no_surat_jalan} • {shipment.tujuan}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {shipment.perusahaan}
-                        </div>
-                        {shipment.current_lat && shipment.current_lng && (
-                          <div className="text-xs text-green-600 mt-1">
-                            📍 {shipment.current_lat.toFixed(4)}, {shipment.current_lng.toFixed(4)}
-                          </div>
-                        )}
+      {/* Today's Drivers List */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-blue-600" />
+            Driver Hari Ini ({todayDrivers})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4 max-h-96 overflow-y-auto">
+            {shipments.length === 0 ? (
+              <div className="text-center py-8">
+                <Truck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">Tidak ada driver bertugas hari ini</p>
+              </div>
+            ) : (
+              shipments.map((shipment) => (
+                <div
+                  key={shipment.id}
+                  className={`p-4 rounded-lg border transition-colors ${
+                    shipment.current_lat && shipment.current_lng 
+                      ? 'bg-green-50 border-green-200' 
+                      : 'bg-gray-50 border-gray-200'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-800">
+                        {shipment.drivers?.name || 'Supir Tidak Diketahui'}
                       </div>
-                      <div className="flex items-center gap-2">
-                        {shipment.current_lat && shipment.current_lng ? (
-                          <div className="flex items-center gap-1 text-green-600">
-                            <Navigation className="h-4 w-4 animate-pulse" />
-                            <span className="text-xs font-medium">GPS ON</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1 text-gray-400">
-                            <MapPin className="h-4 w-4" />
-                            <span className="text-xs">GPS OFF</span>
-                          </div>
-                        )}
+                      <div className="text-sm text-gray-600">
+                        {shipment.drivers?.license_plate || 'No. Polisi Tidak Diketahui'}
                       </div>
+                      <div className="text-sm text-gray-500">
+                        {shipment.no_surat_jalan} • {shipment.tujuan}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {shipment.perusahaan}
+                      </div>
+                      {shipment.current_lat && shipment.current_lng && (
+                        <div className="text-xs text-green-600 mt-1">
+                          📍 {shipment.current_lat.toFixed(4)}, {shipment.current_lng.toFixed(4)}
+                        </div>
+                      )}
                     </div>
-                    <div className="text-xs text-gray-500 mt-2">
-                      Update terakhir: {formatLastUpdate(shipment.updated_at)}
+                    <div className="flex items-center gap-2">
+                      {shipment.current_lat && shipment.current_lng ? (
+                        <div className="flex items-center gap-1 text-green-600">
+                          <Navigation className="h-4 w-4 animate-pulse" />
+                          <span className="text-xs font-medium">GPS ON</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 text-gray-400">
+                          <MapPin className="h-4 w-4" />
+                          <span className="text-xs">GPS OFF</span>
+                        </div>
+                      )}
                     </div>
                   </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                  <div className="text-xs text-gray-500 mt-2">
+                    Update terakhir: {formatLastUpdate(shipment.updated_at)}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

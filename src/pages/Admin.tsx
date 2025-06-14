@@ -42,19 +42,9 @@ const Admin = () => {
     navigate('/admin/data');
   };
 
-  const handleReportsView = () => {
-    console.log('Viewing reports');
-    navigate('/admin/data');
-  };
-
-  const handleExportData = () => {
-    console.log('Exporting data');
-    navigate('/admin/data');
-  };
-
   const handleForumChat = () => {
-    console.log('Opening forum chat');
-    navigate('/admin/data');
+    console.log('Opening admin forum chat');
+    navigate('/admin/forum');
   };
 
   const handleLogout = async () => {
@@ -165,16 +155,16 @@ const Admin = () => {
                 
                 <Button 
                   variant="outline"
-                  onClick={handleReportsView}
+                  onClick={handleDataManagement}
                   className="bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-300 h-16 flex flex-col items-center justify-center gap-2"
                 >
                   <FileText className="h-6 w-6" />
-                  <span className="text-sm font-medium">Laporan Kendala</span>
+                  <span className="text-sm font-medium">Laporan Data</span>
                 </Button>
                 
                 <Button 
                   variant="outline"
-                  onClick={handleExportData}
+                  onClick={handleDataManagement}
                   className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300 h-16 flex flex-col items-center justify-center gap-2"
                 >
                   <Download className="h-6 w-6" />
@@ -194,7 +184,7 @@ const Admin = () => {
               {/* Tambahan Info */}
               <div className="mt-4 p-3 bg-blue-50 rounded-lg">
                 <p className="text-sm text-blue-700">
-                  💡 <strong>Tip:</strong> Semua menu akan mengarahkan ke halaman manajemen data dimana Anda dapat mengakses semua fitur admin.
+                  💡 <strong>Tip:</strong> Forum Chat sekarang memiliki halaman terpisah untuk mengelola laporan kendala dari driver.
                 </p>
               </div>
             </CardContent>
@@ -204,7 +194,7 @@ const Admin = () => {
           <Card className="bg-white shadow-lg">
             <CardHeader>
               <CardTitle className="text-2xl">Peta Pelacakan Real-time</CardTitle>
-              <p className="text-gray-600">Data GPS driver terintegrasi secara real-time</p>
+              <p className="text-gray-600">Data GPS driver terintegrasi secara real-time - Hanya driver hari ini</p>
             </CardHeader>
             <CardContent>
               <TrackingMap />
