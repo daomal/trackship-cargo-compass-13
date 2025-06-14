@@ -2,7 +2,7 @@
 import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Database, LogOut, Settings, FileText, Download } from "lucide-react";
+import { Database, LogOut, Settings, FileText, Download, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -22,7 +22,7 @@ const Admin = () => {
     );
   }
 
-  // Handle auth checks after loading is complete - but don't auto-redirect
+  // Handle auth checks after loading is complete
   useEffect(() => {
     if (!isLoading) {
       console.log('Admin page - auth state:', { user: !!user, isAdmin });
@@ -40,7 +40,6 @@ const Admin = () => {
           description: "Anda tidak memiliki hak akses admin.",
           variant: "destructive",
         });
-        // Don't auto-redirect, let user stay and see the error
         return;
       }
     }
@@ -48,14 +47,18 @@ const Admin = () => {
 
   const handleDataManagement = () => {
     console.log('Navigating to admin data management');
+    toast({
+      title: "Menuju Manajemen Data",
+      description: "Membuka halaman manajemen data pengiriman",
+    });
     navigate('/admin/data');
   };
 
   const handleReportsView = () => {
     console.log('Viewing reports');
     toast({
-      title: "Laporan Kendala",
-      description: "Navigasi ke halaman laporan kendala",
+      title: "Menuju Laporan Kendala",
+      description: "Membuka halaman laporan kendala pengiriman",
     });
     navigate('/admin/data');
   };
@@ -64,22 +67,36 @@ const Admin = () => {
     console.log('Exporting data');
     toast({
       title: "Export Data",
-      description: "Fitur export akan segera tersedia",
+      description: "Membuka halaman export data pengiriman",
     });
+    navigate('/admin/data');
   };
 
   const handleForumChat = () => {
     console.log('Opening forum chat');
     toast({
       title: "Forum Chat",
-      description: "Navigasi ke forum komunikasi",
+      description: "Membuka halaman manajemen forum komunikasi",
     });
     navigate('/admin/data');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     console.log('Admin logging out');
-    signOut();
+    try {
+      await signOut();
+      toast({
+        title: "Logout Berhasil",
+        description: "Anda telah keluar dari sistem",
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast({
+        title: "Error Logout",
+        description: "Terjadi kesalahan saat logout",
+        variant: "destructive",
+      });
+    }
   };
 
   // Show access denied if not admin but don't redirect
@@ -123,12 +140,16 @@ const Admin = () => {
               <Button 
                 variant="outline" 
                 onClick={handleDataManagement}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 hover:bg-blue-50"
               >
                 <Database className="h-4 w-4" />
                 Manajemen Data
               </Button>
-              <Button variant="outline" onClick={handleLogout}>
+              <Button 
+                variant="outline" 
+                onClick={handleLogout}
+                className="hover:bg-red-50 hover:text-red-600"
+              >
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
               </Button>
@@ -140,42 +161,52 @@ const Admin = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Settings className="h-5 w-5 text-blue-600" />
-                Menu Cepat
+                Menu Navigasi Cepat
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Button 
                   onClick={handleDataManagement}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-blue-600 hover:bg-blue-700 h-16 flex flex-col items-center justify-center gap-2"
                 >
-                  <Database className="h-4 w-4 mr-2" />
-                  Kelola Data Pengiriman
+                  <Database className="h-6 w-6" />
+                  <span className="text-sm font-medium">Kelola Data Pengiriman</span>
                 </Button>
+                
                 <Button 
                   variant="outline"
                   onClick={handleReportsView}
-                  className="bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-300"
+                  className="bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-300 h-16 flex flex-col items-center justify-center gap-2"
                 >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Lihat Laporan Kendala
+                  <FileText className="h-6 w-6" />
+                  <span className="text-sm font-medium">Laporan Kendala</span>
                 </Button>
+                
                 <Button 
                   variant="outline"
                   onClick={handleExportData}
-                  className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
+                  className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300 h-16 flex flex-col items-center justify-center gap-2"
                 >
-                  <Download className="h-4 w-4 mr-2" />
-                  Export Data
+                  <Download className="h-6 w-6" />
+                  <span className="text-sm font-medium">Export Data</span>
                 </Button>
+                
                 <Button 
                   variant="outline"
                   onClick={handleForumChat}
-                  className="bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-300"
+                  className="bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-300 h-16 flex flex-col items-center justify-center gap-2"
                 >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Forum Chat
+                  <MessageSquare className="h-6 w-6" />
+                  <span className="text-sm font-medium">Forum Chat</span>
                 </Button>
+              </div>
+              
+              {/* Tambahan Info */}
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-700">
+                  💡 <strong>Tip:</strong> Semua menu akan mengarahkan ke halaman manajemen data dimana Anda dapat mengakses semua fitur admin.
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -184,6 +215,7 @@ const Admin = () => {
           <Card className="bg-white shadow-lg">
             <CardHeader>
               <CardTitle className="text-2xl">Peta Pelacakan Real-time</CardTitle>
+              <p className="text-gray-600">Data GPS driver terintegrasi secara real-time</p>
             </CardHeader>
             <CardContent>
               <TrackingMap />
