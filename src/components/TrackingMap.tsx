@@ -23,6 +23,7 @@ const TrackingMap = () => {
   const [activeShipments, setActiveShipments] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [mapKey, setMapKey] = useState(0);
   const mapCenter: [number, number] = [-2.548926, 118.0148634];
 
   // Initialize Leaflet icons on component mount
@@ -41,6 +42,7 @@ const TrackingMap = () => {
         
         if (error) {
           console.error('Error fetching shipments:', error);
+          setMapError('Failed to load shipment data');
           setIsLoading(false);
           return;
         }
@@ -75,6 +77,13 @@ const TrackingMap = () => {
     };
   }, []);
 
+  // Force map re-render on error
+  const handleMapError = () => {
+    console.log('Map error detected, forcing re-render');
+    setMapKey(prev => prev + 1);
+    setMapError(null);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full w-full bg-gray-100">
@@ -92,10 +101,10 @@ const TrackingMap = () => {
         <div className="text-center">
           <p className="text-red-600 mb-4">{mapError}</p>
           <button 
-            onClick={() => window.location.reload()} 
+            onClick={handleMapError} 
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
-            Muat Ulang
+            Muat Ulang Peta
           </button>
         </div>
       </div>
@@ -105,40 +114,42 @@ const TrackingMap = () => {
   try {
     return (
       <div className="h-full w-full">
-        <MapContainer 
-          center={mapCenter} 
-          zoom={5} 
-          style={{ height: '100%', width: '100%' }}
-          key={`tracking-map-${Date.now()}`}
-          whenCreated={() => console.log('Map created successfully')}
-        >
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          />
-          {activeShipments.map(shipment => {
-            if (!shipment.current_lat || !shipment.current_lng) return null;
-            
-            try {
-              return (
-                <Marker 
-                  key={shipment.id} 
-                  position={[shipment.current_lat, shipment.current_lng]}
-                >
-                  <Popup>
-                    <div>
-                      <b>{shipment.drivers?.name || 'Driver Unknown'}</b> ({shipment.drivers?.license_plate || 'Unknown Plate'})<br/>
-                      Tujuan: {shipment.tujuan}
-                    </div>
-                  </Popup>
-                </Marker>
-              );
-            } catch (error) {
-              console.error('Error rendering marker for shipment:', shipment.id, error);
-              return null;
-            }
-          })}
-        </MapContainer>
+        <div key={`map-wrapper-${mapKey}`}>
+          <MapContainer 
+            center={mapCenter} 
+            zoom={5} 
+            style={{ height: '100%', width: '100%' }}
+            key={`tracking-map-${mapKey}`}
+            whenReady={() => console.log('Map ready successfully')}
+          >
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            />
+            {activeShipments.map(shipment => {
+              if (!shipment.current_lat || !shipment.current_lng) return null;
+              
+              try {
+                return (
+                  <Marker 
+                    key={shipment.id} 
+                    position={[shipment.current_lat, shipment.current_lng]}
+                  >
+                    <Popup>
+                      <div>
+                        <b>{shipment.drivers?.name || 'Driver Unknown'}</b> ({shipment.drivers?.license_plate || 'Unknown Plate'})<br/>
+                        Tujuan: {shipment.tujuan}
+                      </div>
+                    </Popup>
+                  </Marker>
+                );
+              } catch (error) {
+                console.error('Error rendering marker for shipment:', shipment.id, error);
+                return null;
+              }
+            })}
+          </MapContainer>
+        </div>
       </div>
     );
   } catch (error) {
@@ -148,10 +159,10 @@ const TrackingMap = () => {
         <div className="text-center">
           <p className="text-red-600 mb-4">Gagal memuat peta</p>
           <button 
-            onClick={() => window.location.reload()} 
+            onClick={handleMapError} 
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
-            Muat Ulang
+            Muat Ulang Peta
           </button>
         </div>
       </div>
