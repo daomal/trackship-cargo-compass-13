@@ -15,11 +15,7 @@ const Admin = () => {
       if (!user) {
         navigate('/auth');
       } else if (!isAdmin) {
-        toast({
-          title: "Akses Ditolak",
-          description: "Anda tidak memiliki hak akses admin.",
-          variant: "destructive",
-        });
+        toast.error("Akses Ditolak: Anda tidak memiliki hak akses admin.");
         navigate('/');
       }
     }
@@ -35,7 +31,7 @@ const Admin = () => {
         <Button onClick={() => navigate('/admin/data')}>
           Manajemen Data
         </Button>
-        <Button onClick={() => navigate('/admin/data')}>
+        <Button onClick={() => navigate('/admin/kendala')}>
           Laporan Kendala
         </Button>
       </div>
