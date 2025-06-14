@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Database, LogOut, Settings } from "lucide-react";
@@ -9,42 +9,38 @@ import { useNavigate } from "react-router-dom";
 import TrackingMap from "@/components/TrackingMap";
 
 const Admin = () => {
-  const { isAdmin, user, signOut } = useAuth();
+  const { isAdmin, user, isLoading, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [authChecked, setAuthChecked] = useState(false);
 
+  // 1. Show loading state while auth is being checked
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="animate-spin h-12 w-12 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  // 2. Handle auth checks after loading is complete
   useEffect(() => {
-    // Wait for auth context to be fully loaded before checking
-    const checkAuth = async () => {
-      // Give a small delay to ensure auth context is initialized
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
+    // Only run checks if loading is finished
+    if (!isLoading) {
       if (!user) {
-        toast({
-          title: "Akses ditolak",
-          description: "Silakan login terlebih dahulu",
-          variant: "destructive",
-        });
+        // If no user at all, redirect to auth
         navigate('/auth');
-        return;
-      }
-      
-      if (!isAdmin) {
+      } else if (!isAdmin) {
+        // If user exists but not admin, redirect to home
         toast({
-          title: "Akses ditolak",
-          description: "Anda tidak memiliki akses admin",
+          title: "Akses Ditolak",
+          description: "Anda tidak memiliki hak akses admin.",
           variant: "destructive",
         });
         navigate('/');
-        return;
       }
-      
-      setAuthChecked(true);
-    };
-
-    checkAuth();
-  }, [isAdmin, user, navigate, toast]);
+      // If user exists and is admin, do nothing (let page render)
+    }
+  }, [isLoading, user, isAdmin, navigate, toast]);
 
   const handleDataManagement = () => {
     navigate('/admin/data');
@@ -57,15 +53,6 @@ const Admin = () => {
   const handleLogout = () => {
     signOut();
   };
-
-  // Show loading while auth is being checked
-  if (!authChecked) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <div className="animate-spin h-12 w-12 border-4 border-blue-500 rounded-full border-t-transparent"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
