@@ -32,6 +32,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [hasNavigated, setHasNavigated] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -82,6 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           setProfile(null);
           setIsLoading(false);
+          setHasNavigated(false);
         }
       }
     );
@@ -92,9 +94,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Separate redirect logic that only runs after initialization is complete
+  // Separate redirect logic that only runs once after initialization is complete
   useEffect(() => {
-    if (!isInitialized || isLoading) return;
+    if (!isInitialized || isLoading || hasNavigated) return;
 
     const currentPath = window.location.pathname;
     console.log('Checking redirect logic:', { 
@@ -102,25 +104,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isLoading, 
       user: !!user, 
       profile, 
-      currentPath 
+      currentPath,
+      hasNavigated
     });
 
-    // Only redirect if we have complete auth state
+    // Only redirect if we have complete auth state and haven't navigated yet
     if (user && profile) {
       // Don't redirect if already on the correct page
       if (profile.role === 'admin' && currentPath === '/admin') return;
       if (profile.driver_id && currentPath === '/dashboard-supir') return;
       
       // Redirect based on user role
-      if (profile.role === 'admin') {
+      if (profile.role === 'admin' && currentPath !== '/admin') {
         console.log('User is admin, redirecting to admin panel');
+        setHasNavigated(true);
         navigate('/admin');
-      } else if (profile.driver_id) {
+      } else if (profile.driver_id && currentPath !== '/dashboard-supir') {
         console.log('User is driver, redirecting to driver dashboard');
+        setHasNavigated(true);
         navigate('/dashboard-supir');
       }
     }
-  }, [user, profile, isLoading, isInitialized, navigate]);
+  }, [user, profile, isLoading, isInitialized, navigate, hasNavigated]);
 
   const fetchUserProfile = async (userId: string) => {
     try {
@@ -150,6 +155,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log("Attempting sign in with:", email);
       setIsLoading(true);
+      setHasNavigated(false);
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -195,6 +201,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(null);
       setProfile(null);
       setIsInitialized(false);
+      setHasNavigated(false);
       navigate('/auth');
     } catch (error) {
       console.error('Sign out error:', error);
@@ -209,7 +216,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     profile, 
     isAdmin, 
     isLoading, 
-    isInitialized 
+    isInitialized,
+    hasNavigated
   });
 
   return (
