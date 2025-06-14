@@ -19,12 +19,24 @@ const TrackingMap = () => {
 
   useEffect(() => {
     const fetchActiveShipments = async () => {
-      const { data, error } = await supabase
-        .from('shipments')
-        .select('*, drivers(name, license_plate)')
-        .eq('status', 'tertunda')
-        .not('current_lat', 'is', null);
-      if (data) setActiveShipments(data);
+      try {
+        const { data, error } = await supabase
+          .from('shipments')
+          .select('*, drivers(name, license_plate)')
+          .eq('status', 'tertunda')
+          .not('current_lat', 'is', null);
+        
+        if (error) {
+          console.error('Error fetching shipments:', error);
+          return;
+        }
+        
+        if (data) {
+          setActiveShipments(data);
+        }
+      } catch (error) {
+        console.error('Error in fetchActiveShipments:', error);
+      }
     };
 
     fetchActiveShipments();
@@ -51,14 +63,18 @@ const TrackingMap = () => {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
-      {activeShipments.map(shipment => (
-        <Marker key={shipment.id} position={[shipment.current_lat, shipment.current_lng]}>
-          <Popup>
-            <b>{shipment.drivers?.name || 'Driver Unknown'}</b> ({shipment.drivers?.license_plate || 'Unknown Plate'})<br/>
-            Tujuan: {shipment.tujuan}
-          </Popup>
-        </Marker>
-      ))}
+      {activeShipments.map(shipment => {
+        if (!shipment.current_lat || !shipment.current_lng) return null;
+        
+        return (
+          <Marker key={shipment.id} position={[shipment.current_lat, shipment.current_lng]}>
+            <Popup>
+              <b>{shipment.drivers?.name || 'Driver Unknown'}</b> ({shipment.drivers?.license_plate || 'Unknown Plate'})<br/>
+              Tujuan: {shipment.tujuan}
+            </Popup>
+          </Marker>
+        );
+      })}
     </MapContainer>
   );
 };
