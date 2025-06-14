@@ -31,32 +31,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    // Check for existing session first
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log("Initial session check:", session);
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchUserProfile(session.user.id);
-      } else {
-        setIsLoading(false);
+    let mounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        // Get existing session first
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        console.log("Initial session check:", currentSession);
+        
+        if (mounted) {
+          setSession(currentSession);
+          setUser(currentSession?.user ?? null);
+          
+          if (currentSession?.user) {
+            await fetchUserProfile(currentSession.user.id);
+            ensureUserInProfiles();
+          } else {
+            setIsLoading(false);
+          }
+          setIsInitialized(true);
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        if (mounted) {
+          setIsLoading(false);
+          setIsInitialized(true);
+        }
       }
-    });
+    };
+
+    // Initialize auth
+    initializeAuth();
 
     // Listen for authentication state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log("Auth state changed:", event, session);
+        
+        if (!mounted) return;
+        
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch profile immediately after auth state change
           await fetchUserProfile(session.user.id);
-          // Ensure the user exists in the profiles table
           ensureUserInProfiles();
         } else {
           setProfile(null);
@@ -66,20 +87,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
 
-  // Redirect logic after profile is loaded
+  // Separate redirect logic that only runs after initialization is complete
   useEffect(() => {
-    if (profile && user && !isLoading) {
-      const currentPath = window.location.pathname;
-      
+    if (!isInitialized || isLoading) return;
+
+    const currentPath = window.location.pathname;
+    console.log('Checking redirect logic:', { 
+      isInitialized, 
+      isLoading, 
+      user: !!user, 
+      profile, 
+      currentPath 
+    });
+
+    // Only redirect if we have complete auth state
+    if (user && profile) {
       // Don't redirect if already on the correct page
       if (profile.role === 'admin' && currentPath === '/admin') return;
       if (profile.driver_id && currentPath === '/dashboard-supir') return;
       
-      // Redirect based on user role after successful login
+      // Redirect based on user role
       if (profile.role === 'admin') {
         console.log('User is admin, redirecting to admin panel');
         navigate('/admin');
@@ -88,7 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         navigate('/dashboard-supir');
       }
     }
-  }, [profile, user, isLoading, navigate]);
+  }, [user, profile, isLoading, isInitialized, navigate]);
 
   const fetchUserProfile = async (userId: string) => {
     try {
@@ -162,16 +194,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
       setSession(null);
       setProfile(null);
+      setIsInitialized(false);
       navigate('/auth');
     } catch (error) {
       console.error('Sign out error:', error);
     }
   };
 
-  // Check if the profile has admin role - only return true if profile is loaded and role is admin
+  // Only return true if profile is loaded and role is admin
   const isAdmin = profile?.role === 'admin';
 
-  console.log('Auth context state:', { user: !!user, profile, isAdmin, isLoading });
+  console.log('Auth context state:', { 
+    user: !!user, 
+    profile, 
+    isAdmin, 
+    isLoading, 
+    isInitialized 
+  });
 
   return (
     <AuthContext.Provider

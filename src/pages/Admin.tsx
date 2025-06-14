@@ -13,7 +13,7 @@ const Admin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // 1. Show loading state while auth is being checked
+  // Show loading state while auth is being checked
   if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -22,24 +22,26 @@ const Admin = () => {
     );
   }
 
-  // 2. Handle auth checks after loading is complete
+  // Handle auth checks after loading is complete - but don't auto-redirect
   useEffect(() => {
-    console.log('Admin page - checking auth:', { isLoading, user: !!user, isAdmin });
-    
     if (!isLoading) {
+      console.log('Admin page - auth state:', { user: !!user, isAdmin });
+      
       if (!user) {
-        console.log('No user, redirecting to auth');
+        console.log('No user found, redirecting to auth');
         navigate('/auth');
-      } else if (!isAdmin) {
-        console.log('User is not admin, redirecting to home');
+        return;
+      }
+      
+      if (!isAdmin) {
+        console.log('User is not admin, showing access denied');
         toast({
           title: "Akses Ditolak",
           description: "Anda tidak memiliki hak akses admin.",
           variant: "destructive",
         });
-        navigate('/');
-      } else {
-        console.log('User is admin, staying on admin page');
+        // Don't auto-redirect, let user stay and see the error
+        return;
       }
     }
   }, [isLoading, user, isAdmin, navigate, toast]);
@@ -80,9 +82,29 @@ const Admin = () => {
     signOut();
   };
 
-  // Don't render anything if we're still checking auth or user is not admin
-  if (!user || !isAdmin) {
-    return null;
+  // Show access denied if not admin but don't redirect
+  if (!user) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Tidak ada akses</h2>
+          <p className="mb-4">Silakan login terlebih dahulu</p>
+          <Button onClick={() => navigate('/auth')}>Login</Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Akses Ditolak</h2>
+          <p className="mb-4">Anda tidak memiliki hak akses admin</p>
+          <Button onClick={() => navigate('/')}>Kembali ke Dashboard</Button>
+        </div>
+      </div>
+    );
   }
 
   return (
