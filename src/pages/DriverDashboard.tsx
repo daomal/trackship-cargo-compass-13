@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,6 @@ import { Shipment, SupabaseShipment } from '@/lib/types';
 import { locationTracker } from '@/services/locationTracker';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { Geolocation } from '@capacitor/geolocation';
 
 const DriverDashboard = () => {
   const { user, profile } = useAuth();
@@ -18,7 +18,6 @@ const DriverDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [gpsStatus, setGpsStatus] = useState<string>('Memulai GPS...');
   const [trackingShipments, setTrackingShipments] = useState<Set<string>>(new Set());
-  const [gpsPermissionGranted, setGpsPermissionGranted] = useState(false);
 
   useEffect(() => {
     // Redirect if not a driver
@@ -28,49 +27,9 @@ const DriverDashboard = () => {
     }
 
     if (profile?.driver_id) {
-      initializeGPSAndFetchShipments();
+      fetchDriverShipments();
     }
   }, [profile, navigate]);
-
-  const initializeGPSAndFetchShipments = async () => {
-    // First fetch shipments, then try GPS
-    await fetchDriverShipments();
-    
-    // Start GPS tracking without explicit permission request
-    try {
-      setGpsStatus('Mencari lokasi...');
-      
-      // Try to start GPS watch directly - this will trigger browser permission automatically
-      const watchId = await Geolocation.watchPosition(
-        { 
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 3000
-        }, 
-        (position, err) => {
-          if (err || !position) {
-            console.error('GPS Error:', err);
-            setGpsStatus('Gagal mendapatkan lokasi ❌');
-            setGpsPermissionGranted(false);
-            return;
-          }
-          
-          setGpsStatus('GPS Terhubung ✅');
-          setGpsPermissionGranted(true);
-          
-          // Start auto tracking after GPS is working
-          setTimeout(() => {
-            startAutoTracking();
-          }, 1000);
-        }
-      );
-      
-    } catch (error) {
-      console.error('GPS Permission/Watch Error:', error);
-      setGpsStatus('Izin GPS ditolak atau tidak tersedia ❌');
-      setGpsPermissionGranted(false);
-    }
-  };
 
   const fetchDriverShipments = async () => {
     if (!profile?.driver_id) return;
@@ -92,28 +51,17 @@ const DriverDashboard = () => {
 
       const mappedShipments = (data as SupabaseShipment[]).map(mapSupabaseShipment);
       setShipments(mappedShipments);
+
+      // Auto-start tracking for the first shipment
+      if (mappedShipments.length > 0) {
+        const firstShipment = mappedShipments[0];
+        handleStartTracking(firstShipment.id);
+      }
     } catch (error) {
       console.error('Error:', error);
       toast.error('Terjadi kesalahan saat memuat data');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const startAutoTracking = async () => {
-    if (shipments.length > 0 && gpsPermissionGranted) {
-      // Start tracking for the first active shipment
-      const activeShipment = shipments[0];
-      if (activeShipment) {
-        try {
-          await locationTracker.startTracking(activeShipment.id, setGpsStatus);
-          setTrackingShipments(prev => new Set(prev).add(activeShipment.id));
-          setGpsStatus('GPS Terhubung ✅');
-        } catch (error) {
-          console.error('Error starting auto tracking:', error);
-          setGpsStatus('Error GPS ⚠️');
-        }
-      }
     }
   };
 
@@ -176,15 +124,10 @@ const DriverDashboard = () => {
   };
 
   const handleStartTracking = async (shipmentId: string) => {
-    if (!gpsPermissionGranted) {
-      toast.error('GPS belum tersedia atau izin ditolak');
-      return;
-    }
-
     try {
       await locationTracker.startTracking(shipmentId, setGpsStatus);
       setTrackingShipments(prev => new Set(prev).add(shipmentId));
-      setGpsStatus('GPS Terhubung ✅');
+      toast.success('GPS tracking dimulai');
     } catch (error) {
       console.error('Error starting tracking:', error);
       toast.error('Gagal memulai pelacakan GPS');
@@ -200,16 +143,13 @@ const DriverDashboard = () => {
         newSet.delete(shipmentId);
         return newSet;
       });
+      toast.success('GPS tracking dihentikan');
     } catch (error) {
       console.error('Error stopping tracking:', error);
     }
   };
 
   const handleForumKendala = (shipmentId: string) => {
-    navigate(`/forum-kendala/${shipmentId}`);
-  };
-
-  const handleLaporKendala = async (shipmentId: string) => {
     navigate(`/forum-kendala/${shipmentId}`);
   };
 
@@ -241,7 +181,7 @@ const DriverDashboard = () => {
                   <Navigation className="h-5 w-5 text-blue-600" />
                   <span className="font-semibold">Status GPS:</span>
                 </div>
-                <Badge variant={gpsStatus.includes('✅') || gpsStatus.includes('Terhubung') ? 'default' : 'secondary'}>
+                <Badge variant={gpsStatus.includes('✅') || gpsStatus.includes('Aktif') ? 'default' : 'secondary'}>
                   {gpsStatus}
                 </Badge>
               </div>
@@ -311,7 +251,6 @@ const DriverDashboard = () => {
                         onClick={() => handleStartTracking(shipment.id)}
                         variant="outline"
                         className="flex items-center gap-2 bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100"
-                        disabled={!gpsPermissionGranted}
                       >
                         <Navigation className="h-4 w-4" />
                         Aktifkan GPS
@@ -320,7 +259,7 @@ const DriverDashboard = () => {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Button
                       onClick={() => handleDelivered(shipment.id)}
                       className="bg-green-600 hover:bg-green-700 text-white h-14 text-lg font-semibold flex items-center justify-center gap-2 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-105"
@@ -331,15 +270,6 @@ const DriverDashboard = () => {
                     
                     <Button
                       onClick={() => handleForumKendala(shipment.id)}
-                      variant="outline"
-                      className="bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-300 h-14 text-lg font-semibold flex items-center justify-center gap-2 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-105"
-                    >
-                      <MessageSquare className="h-6 w-6" />
-                      💬 FORUM KENDALA
-                    </Button>
-                    
-                    <Button
-                      onClick={() => handleLaporKendala(shipment.id)}
                       variant="destructive"
                       className="bg-red-600 hover:bg-red-700 text-white h-14 text-lg font-semibold flex items-center justify-center gap-2 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-105"
                     >

@@ -51,8 +51,7 @@ const Admin = () => {
       title: "Menuju Manajemen Data",
       description: "Membuka halaman manajemen data pengiriman",
     });
-    // Direct navigation without preventing default
-    window.location.href = '/admin/data';
+    navigate('/admin/data');
   };
 
   const handleReportsView = () => {
@@ -61,8 +60,7 @@ const Admin = () => {
       title: "Menuju Laporan Kendala",
       description: "Membuka halaman laporan kendala pengiriman",
     });
-    // Direct navigation without preventing default
-    window.location.href = '/admin/data';
+    navigate('/admin/data');
   };
 
   const handleExportData = () => {
@@ -71,8 +69,7 @@ const Admin = () => {
       title: "Export Data",
       description: "Membuka halaman export data pengiriman",
     });
-    // Direct navigation without preventing default
-    window.location.href = '/admin/data';
+    navigate('/admin/data');
   };
 
   const handleForumChat = () => {
@@ -81,8 +78,7 @@ const Admin = () => {
       title: "Forum Chat",
       description: "Membuka halaman manajemen forum komunikasi",
     });
-    // Direct navigation without preventing default
-    window.location.href = '/admin/data';
+    navigate('/admin/data');
   };
 
   const handleLogout = async () => {
