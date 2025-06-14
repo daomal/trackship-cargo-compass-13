@@ -31,7 +31,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -51,17 +50,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (currentSession?.user) {
             console.log('Fetching profile for existing session');
             await fetchUserProfile(currentSession.user.id);
-            ensureUserInProfiles();
+            await ensureUserInProfiles();
           }
           
           setIsLoading(false);
-          setIsInitialized(true);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
         if (mounted) {
           setIsLoading(false);
-          setIsInitialized(true);
         }
       }
     };
@@ -81,13 +78,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (session?.user) {
           console.log('Fetching profile for auth change');
-          await fetchUserProfile(session.user.id);
-          ensureUserInProfiles();
+          // Use setTimeout to prevent blocking the auth state change
+          setTimeout(async () => {
+            if (mounted) {
+              await fetchUserProfile(session.user.id);
+              await ensureUserInProfiles();
+              setIsLoading(false);
+            }
+          }, 0);
         } else {
           setProfile(null);
-        }
-        
-        if (isInitialized) {
           setIsLoading(false);
         }
       }
@@ -97,7 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [isInitialized]);
+  }, []);
 
   const fetchUserProfile = async (userId: string) => {
     try {
@@ -110,6 +110,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('Error fetching user profile:', error);
+        // Set loading to false even on error
+        setIsLoading(false);
         return;
       }
 
@@ -117,6 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setProfile(data as UserProfile);
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
+      setIsLoading(false);
     }
   };
 
@@ -166,7 +169,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
       setSession(null);
       setProfile(null);
-      setIsInitialized(false);
       navigate('/auth');
     } catch (error) {
       console.error('Sign out error:', error);
@@ -179,8 +181,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user: !!user, 
     profile: !!profile, 
     isAdmin, 
-    isLoading, 
-    isInitialized
+    isLoading
   });
 
   return (

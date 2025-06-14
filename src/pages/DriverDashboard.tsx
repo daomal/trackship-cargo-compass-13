@@ -1,9 +1,8 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Truck, CheckCircle2, AlertTriangle, Navigation, MessageSquare } from 'lucide-react';
+import { MapPin, Truck, CheckCircle2, AlertTriangle, Navigation } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Shipment, SupabaseShipment } from '@/lib/types';
@@ -58,13 +57,14 @@ const DriverDashboard = () => {
       const mappedShipments = (data as SupabaseShipment[]).map(mapSupabaseShipment);
       setShipments(mappedShipments);
 
-      // Auto-start tracking for the first shipment
+      // Auto-start tracking for the first shipment with a delay
       if (mappedShipments.length > 0) {
         const firstShipment = mappedShipments[0];
         console.log('Auto-starting GPS for first shipment:', firstShipment.id);
+        // Add a longer delay to ensure everything is ready
         setTimeout(() => {
           handleStartTracking(firstShipment.id);
-        }, 1000); // Small delay to ensure UI is ready
+        }, 2000);
       }
     } catch (error) {
       console.error('Error:', error);

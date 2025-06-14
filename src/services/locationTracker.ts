@@ -6,17 +6,46 @@ import { toast } from 'sonner';
 type StatusCallback = (status: string) => void;
 
 class LocationTracker {
-  private watchId: string | null = null;
+  private watchId: string | number | null = null;
   private isTracking = false;
   private statusCallback: StatusCallback | null = null;
   private currentShipmentId: string | null = null;
+  private isCapacitorAvailable = false;
+
+  constructor() {
+    // Check if we're in a Capacitor environment
+    this.isCapacitorAvailable = typeof window !== 'undefined' && 
+      window.Capacitor !== undefined && 
+      window.Capacitor.isNativePlatform();
+    
+    console.log('LocationTracker initialized, Capacitor available:', this.isCapacitorAvailable);
+  }
 
   async requestPermissions(): Promise<boolean> {
     try {
       console.log('Requesting location permissions...');
-      const permissions = await Geolocation.requestPermissions();
-      console.log('Location permissions result:', permissions);
-      return permissions.location === 'granted';
+      
+      if (this.isCapacitorAvailable) {
+        const permissions = await Geolocation.requestPermissions();
+        console.log('Capacitor location permissions result:', permissions);
+        return permissions.location === 'granted';
+      } else {
+        // Fallback to browser geolocation API
+        if (!navigator.geolocation) {
+          console.error('Geolocation is not supported by this browser');
+          return false;
+        }
+        
+        // Check if permission is already granted
+        if ('permissions' in navigator) {
+          const permission = await navigator.permissions.query({ name: 'geolocation' });
+          console.log('Browser geolocation permission:', permission.state);
+          return permission.state === 'granted' || permission.state === 'prompt';
+        }
+        
+        // If permissions API is not available, assume we can request it
+        return true;
+      }
     } catch (error) {
       console.error('Error requesting location permissions:', error);
       return false;
@@ -51,38 +80,51 @@ class LocationTracker {
       this.updateStatus('Memulai GPS...');
       console.log('Starting location watch...');
 
-      this.watchId = await Geolocation.watchPosition(
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 5000,
-        },
-        (position, err) => {
-          if (err) {
-            console.error('Location error:', err);
-            this.updateStatus('GPS Error ⚠️');
-            toast.error('Error GPS: ' + err.message);
-            return;
+      if (this.isCapacitorAvailable) {
+        // Use Capacitor Geolocation
+        this.watchId = await Geolocation.watchPosition(
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 5000,
+          },
+          (position, err) => {
+            this.handleLocationUpdate(position, err);
           }
-
-          if (position && this.currentShipmentId) {
-            console.log('New GPS position received:', {
+        );
+      } else {
+        // Use browser geolocation API
+        this.watchId = navigator.geolocation.watchPosition(
+          (position) => {
+            console.log('Browser GPS position received:', {
               lat: position.coords.latitude,
               lng: position.coords.longitude,
               accuracy: position.coords.accuracy,
               timestamp: new Date(position.timestamp)
             });
             
-            this.updateShipmentLocation(
-              this.currentShipmentId, 
-              position.coords.latitude, 
-              position.coords.longitude
-            );
-            
-            this.updateStatus(`GPS Aktif ✅ (±${Math.round(position.coords.accuracy)}m)`);
+            if (this.currentShipmentId) {
+              this.updateShipmentLocation(
+                this.currentShipmentId, 
+                position.coords.latitude, 
+                position.coords.longitude
+              );
+              
+              this.updateStatus(`GPS Aktif ✅ (±${Math.round(position.coords.accuracy)}m)`);
+            }
+          },
+          (error) => {
+            console.error('Browser geolocation error:', error);
+            this.updateStatus('GPS Error ⚠️');
+            toast.error('Error GPS: ' + error.message);
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 5000,
           }
-        }
-      );
+        );
+      }
 
       this.isTracking = true;
       console.log('GPS tracking started successfully with watchId:', this.watchId);
@@ -95,11 +137,42 @@ class LocationTracker {
     }
   }
 
+  private handleLocationUpdate(position: any, err: any): void {
+    if (err) {
+      console.error('Capacitor location error:', err);
+      this.updateStatus('GPS Error ⚠️');
+      toast.error('Error GPS: ' + err.message);
+      return;
+    }
+
+    if (position && this.currentShipmentId) {
+      console.log('Capacitor GPS position received:', {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+        timestamp: new Date(position.timestamp)
+      });
+      
+      this.updateShipmentLocation(
+        this.currentShipmentId, 
+        position.coords.latitude, 
+        position.coords.longitude
+      );
+      
+      this.updateStatus(`GPS Aktif ✅ (±${Math.round(position.coords.accuracy)}m)`);
+    }
+  }
+
   async stopTracking(): Promise<void> {
     console.log('Stopping GPS tracking...');
-    if (this.watchId) {
+    if (this.watchId !== null) {
       try {
-        await Geolocation.clearWatch({ id: this.watchId });
+        if (this.isCapacitorAvailable) {
+          await Geolocation.clearWatch({ id: this.watchId as string });
+        } else {
+          navigator.geolocation.clearWatch(this.watchId as number);
+        }
+        
         this.watchId = null;
         this.isTracking = false;
         this.currentShipmentId = null;
@@ -148,18 +221,43 @@ class LocationTracker {
   async getCurrentPosition(): Promise<{ lat: number; lng: number } | null> {
     try {
       console.log('Getting current position...');
-      const position = await Geolocation.getCurrentPosition({
-        enableHighAccuracy: true,
-        timeout: 10000
-      });
-
-      const coords = {
-        lat: position.coords.latitude,
-        lng: position.coords.longitude
-      };
       
-      console.log('Current position obtained:', coords);
-      return coords;
+      if (this.isCapacitorAvailable) {
+        const position = await Geolocation.getCurrentPosition({
+          enableHighAccuracy: true,
+          timeout: 10000
+        });
+
+        const coords = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+        
+        console.log('Current position obtained (Capacitor):', coords);
+        return coords;
+      } else {
+        // Use browser geolocation API
+        return new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const coords = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+              };
+              console.log('Current position obtained (Browser):', coords);
+              resolve(coords);
+            },
+            (error) => {
+              console.error('Error getting current position:', error);
+              reject(error);
+            },
+            {
+              enableHighAccuracy: true,
+              timeout: 10000
+            }
+          );
+        });
+      }
     } catch (error) {
       console.error('Error getting current position:', error);
       return null;
