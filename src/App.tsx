@@ -10,8 +10,10 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Admin = lazy(() => import("./pages/Admin"));
+const AdminData = lazy(() => import("./pages/AdminData"));
 const PublicData = lazy(() => import("./pages/PublicData"));
 const DriverDashboard = lazy(() => import("./pages/DriverDashboard"));
+const ForumKendala = lazy(() => import("./pages/ForumKendala"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -42,10 +44,26 @@ const App = () => (
                 }
               />
               <Route
+                path="/admin/data"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminData />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/dashboard-supir"
                 element={
                   <ProtectedRoute>
                     <DriverDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/forum-kendala/:shipmentId"
+                element={
+                  <ProtectedRoute>
+                    <ForumKendala />
                   </ProtectedRoute>
                 }
               />

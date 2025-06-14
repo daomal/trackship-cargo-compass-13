@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Truck, CheckCircle2, AlertTriangle, Navigation } from 'lucide-react';
+import { MapPin, Truck, CheckCircle2, AlertTriangle, Navigation, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Shipment, SupabaseShipment } from '@/lib/types';
@@ -11,13 +11,12 @@ import { locationTracker } from '@/services/locationTracker';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
-const KENDALA_OPTIONS = ["Ban Bocor", "Macet", "Mesin Rusak", "Lainnya"];
-
 const DriverDashboard = () => {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [gpsStatus, setGpsStatus] = useState<string>('GPS Tidak Aktif');
   const [trackingShipments, setTrackingShipments] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -29,6 +28,8 @@ const DriverDashboard = () => {
 
     if (profile?.driver_id) {
       fetchDriverShipments();
+      // Start automatic GPS tracking for all pending shipments
+      startAutoTracking();
     }
   }, [profile, navigate]);
 
@@ -57,6 +58,21 @@ const DriverDashboard = () => {
       toast.error('Terjadi kesalahan saat memuat data');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const startAutoTracking = async () => {
+    if (shipments.length > 0) {
+      // Start tracking for the first active shipment
+      const activeShipment = shipments[0];
+      if (activeShipment) {
+        try {
+          await locationTracker.startTracking(activeShipment.id, setGpsStatus);
+          setTrackingShipments(prev => new Set(prev).add(activeShipment.id));
+        } catch (error) {
+          console.error('Error starting auto tracking:', error);
+        }
+      }
     }
   };
 
@@ -118,58 +134,9 @@ const DriverDashboard = () => {
     }
   };
 
-  const handleReportProblem = async (shipmentId: string) => {
-    const kendala = prompt(`Pilih kendala:\n${KENDALA_OPTIONS.map((k, i) => `${i + 1}. ${k}`).join('\n')}\n\nMasukkan nomor (1-4):`);
-    
-    if (!kendala) return;
-    
-    const kendalaIndex = parseInt(kendala) - 1;
-    if (kendalaIndex < 0 || kendalaIndex >= KENDALA_OPTIONS.length) {
-      toast.error('Pilihan tidak valid');
-      return;
-    }
-
-    const selectedKendala = KENDALA_OPTIONS[kendalaIndex];
-
-    try {
-      const { error } = await supabase
-        .from('shipments')
-        .update({
-          status: 'gagal',
-          kendala: selectedKendala,
-          updated_at: new Date().toISOString(),
-          updated_by: user?.id
-        })
-        .eq('id', shipmentId);
-
-      if (error) {
-        console.error('Error updating shipment:', error);
-        toast.error('Gagal melaporkan kendala');
-        return;
-      }
-
-      toast.success(`Kendala dilaporkan: ${selectedKendala}`);
-      
-      // Stop tracking for this shipment
-      if (trackingShipments.has(shipmentId)) {
-        await locationTracker.stopTracking();
-        setTrackingShipments(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(shipmentId);
-          return newSet;
-        });
-      }
-
-      fetchDriverShipments();
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error('Terjadi kesalahan');
-    }
-  };
-
   const handleStartTracking = async (shipmentId: string) => {
     try {
-      await locationTracker.startTracking(shipmentId);
+      await locationTracker.startTracking(shipmentId, setGpsStatus);
       setTrackingShipments(prev => new Set(prev).add(shipmentId));
     } catch (error) {
       console.error('Error starting tracking:', error);
@@ -180,6 +147,7 @@ const DriverDashboard = () => {
   const handleStopTracking = async (shipmentId: string) => {
     try {
       await locationTracker.stopTracking();
+      setGpsStatus('GPS Dihentikan');
       setTrackingShipments(prev => {
         const newSet = new Set(prev);
         newSet.delete(shipmentId);
@@ -201,12 +169,29 @@ const DriverDashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div className="container mx-auto max-w-4xl">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center justify-center gap-2">
-            <Truck className="h-8 w-8 text-blue-600" />
-            Dashboard Supir
-          </h1>
-          <p className="text-gray-600">Kelola pengiriman Anda dengan mudah</p>
+        <div className="mb-8">
+          <div className="text-center mb-6">
+            <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center justify-center gap-2">
+              <Truck className="h-8 w-8 text-blue-600" />
+              Dashboard Supir
+            </h1>
+            <p className="text-gray-600">Kelola pengiriman Anda dengan mudah</p>
+          </div>
+
+          {/* GPS Status */}
+          <Card className="mb-6 bg-white shadow-lg">
+            <CardContent className="pt-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Navigation className="h-5 w-5 text-blue-600" />
+                  <span className="font-semibold">Status GPS:</span>
+                </div>
+                <Badge variant={gpsStatus.includes('✅') ? 'default' : 'secondary'}>
+                  {gpsStatus}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {shipments.length === 0 ? (
@@ -279,7 +264,7 @@ const DriverDashboard = () => {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Button
                       onClick={() => handleDelivered(shipment.id)}
                       className="bg-green-600 hover:bg-green-700 text-white h-14 text-lg font-semibold flex items-center justify-center gap-2 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-105"
@@ -289,7 +274,37 @@ const DriverDashboard = () => {
                     </Button>
                     
                     <Button
-                      onClick={() => handleReportProblem(shipment.id)}
+                      onClick={() => navigate(`/forum-kendala/${shipment.id}`)}
+                      variant="outline"
+                      className="bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-300 h-14 text-lg font-semibold flex items-center justify-center gap-2 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-105"
+                    >
+                      <MessageSquare className="h-6 w-6" />
+                      💬 FORUM KENDALA
+                    </Button>
+                    
+                    <Button
+                      onClick={() => {
+                        const kendala = prompt('Pilih kendala:\n1. Ban Bocor\n2. Macet\n3. Mesin Rusak\n4. Lainnya\n\nMasukkan nomor (1-4):');
+                        if (kendala) {
+                          const kendalaOptions = ["Ban Bocor", "Macet", "Mesin Rusak",  "Lainnya"];
+                          const kendalaIndex = parseInt(kendala) - 1;
+                          if (kendalaIndex >= 0 && kendalaIndex < kendalaOptions.length) {
+                            supabase
+                              .from('shipments')
+                              .update({
+                                status: 'gagal',
+                                kendala: kendalaOptions[kendalaIndex],
+                                updated_at: new Date().toISOString(),
+                                updated_by: user?.id
+                              })
+                              .eq('id', shipment.id)
+                              .then(() => {
+                                toast.success(`Kendala dilaporkan: ${kendalaOptions[kendalaIndex]}`);
+                                fetchDriverShipments();
+                              });
+                          }
+                        }
+                      }}
                       variant="destructive"
                       className="bg-red-600 hover:bg-red-700 text-white h-14 text-lg font-semibold flex items-center justify-center gap-2 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-105"
                     >

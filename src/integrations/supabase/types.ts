@@ -27,6 +27,44 @@ export type Database = {
         }
         Relationships: []
       }
+      kendala_reports: {
+        Row: {
+          author_name: string
+          created_at: string
+          id: string
+          message: string
+          photo_url: string | null
+          shipment_id: string
+          user_id: string | null
+        }
+        Insert: {
+          author_name: string
+          created_at?: string
+          id?: string
+          message: string
+          photo_url?: string | null
+          shipment_id: string
+          user_id?: string | null
+        }
+        Update: {
+          author_name?: string
+          created_at?: string
+          id?: string
+          message?: string
+          photo_url?: string | null
+          shipment_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kendala_reports_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notes: {
         Row: {
           author_name: string

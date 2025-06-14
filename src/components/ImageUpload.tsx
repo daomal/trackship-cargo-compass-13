@@ -11,12 +11,14 @@ interface ImageUploadProps {
   onImageUploaded: (imageUrl: string) => void;
   onImageRemoved: () => void;
   currentImageUrl?: string;
+  bucketName?: string;
 }
 
 const ImageUpload: React.FC<ImageUploadProps> = ({
   onImageUploaded,
   onImageRemoved,
-  currentImageUrl
+  currentImageUrl,
+  bucketName = 'kendala-photos'
 }) => {
   const [isUploading, setIsUploading] = useState(false);
   const { user } = useAuth();
@@ -44,14 +46,14 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       const fileName = `${user?.id || 'anonymous'}/${Date.now()}.${fileExt}`;
 
       const { data, error } = await supabase.storage
-        .from('note-images')
+        .from(bucketName)
         .upload(fileName, file);
 
       if (error) throw error;
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('note-images')
+        .from(bucketName)
         .getPublicUrl(data.path);
 
       onImageUploaded(publicUrl);
