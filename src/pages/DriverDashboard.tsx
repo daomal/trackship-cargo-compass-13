@@ -38,7 +38,7 @@ const DriverDashboard = () => {
 
     return () => {
       if (trackingId) {
-        stopTracking(trackingId);
+        stopTracking();
       }
     };
   }, [profile]);
@@ -48,7 +48,7 @@ const DriverDashboard = () => {
     if (newStatus === 'terkirim') {
       updateObject.tanggal_tiba = new Date().toISOString();
       updateObject.waktu_tiba = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-      if (trackingId) stopTracking(trackingId);
+      if (trackingId) stopTracking();
     }
     const { error } = await supabase.from('shipments').update(updateObject).eq('id', shipment.id);
     if (error) toast.error('Gagal update status');
