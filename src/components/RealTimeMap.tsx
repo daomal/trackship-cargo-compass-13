@@ -3,10 +3,11 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MapPin, Navigation, AlertCircle, Settings, Trash2 } from 'lucide-react';
+import { MapPin, Navigation, AlertCircle, Settings, Trash2, Save } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { getMapboxToken, saveMapboxToken, deleteMapboxToken } from '@/utils/mapboxSettings';
 
 interface ShipmentLocation {
   id: string;
@@ -30,73 +31,94 @@ const RealTimeMap = () => {
   const [selectedShipment, setSelectedShipment] = useState<string | null>(null);
   const [markers, setMarkers] = useState<mapboxgl.Marker[]>([]);
   const [showTokenManager, setShowTokenManager] = useState(false);
+  const [isLoadingToken, setIsLoadingToken] = useState(true);
+  const [isSavingToken, setIsSavingToken] = useState(false);
 
-  // Load saved token on component mount
+  // Load token from Supabase on component mount
   useEffect(() => {
-    const savedToken = localStorage.getItem('mapbox_token');
-    if (savedToken) {
-      setMapboxToken(savedToken);
-      setTokenInput(savedToken);
-      console.log('📱 Loaded saved Mapbox token from localStorage');
+    loadTokenFromDatabase();
+  }, []);
+
+  const loadTokenFromDatabase = async () => {
+    setIsLoadingToken(true);
+    console.log('🔑 Loading Mapbox token from Supabase...');
+    
+    const token = await getMapboxToken();
+    
+    if (token) {
+      setMapboxToken(token);
+      setTokenInput(token);
+      console.log('✅ Loaded Mapbox token from Supabase');
     } else {
       // Set default token if no saved token
       const defaultToken = 'pk.eyJ1Ijoia2Vsb2xhc2VuamEiLCJhIjoiY21id3gzbnA0MTc1cTJrcHVuZHJyMWo2ciJ9.84jSVtrqyFb8MJwKFeGm1g';
       setMapboxToken(defaultToken);
       setTokenInput(defaultToken);
-      localStorage.setItem('mapbox_token', defaultToken);
-      console.log('📱 Set default Mapbox token');
+      // Save default token to database
+      await saveMapboxToken(defaultToken);
+      console.log('📱 Set and saved default Mapbox token');
     }
-  }, []);
+    
+    setIsLoadingToken(false);
+  };
 
   useEffect(() => {
-    if (mapboxToken && mapContainer.current && !map.current) {
+    if (mapboxToken && mapContainer.current && !map.current && !isLoadingToken) {
       initializeMap();
     }
-  }, [mapboxToken]);
+  }, [mapboxToken, isLoadingToken]);
 
   useEffect(() => {
-    if (mapboxToken) {
+    if (mapboxToken && !isLoadingToken) {
       fetchShipmentLocations();
-      const interval = setInterval(fetchShipmentLocations, 10000); // Update setiap 10 detik
+      const interval = setInterval(fetchShipmentLocations, 10000);
       subscribeToLocationUpdates();
       
       return () => {
         clearInterval(interval);
       };
     }
-  }, [mapboxToken]);
+  }, [mapboxToken, isLoadingToken]);
 
-  const handleTokenSubmit = () => {
+  const handleTokenSubmit = async () => {
     if (tokenInput.trim()) {
+      setIsSavingToken(true);
       const newToken = tokenInput.trim();
-      setMapboxToken(newToken);
-      localStorage.setItem('mapbox_token', newToken);
       
-      // Reinitialize map with new token
-      if (map.current) {
-        map.current.remove();
-        map.current = null;
+      const success = await saveMapboxToken(newToken);
+      if (success) {
+        setMapboxToken(newToken);
+        
+        // Reinitialize map with new token
+        if (map.current) {
+          map.current.remove();
+          map.current = null;
+        }
+        
+        setShowTokenManager(false);
       }
-      
-      toast.success('Mapbox token berhasil disimpan dan diperbarui');
-      setShowTokenManager(false);
+      setIsSavingToken(false);
     } else {
       toast.error('Masukkan Mapbox token yang valid');
     }
   };
 
-  const handleClearToken = () => {
-    localStorage.removeItem('mapbox_token');
-    setMapboxToken('');
-    setTokenInput('');
+  const handleClearToken = async () => {
+    setIsSavingToken(true);
+    const success = await deleteMapboxToken();
     
-    if (map.current) {
-      map.current.remove();
-      map.current = null;
+    if (success) {
+      setMapboxToken('');
+      setTokenInput('');
+      
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
+      
+      setShowTokenManager(false);
     }
-    
-    toast.success('Token Mapbox berhasil dihapus');
-    setShowTokenManager(false);
+    setIsSavingToken(false);
   };
 
   const initializeMap = () => {
@@ -281,6 +303,19 @@ const RealTimeMap = () => {
     };
   };
 
+  if (isLoadingToken) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent mr-3"></div>
+            <p>Memuat pengaturan Mapbox...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (!mapboxToken) {
     return (
       <Card>
@@ -293,13 +328,12 @@ const RealTimeMap = () => {
         <CardContent className="space-y-4">
           <div className="bg-blue-50 p-4 rounded-lg">
             <p className="text-sm text-blue-700 mb-3">
-              <strong>Untuk menggunakan peta real-time:</strong>
+              <strong>Token Mapbox tidak ditemukan</strong>
             </p>
-            <ol className="text-xs text-blue-600 space-y-1 mb-4">
-              <li>1. Buat akun di <a href="https://mapbox.com" target="_blank" rel="noopener noreferrer" className="underline">mapbox.com</a> (GRATIS)</li>
-              <li>2. Dapatkan Public Token dari dashboard Mapbox</li>
-              <li>3. Masukkan token di bawah ini</li>
-            </ol>
+            <p className="text-xs text-blue-600 mb-4">
+              Untuk menggunakan peta real-time, masukkan token Mapbox di bawah ini.
+              Token akan disimpan di database dan dapat diakses dari komputer manapun.
+            </p>
             <div className="bg-green-50 p-3 rounded border border-green-200">
               <p className="text-xs text-green-700">
                 ✅ <strong>Mapbox Gratis:</strong> 50,000 map loads per bulan tanpa biaya
@@ -313,9 +347,24 @@ const RealTimeMap = () => {
               value={tokenInput}
               onChange={(e) => setTokenInput(e.target.value)}
               className="flex-1"
+              disabled={isSavingToken}
             />
-            <Button onClick={handleTokenSubmit}>
-              Aktifkan Peta
+            <Button 
+              onClick={handleTokenSubmit}
+              disabled={isSavingToken}
+              className="flex items-center gap-2"
+            >
+              {isSavingToken ? (
+                <>
+                  <div className="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent"></div>
+                  Menyimpan...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  Simpan Token
+                </>
+              )}
             </Button>
           </div>
         </CardContent>
@@ -362,14 +411,26 @@ const RealTimeMap = () => {
                     value={tokenInput}
                     onChange={(e) => setTokenInput(e.target.value)}
                     className="flex-1"
+                    disabled={isSavingToken}
                   />
-                  <Button onClick={handleTokenSubmit} size="sm">
+                  <Button 
+                    onClick={handleTokenSubmit} 
+                    size="sm"
+                    disabled={isSavingToken}
+                    className="flex items-center gap-1"
+                  >
+                    {isSavingToken ? (
+                      <div className="animate-spin h-3 w-3 border-2 border-white rounded-full border-t-transparent"></div>
+                    ) : (
+                      <Save className="h-3 w-3" />
+                    )}
                     Update
                   </Button>
                   <Button 
                     onClick={handleClearToken} 
                     variant="destructive" 
                     size="sm"
+                    disabled={isSavingToken}
                     className="flex items-center gap-1"
                   >
                     <Trash2 className="h-3 w-3" />
@@ -377,7 +438,7 @@ const RealTimeMap = () => {
                   </Button>
                 </div>
                 <p className="text-xs text-gray-500">
-                  💡 Token akan disimpan secara permanen di browser Anda
+                  💡 Token disimpan di database dan dapat diakses dari komputer manapun
                 </p>
               </div>
             </div>
