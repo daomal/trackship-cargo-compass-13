@@ -242,12 +242,23 @@ const RealTimeMap = () => {
       }
 
       console.log('📍 Raw driver data:', data?.length || 0);
+      console.log('📊 Raw data sample:', data?.slice(0, 2));
       
       // Group by driver_id to get unique drivers with their combined data
       const driverMap = new Map<string, DriverLocation>();
       
       data?.forEach((shipment: any) => {
-        if (!shipment.driver_id || !shipment.drivers) return;
+        if (!shipment.driver_id || !shipment.drivers) {
+          console.log('⚠️ Skipping shipment - missing driver data:', shipment);
+          return;
+        }
+        
+        console.log('🔍 Processing shipment:', {
+          driver_id: shipment.driver_id,
+          driver_name: shipment.drivers?.name,
+          lat: shipment.current_lat,
+          lng: shipment.current_lng
+        });
         
         const driverId = shipment.driver_id;
         const existing = driverMap.get(driverId);
@@ -261,7 +272,7 @@ const RealTimeMap = () => {
             delivered.push(...existing.delivered_destinations);
           }
           
-          driverMap.set(driverId, {
+          const driverLocation: DriverLocation = {
             driver_id: driverId,
             driver_name: shipment.drivers.name,
             license_plate: shipment.drivers.license_plate,
@@ -271,7 +282,10 @@ const RealTimeMap = () => {
             shipment_count: (existing?.shipment_count || 0) + 1,
             destinations: destinations,
             delivered_destinations: delivered
-          });
+          };
+          
+          console.log('✅ Created driver location object:', driverLocation);
+          driverMap.set(driverId, driverLocation);
         } else if (existing) {
           existing.shipment_count += 1;
           if (!existing.destinations.includes(shipment.tujuan)) {
@@ -285,11 +299,15 @@ const RealTimeMap = () => {
 
       const uniqueDrivers = Array.from(driverMap.values());
       console.log('📍 Unique drivers with GPS:', uniqueDrivers.length);
+      console.log('📊 Driver objects:', uniqueDrivers);
       
       setDrivers(uniqueDrivers);
       
       if (map.current && mapInitialized) {
+        console.log('🗺️ Map is ready, updating markers...');
         updateMapMarkersAndTrails(uniqueDrivers);
+      } else {
+        console.log('⚠️ Map not ready yet - map.current:', !!map.current, 'mapInitialized:', mapInitialized);
       }
     } catch (error) {
       console.error('💥 Error:', error);
@@ -380,16 +398,18 @@ const RealTimeMap = () => {
       ctx.fill();
     }
     
+    console.log('✅ 3D truck icon created successfully');
     return canvas;
   };
 
   const updateMapMarkersAndTrails = (driverData: DriverLocation[]) => {
     if (!map.current || !mapInitialized) {
-      console.log('⚠️ Map not ready for markers update');
+      console.log('⚠️ Map not ready for markers update - map.current:', !!map.current, 'mapInitialized:', mapInitialized);
       return;
     }
 
     console.log('🗺️ Updating map markers and trails for', driverData.length, 'drivers');
+    console.log('📊 Driver data for markers:', driverData);
 
     // Clear existing markers that are no longer needed
     const currentDriverIds = new Set(driverData.map(d => d.driver_id));
@@ -408,6 +428,13 @@ const RealTimeMap = () => {
       const newPosition: [number, number] = [driver.current_lng, driver.current_lat];
       
       console.log('📍 Processing driver:', driver.driver_name, 'at position:', newPosition);
+      console.log('🎨 Driver color:', driverColor);
+      
+      // Validate coordinates
+      if (!driver.current_lat || !driver.current_lng || isNaN(driver.current_lat) || isNaN(driver.current_lng)) {
+        console.error('❌ Invalid coordinates for driver:', driver.driver_name, 'lat:', driver.current_lat, 'lng:', driver.current_lng);
+        return;
+      }
       
       // Update or create trail
       const existingTrail = driver_trails.get(driverId);
@@ -449,85 +476,101 @@ const RealTimeMap = () => {
         }
       } else {
         console.log('✨ Creating new marker for:', driver.driver_name);
-        // Create new marker with 3D truck icon
-        const truckIcon = create3DTruckIcon(driverColor, driver.driver_name);
-        const el = document.createElement('div');
-        el.appendChild(truckIcon);
-        el.style.cursor = 'pointer';
-        el.style.transform = 'translate(-50%, -50%)';
-        el.style.transition = 'all 0.3s ease';
         
-        el.addEventListener('mouseenter', () => {
-          el.style.transform = 'translate(-50%, -50%) scale(1.1)';
-        });
-        
-        el.addEventListener('mouseleave', () => {
-          el.style.transform = 'translate(-50%, -50%) scale(1)';
-        });
-        
-        el.addEventListener('click', () => {
-          console.log('📍 Driver marker clicked:', driver.driver_name);
-          setSelectedDriver(driver.driver_id);
-          map.current?.flyTo({
-            center: newPosition,
-            zoom: 16,
-            duration: 1000
+        try {
+          // Create new marker with 3D truck icon
+          const truckIcon = create3DTruckIcon(driverColor, driver.driver_name);
+          console.log('🚛 Truck icon created, adding to DOM...');
+          
+          const el = document.createElement('div');
+          el.appendChild(truckIcon);
+          el.style.cursor = 'pointer';
+          el.style.transform = 'translate(-50%, -50%)';
+          el.style.transition = 'all 0.3s ease';
+          
+          console.log('📦 DOM element created for marker');
+          
+          el.addEventListener('mouseenter', () => {
+            el.style.transform = 'translate(-50%, -50%) scale(1.1)';
           });
-        });
+          
+          el.addEventListener('mouseleave', () => {
+            el.style.transform = 'translate(-50%, -50%) scale(1)';
+          });
+          
+          el.addEventListener('click', () => {
+            console.log('📍 Driver marker clicked:', driver.driver_name);
+            setSelectedDriver(driver.driver_id);
+            map.current?.flyTo({
+              center: newPosition,
+              zoom: 16,
+              duration: 1000
+            });
+          });
 
-        // Create enhanced popup
-        const timeAgo = Math.floor((new Date().getTime() - new Date(driver.updated_at).getTime()) / 60000);
-        const popup = new mapboxgl.Popup({ 
-          offset: 30,
-          closeButton: true,
-          closeOnClick: false
-        }).setHTML(
-          `<div style="padding: 16px; font-family: 'Segoe UI', sans-serif; min-width: 280px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.15);">
-            <div style="text-align: center; margin-bottom: 12px;">
-              <h3 style="margin: 0; font-size: 18px; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">
-                🚛 ${driver.driver_name}
-              </h3>
-              <div style="width: 30px; height: 3px; background: ${driverColor}; margin: 8px auto; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.3);"></div>
-            </div>
-            <div style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; margin-bottom: 12px; backdrop-filter: blur(10px);">
-              <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                <span style="font-size: 16px; margin-right: 8px;">📋</span>
-                <span style="font-size: 14px; font-weight: 500;">${driver.license_plate}</span>
-              </div>
-              <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                <span style="font-size: 16px; margin-right: 8px;">📦</span>
-                <span style="font-size: 14px;">${driver.shipment_count} pengiriman aktif</span>
-              </div>
-              <div style="display: flex; align-items: flex-start; margin-bottom: 8px;">
-                <span style="font-size: 16px; margin-right: 8px; margin-top: 2px;">📍</span>
-                <span style="font-size: 13px; line-height: 1.4;">${driver.destinations.join(', ')}</span>
-              </div>
-              ${driver.delivered_destinations.length > 0 ? 
-                `<div style="display: flex; align-items: flex-start; margin-bottom: 8px;">
-                  <span style="font-size: 16px; margin-right: 8px; margin-top: 2px;">✅</span>
-                  <span style="font-size: 13px; color: #90EE90; line-height: 1.4;">${driver.delivered_destinations.join(', ')}</span>
-                </div>` : ''
-              }
-            </div>
-            <div style="text-align: center; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 6px;">
-              <div style="color: ${timeAgo < 1 ? '#90EE90' : timeAgo < 5 ? '#FFD700' : '#FF6B6B'}; font-size: 14px; font-weight: bold; margin-bottom: 4px;">
-                ${timeAgo < 1 ? '🟢 LIVE TRACKING' : `⏰ ${timeAgo} menit yang lalu`}
-              </div>
-              <div style="font-size: 11px; color: rgba(255,255,255,0.8);">
-                ${driver.current_lat.toFixed(6)}, ${driver.current_lng.toFixed(6)}
-              </div>
-            </div>
-          </div>`
-        );
+          console.log('🔧 Event listeners added to marker element');
 
-        const marker = new mapboxgl.Marker(el)
-          .setLngLat(newPosition)
-          .setPopup(popup)
-          .addTo(map.current);
+          // Create enhanced popup
+          const timeAgo = Math.floor((new Date().getTime() - new Date(driver.updated_at).getTime()) / 60000);
+          const popup = new mapboxgl.Popup({ 
+            offset: 30,
+            closeButton: true,
+            closeOnClick: false
+          }).setHTML(
+            `<div style="padding: 16px; font-family: 'Segoe UI', sans-serif; min-width: 280px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.15);">
+              <div style="text-align: center; margin-bottom: 12px;">
+                <h3 style="margin: 0; font-size: 18px; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">
+                  🚛 ${driver.driver_name}
+                </h3>
+                <div style="width: 30px; height: 3px; background: ${driverColor}; margin: 8px auto; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.3);"></div>
+              </div>
+              <div style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; margin-bottom: 12px; backdrop-filter: blur(10px);">
+                <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                  <span style="font-size: 16px; margin-right: 8px;">📋</span>
+                  <span style="font-size: 14px; font-weight: 500;">${driver.license_plate}</span>
+                </div>
+                <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                  <span style="font-size: 16px; margin-right: 8px;">📦</span>
+                  <span style="font-size: 14px;">${driver.shipment_count} pengiriman aktif</span>
+                </div>
+                <div style="display: flex; align-items: flex-start; margin-bottom: 8px;">
+                  <span style="font-size: 16px; margin-right: 8px; margin-top: 2px;">📍</span>
+                  <span style="font-size: 13px; line-height: 1.4;">${driver.destinations.join(', ')}</span>
+                </div>
+                ${driver.delivered_destinations.length > 0 ? 
+                  `<div style="display: flex; align-items: flex-start; margin-bottom: 8px;">
+                    <span style="font-size: 16px; margin-right: 8px; margin-top: 2px;">✅</span>
+                    <span style="font-size: 13px; color: #90EE90; line-height: 1.4;">${driver.delivered_destinations.join(', ')}</span>
+                  </div>` : ''
+                }
+              </div>
+              <div style="text-align: center; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 6px;">
+                <div style="color: ${timeAgo < 1 ? '#90EE90' : timeAgo < 5 ? '#FFD700' : '#FF6B6B'}; font-size: 14px; font-weight: bold; margin-bottom: 4px;">
+                  ${timeAgo < 1 ? '🟢 LIVE TRACKING' : `⏰ ${timeAgo} menit yang lalu`}
+                </div>
+                <div style="font-size: 11px; color: rgba(255,255,255,0.8);">
+                  ${driver.current_lat.toFixed(6)}, ${driver.current_lng.toFixed(6)}
+                </div>
+              </div>
+            </div>`
+          );
 
-        console.log('✅ Marker created and added to map for:', driver.driver_name);
-        drivers_markers.set(driverId, marker);
-        setDriverMarkers(new Map(drivers_markers));
+          console.log('💬 Popup created for marker');
+
+          console.log('🗺️ Creating marker at position:', newPosition);
+          const marker = new mapboxgl.Marker(el)
+            .setLngLat(newPosition)
+            .setPopup(popup)
+            .addTo(map.current);
+
+          console.log('✅ Marker created and added to map for:', driver.driver_name);
+          drivers_markers.set(driverId, marker);
+          setDriverMarkers(new Map(drivers_markers));
+          
+          console.log('📊 Current markers count:', drivers_markers.size);
+        } catch (markerError) {
+          console.error('❌ Error creating marker for', driver.driver_name, ':', markerError);
+        }
       }
       
       // Add destination markers for delivered locations
