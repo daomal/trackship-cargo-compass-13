@@ -1,10 +1,9 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MapPin, Navigation, AlertCircle } from 'lucide-react';
+import { MapPin, Navigation, AlertCircle, Settings, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -30,6 +29,24 @@ const RealTimeMap = () => {
   const [shipments, setShipments] = useState<ShipmentLocation[]>([]);
   const [selectedShipment, setSelectedShipment] = useState<string | null>(null);
   const [markers, setMarkers] = useState<mapboxgl.Marker[]>([]);
+  const [showTokenManager, setShowTokenManager] = useState(false);
+
+  // Load saved token on component mount
+  useEffect(() => {
+    const savedToken = localStorage.getItem('mapbox_token');
+    if (savedToken) {
+      setMapboxToken(savedToken);
+      setTokenInput(savedToken);
+      console.log('📱 Loaded saved Mapbox token from localStorage');
+    } else {
+      // Set default token if no saved token
+      const defaultToken = 'pk.eyJ1Ijoia2Vsb2xhc2VuamEiLCJhIjoiY21id3gzbnA0MTc1cTJrcHVuZHJyMWo2ciJ9.84jSVtrqyFb8MJwKFeGm1g';
+      setMapboxToken(defaultToken);
+      setTokenInput(defaultToken);
+      localStorage.setItem('mapbox_token', defaultToken);
+      console.log('📱 Set default Mapbox token');
+    }
+  }, []);
 
   useEffect(() => {
     if (mapboxToken && mapContainer.current && !map.current) {
@@ -51,11 +68,35 @@ const RealTimeMap = () => {
 
   const handleTokenSubmit = () => {
     if (tokenInput.trim()) {
-      setMapboxToken(tokenInput.trim());
-      toast.success('Mapbox token berhasil diatur');
+      const newToken = tokenInput.trim();
+      setMapboxToken(newToken);
+      localStorage.setItem('mapbox_token', newToken);
+      
+      // Reinitialize map with new token
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
+      
+      toast.success('Mapbox token berhasil disimpan dan diperbarui');
+      setShowTokenManager(false);
     } else {
       toast.error('Masukkan Mapbox token yang valid');
     }
+  };
+
+  const handleClearToken = () => {
+    localStorage.removeItem('mapbox_token');
+    setMapboxToken('');
+    setTokenInput('');
+    
+    if (map.current) {
+      map.current.remove();
+      map.current = null;
+    }
+    
+    toast.success('Token Mapbox berhasil dihapus');
+    setShowTokenManager(false);
   };
 
   const initializeMap = () => {
@@ -105,7 +146,6 @@ const RealTimeMap = () => {
           tanggal_kirim,
           drivers (name, license_plate)
         `)
-        .eq('status', 'tertunda')
         .eq('tanggal_kirim', today)
         .not('current_lat', 'is', null)
         .not('current_lng', 'is', null);
@@ -287,12 +327,62 @@ const RealTimeMap = () => {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MapPin className="h-5 w-5 text-blue-600" />
-            Peta Pelacakan Real-time - Driver Hari Ini
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-blue-600" />
+              Peta Pelacakan Real-time - Driver Hari Ini
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowTokenManager(!showTokenManager)}
+              className="flex items-center gap-2"
+            >
+              <Settings className="h-4 w-4" />
+              Kelola Token
+            </Button>
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Token Manager */}
+          {showTokenManager && (
+            <div className="mb-4 p-4 bg-gray-50 rounded-lg border">
+              <h4 className="font-semibold mb-3">Pengaturan Mapbox Token</h4>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm text-gray-600 mb-1 block">Token Aktif Saat Ini:</label>
+                  <div className="bg-white p-2 rounded text-xs font-mono border break-all">
+                    {mapboxToken ? `${mapboxToken.substring(0, 20)}...${mapboxToken.substring(mapboxToken.length - 10)}` : 'Tidak ada token'}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    placeholder="Masukkan token baru..."
+                    value={tokenInput}
+                    onChange={(e) => setTokenInput(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button onClick={handleTokenSubmit} size="sm">
+                    Update
+                  </Button>
+                  <Button 
+                    onClick={handleClearToken} 
+                    variant="destructive" 
+                    size="sm"
+                    className="flex items-center gap-1"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    Hapus
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500">
+                  💡 Token akan disimpan secara permanen di browser Anda
+                </p>
+              </div>
+            </div>
+          )}
+
           <div ref={mapContainer} className="h-96 w-full rounded-lg" />
           {shipments.length === 0 && (
             <div className="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
