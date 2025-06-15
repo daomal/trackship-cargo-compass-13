@@ -41,6 +41,7 @@ const RealTimeMap = () => {
   const [isLoadingToken, setIsLoadingToken] = useState(true);
   const [isSavingToken, setIsSavingToken] = useState(false);
   const [userInteracting, setUserInteracting] = useState(false);
+  const [mapInitialized, setMapInitialized] = useState(false);
 
   // Color palette for different drivers
   const driverColors = [
@@ -66,7 +67,7 @@ const RealTimeMap = () => {
       console.log('✅ Loaded Mapbox token from Supabase');
     } else {
       // Set default token if no saved token
-      const defaultToken = 'pk.eyJ1Ijoia2Vsb2xhc2VuamEiLCJhIjoiY21id3gzbnA0MTc1cTJrcHVuZHJyMWo2ciJ9.84jSVtrqyFb8MJwKFeGm1g';
+      const defaultToken = 'pk.eyJ1Ijoia2Vsb2xhc2VuamEiLCJhIjoiY21id3gzbnA0MTc1cTJycHVuZHJyMWo2ciJ9.84jSVtrqyFb8MJwKFeGm1g';
       setMapboxToken(defaultToken);
       setTokenInput(defaultToken);
       // Save default token to database
@@ -108,6 +109,7 @@ const RealTimeMap = () => {
         if (map.current) {
           map.current.remove();
           map.current = null;
+          setMapInitialized(false);
         }
         
         setShowTokenManager(false);
@@ -129,6 +131,7 @@ const RealTimeMap = () => {
       if (map.current) {
         map.current.remove();
         map.current = null;
+        setMapInitialized(false);
       }
       
       setShowTokenManager(false);
@@ -146,32 +149,58 @@ const RealTimeMap = () => {
         container: mapContainer.current,
         style: 'mapbox://styles/mapbox/streets-v12',
         center: [106.8456, -6.2088], // Jakarta coordinates
-        zoom: 10,
+        zoom: 11,
       });
 
       map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
       
       // Track user interaction to prevent auto zoom-out
-      map.current.on('mousedown', () => setUserInteracting(true));
-      map.current.on('touchstart', () => setUserInteracting(true));
-      map.current.on('dragstart', () => setUserInteracting(true));
-      map.current.on('zoomstart', () => setUserInteracting(true));
+      map.current.on('mousedown', () => {
+        setUserInteracting(true);
+        console.log('🖱️ User started interacting with map');
+      });
+      map.current.on('touchstart', () => {
+        setUserInteracting(true);
+        console.log('👆 User started touching map');
+      });
+      map.current.on('dragstart', () => {
+        setUserInteracting(true);
+        console.log('🖱️ User started dragging map');
+      });
+      map.current.on('zoomstart', () => {
+        setUserInteracting(true);
+        console.log('🔍 User started zooming map');
+      });
       
+      // Long delay before allowing auto-fit again
       map.current.on('mouseup', () => {
-        setTimeout(() => setUserInteracting(false), 2000); // Wait 2 seconds before allowing auto-fit
+        setTimeout(() => {
+          setUserInteracting(false);
+          console.log('🖱️ User interaction timeout - allowing auto-fit');
+        }, 10000); // 10 seconds delay
       });
       map.current.on('touchend', () => {
-        setTimeout(() => setUserInteracting(false), 2000);
+        setTimeout(() => {
+          setUserInteracting(false);
+          console.log('👆 Touch interaction timeout - allowing auto-fit');
+        }, 10000);
       });
       map.current.on('dragend', () => {
-        setTimeout(() => setUserInteracting(false), 2000);
+        setTimeout(() => {
+          setUserInteracting(false);
+          console.log('🖱️ Drag interaction timeout - allowing auto-fit');
+        }, 10000);
       });
       map.current.on('zoomend', () => {
-        setTimeout(() => setUserInteracting(false), 2000);
+        setTimeout(() => {
+          setUserInteracting(false);
+          console.log('🔍 Zoom interaction timeout - allowing auto-fit');
+        }, 10000);
       });
       
       map.current.on('load', () => {
         console.log('🗺️ Map loaded successfully');
+        setMapInitialized(true);
         fetchDriverLocations(); // Fetch locations once map is ready
       });
 
@@ -259,7 +288,7 @@ const RealTimeMap = () => {
       
       setDrivers(uniqueDrivers);
       
-      if (map.current) {
+      if (map.current && mapInitialized) {
         updateMapMarkersAndTrails(uniqueDrivers);
       }
     } catch (error) {
@@ -267,39 +296,93 @@ const RealTimeMap = () => {
     }
   };
 
-  const createTruckIcon = (color: string, driverName: string) => {
+  const create3DTruckIcon = (color: string, driverName: string) => {
     const canvas = document.createElement('canvas');
-    canvas.width = 40;
-    canvas.height = 40;
+    canvas.width = 60;
+    canvas.height = 60;
     const ctx = canvas.getContext('2d');
     
     if (ctx) {
-      // Draw truck body
-      ctx.fillStyle = color;
-      ctx.fillRect(8, 15, 24, 12);
+      // Create shadow
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetX = 3;
+      ctx.shadowOffsetY = 3;
       
-      // Draw truck cabin
-      ctx.fillRect(8, 8, 12, 15);
+      // Draw main truck body with gradient
+      const gradient = ctx.createLinearGradient(0, 0, 0, 40);
+      gradient.addColorStop(0, color);
+      gradient.addColorStop(0.5, color);
+      gradient.addColorStop(1, '#000');
       
-      // Draw wheels
-      ctx.fillStyle = '#333';
+      ctx.fillStyle = gradient;
+      ctx.fillRect(12, 18, 36, 18);
+      
+      // Draw truck cabin with 3D effect
+      const cabinGradient = ctx.createLinearGradient(0, 0, 0, 25);
+      cabinGradient.addColorStop(0, '#ffffff');
+      cabinGradient.addColorStop(0.3, color);
+      cabinGradient.addColorStop(1, '#000');
+      
+      ctx.fillStyle = cabinGradient;
+      ctx.fillRect(12, 10, 18, 25);
+      
+      // Reset shadow for other elements
+      ctx.shadowColor = 'transparent';
+      
+      // Draw windshield
+      ctx.fillStyle = 'rgba(135, 206, 235, 0.8)';
+      ctx.fillRect(14, 12, 14, 8);
+      
+      // Draw wheels with 3D effect
+      const wheelGradient = ctx.createRadialGradient(18, 40, 2, 18, 40, 6);
+      wheelGradient.addColorStop(0, '#666');
+      wheelGradient.addColorStop(0.7, '#333');
+      wheelGradient.addColorStop(1, '#000');
+      
+      ctx.fillStyle = wheelGradient;
       ctx.beginPath();
-      ctx.arc(14, 30, 3, 0, 2 * Math.PI);
-      ctx.arc(26, 30, 3, 0, 2 * Math.PI);
+      ctx.arc(18, 40, 6, 0, 2 * Math.PI);
+      ctx.arc(36, 40, 6, 0, 2 * Math.PI);
       ctx.fill();
       
-      // Add driver initial
+      // Add wheel rims
+      ctx.fillStyle = '#999';
+      ctx.beginPath();
+      ctx.arc(18, 40, 3, 0, 2 * Math.PI);
+      ctx.arc(36, 40, 3, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      // Draw headlights
+      ctx.fillStyle = '#FFFF99';
+      ctx.fillRect(48, 22, 3, 4);
+      ctx.fillRect(48, 28, 3, 4);
+      
+      // Add driver initial with better styling
       ctx.fillStyle = '#FFF';
-      ctx.font = 'bold 10px Arial';
+      ctx.font = 'bold 14px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText(driverName.charAt(0).toUpperCase(), 14, 17);
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 1;
+      const initial = driverName.charAt(0).toUpperCase();
+      ctx.strokeText(initial, 21, 22);
+      ctx.fillText(initial, 21, 22);
+      
+      // Add direction arrow
+      ctx.fillStyle = '#FFD700';
+      ctx.beginPath();
+      ctx.moveTo(45, 15);
+      ctx.lineTo(55, 20);
+      ctx.lineTo(45, 25);
+      ctx.closePath();
+      ctx.fill();
     }
     
     return canvas;
   };
 
   const updateMapMarkersAndTrails = (driverData: DriverLocation[]) => {
-    if (!map.current) return;
+    if (!map.current || !mapInitialized) return;
 
     console.log('🗺️ Updating map markers and trails for', driverData.length, 'drivers');
 
@@ -347,53 +430,74 @@ const RealTimeMap = () => {
           animateMarker(existingMarker, currentLngLat, targetLngLat, 2000); // 2 second animation
         }
       } else {
-        // Create new marker
-        const truckIcon = createTruckIcon(driverColor, driver.driver_name);
+        // Create new marker with 3D truck icon
+        const truckIcon = create3DTruckIcon(driverColor, driver.driver_name);
         const el = document.createElement('div');
         el.appendChild(truckIcon);
         el.style.cursor = 'pointer';
         el.style.transform = 'translate(-50%, -50%)';
+        el.style.transition = 'all 0.3s ease';
+        
+        el.addEventListener('mouseenter', () => {
+          el.style.transform = 'translate(-50%, -50%) scale(1.1)';
+        });
+        
+        el.addEventListener('mouseleave', () => {
+          el.style.transform = 'translate(-50%, -50%) scale(1)';
+        });
         
         el.addEventListener('click', () => {
           console.log('📍 Driver marker clicked:', driver.driver_name);
           setSelectedDriver(driver.driver_id);
-          if (!userInteracting) {
-            map.current?.flyTo({
-              center: newPosition,
-              zoom: 15,
-              duration: 1000
-            });
-          }
+          map.current?.flyTo({
+            center: newPosition,
+            zoom: 16,
+            duration: 1000
+          });
         });
 
-        // Create popup
+        // Create enhanced popup
         const timeAgo = Math.floor((new Date().getTime() - new Date(driver.updated_at).getTime()) / 60000);
-        const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(
-          `<div style="padding: 12px; font-family: sans-serif; min-width: 220px;">
-            <h3 style="margin: 0 0 8px 0; color: #1f2937; font-size: 16px; font-weight: bold;">
-              🚛 ${driver.driver_name}
-            </h3>
-            <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 14px;">
-              📋 ${driver.license_plate}
-            </p>
-            <p style="margin: 0 0 4px 0; color: #374151; font-size: 14px;">
-              📦 ${driver.shipment_count} pengiriman aktif
-            </p>
-            <p style="margin: 0 0 8px 0; color: #374151; font-size: 14px;">
-              📍 Tujuan: ${driver.destinations.join(', ')}
-            </p>
-            ${driver.delivered_destinations.length > 0 ? 
-              `<p style="margin: 0 0 8px 0; color: #10B981; font-size: 14px;">
-                ✅ Selesai: ${driver.delivered_destinations.join(', ')}
-              </p>` : ''
-            }
-            <p style="margin: 0 0 8px 0; color: ${timeAgo < 1 ? '#10B981' : timeAgo < 5 ? '#F59E0B' : '#EF4444'}; font-size: 12px; font-weight: bold;">
-              🕐 ${timeAgo < 1 ? '🟢 LIVE' : `⏰ ${timeAgo} menit lalu`}
-            </p>
-            <p style="margin: 0; color: #9ca3af; font-size: 11px;">
-              Lat: ${driver.current_lat.toFixed(6)}<br>
-              Lng: ${driver.current_lng.toFixed(6)}
-            </p>
+        const popup = new mapboxgl.Popup({ 
+          offset: 30,
+          closeButton: true,
+          closeOnClick: false
+        }).setHTML(
+          `<div style="padding: 16px; font-family: 'Segoe UI', sans-serif; min-width: 280px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.15);">
+            <div style="text-align: center; margin-bottom: 12px;">
+              <h3 style="margin: 0; font-size: 18px; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">
+                🚛 ${driver.driver_name}
+              </h3>
+              <div style="width: 30px; height: 3px; background: ${driverColor}; margin: 8px auto; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.3);"></div>
+            </div>
+            <div style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; margin-bottom: 12px; backdrop-filter: blur(10px);">
+              <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 16px; margin-right: 8px;">📋</span>
+                <span style="font-size: 14px; font-weight: 500;">${driver.license_plate}</span>
+              </div>
+              <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 16px; margin-right: 8px;">📦</span>
+                <span style="font-size: 14px;">${driver.shipment_count} pengiriman aktif</span>
+              </div>
+              <div style="display: flex; align-items: flex-start; margin-bottom: 8px;">
+                <span style="font-size: 16px; margin-right: 8px; margin-top: 2px;">📍</span>
+                <span style="font-size: 13px; line-height: 1.4;">${driver.destinations.join(', ')}</span>
+              </div>
+              ${driver.delivered_destinations.length > 0 ? 
+                `<div style="display: flex; align-items: flex-start; margin-bottom: 8px;">
+                  <span style="font-size: 16px; margin-right: 8px; margin-top: 2px;">✅</span>
+                  <span style="font-size: 13px; color: #90EE90; line-height: 1.4;">${driver.delivered_destinations.join(', ')}</span>
+                </div>` : ''
+              }
+            </div>
+            <div style="text-align: center; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 6px;">
+              <div style="color: ${timeAgo < 1 ? '#90EE90' : timeAgo < 5 ? '#FFD700' : '#FF6B6B'}; font-size: 14px; font-weight: bold; margin-bottom: 4px;">
+                ${timeAgo < 1 ? '🟢 LIVE TRACKING' : `⏰ ${timeAgo} menit yang lalu`}
+              </div>
+              <div style="font-size: 11px; color: rgba(255,255,255,0.8);">
+                ${driver.current_lat.toFixed(6)}, ${driver.current_lng.toFixed(6)}
+              </div>
+            </div>
           </div>`
         );
 
@@ -411,22 +515,34 @@ const RealTimeMap = () => {
         const destKey = `${driverId}-${destination}`;
         if (!destination_markers.has(destKey)) {
           const destEl = document.createElement('div');
-          destEl.innerHTML = '📍';
-          destEl.style.fontSize = '24px';
+          destEl.innerHTML = '🎯';
+          destEl.style.fontSize = '28px';
           destEl.style.cursor = 'pointer';
           destEl.style.transform = 'translate(-50%, -100%)';
+          destEl.style.filter = 'drop-shadow(2px 2px 4px rgba(0,0,0,0.3))';
+          destEl.style.transition = 'all 0.3s ease';
+          
+          destEl.addEventListener('mouseenter', () => {
+            destEl.style.transform = 'translate(-50%, -100%) scale(1.2)';
+          });
+          
+          destEl.addEventListener('mouseleave', () => {
+            destEl.style.transform = 'translate(-50%, -100%) scale(1)';
+          });
           
           const destPopup = new mapboxgl.Popup({ offset: 15 }).setHTML(
-            `<div style="padding: 8px; font-family: sans-serif;">
-              <h4 style="margin: 0 0 4px 0; color: #10B981; font-size: 14px;">
-                ✅ Pengiriman Selesai
+            `<div style="padding: 12px; font-family: sans-serif; background: linear-gradient(135deg, #10B981, #059669); color: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+              <h4 style="margin: 0 0 8px 0; font-size: 16px; text-align: center;">
+                ✅ Pengiriman Berhasil
               </h4>
-              <p style="margin: 0 0 2px 0; font-size: 12px; color: #374151;">
-                📍 ${destination}
-              </p>
-              <p style="margin: 0; font-size: 12px; color: #6b7280;">
-                oleh: ${driver.driver_name}
-              </p>
+              <div style="background: rgba(255,255,255,0.1); padding: 8px; border-radius: 4px; margin-bottom: 8px;">
+                <p style="margin: 0 0 4px 0; font-size: 14px; font-weight: bold;">
+                  📍 ${destination}
+                </p>
+                <p style="margin: 0; font-size: 12px; opacity: 0.9;">
+                  oleh: ${driver.driver_name}
+                </p>
+              </div>
             </div>`
           );
           
@@ -443,20 +559,20 @@ const RealTimeMap = () => {
       });
     });
 
-    // Fit map to show all markers (only if user is not interacting)
-    if (driverData.length > 0 && !userInteracting) {
+    // Only fit bounds on first load and when no user interaction
+    if (driverData.length > 0 && !userInteracting && !mapInitialized) {
       const bounds = new mapboxgl.LngLatBounds();
       driverData.forEach(driver => {
         bounds.extend([driver.current_lng, driver.current_lat]);
       });
       
       map.current?.fitBounds(bounds, {
-        padding: 50,
-        maxZoom: 13,
-        duration: 1000
+        padding: 80,
+        maxZoom: 12,
+        duration: 1500
       });
       
-      console.log('🗺️ Map bounds updated to show all', driverData.length, 'driver markers');
+      console.log('🗺️ Initial map bounds set for', driverData.length, 'drivers');
     }
   };
 
@@ -501,7 +617,7 @@ const RealTimeMap = () => {
         },
         paint: {
           'line-color': trail.color,
-          'line-width': 3,
+          'line-width': 4,
           'line-opacity': 0.8
         }
       });
@@ -692,7 +808,7 @@ const RealTimeMap = () => {
             </div>
           )}
 
-          <div ref={mapContainer} className="h-96 w-full rounded-lg" />
+          <div ref={mapContainer} className="h-[600px] w-full rounded-lg border-2 border-gray-200 shadow-lg" />
           {drivers.length === 0 && (
             <div className="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
               <div className="flex items-center gap-2 text-yellow-800">
@@ -730,13 +846,11 @@ const RealTimeMap = () => {
                     }`}
                     onClick={() => {
                       setSelectedDriver(driver.driver_id);
-                      if (!userInteracting) {
-                        map.current?.flyTo({
-                          center: [driver.current_lng, driver.current_lat],
-                          zoom: 15,
-                          duration: 1000
-                        });
-                      }
+                      map.current?.flyTo({
+                        center: [driver.current_lng, driver.current_lat],
+                        zoom: 16,
+                        duration: 1000
+                      });
                     }}
                   >
                     <div className="flex items-center justify-between">
