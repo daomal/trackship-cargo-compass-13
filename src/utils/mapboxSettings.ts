@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 
 export interface MapboxSettings {
   id: string;
+  key: string;
   mapbox_token: string;
   created_at: string;
   updated_at: string;
@@ -14,7 +15,8 @@ export interface MapboxSettings {
  */
 export const getMapboxToken = async (): Promise<string> => {
   try {
-    const { data, error } = await supabase
+    // Use type assertion to work around TypeScript limitations
+    const { data, error } = await (supabase as any)
       .from('settings')
       .select('mapbox_token')
       .eq('key', 'mapbox_token')
@@ -37,7 +39,8 @@ export const getMapboxToken = async (): Promise<string> => {
  */
 export const saveMapboxToken = async (token: string): Promise<boolean> => {
   try {
-    const { error } = await supabase
+    // Use type assertion to work around TypeScript limitations
+    const { error } = await (supabase as any)
       .from('settings')
       .upsert({
         key: 'mapbox_token',
@@ -66,7 +69,8 @@ export const saveMapboxToken = async (token: string): Promise<boolean> => {
  */
 export const deleteMapboxToken = async (): Promise<boolean> => {
   try {
-    const { error } = await supabase
+    // Use type assertion to work around TypeScript limitations
+    const { error } = await (supabase as any)
       .from('settings')
       .delete()
       .eq('key', 'mapbox_token');

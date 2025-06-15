@@ -124,6 +124,30 @@ export type Database = {
           },
         ]
       }
+      settings: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          mapbox_token: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          mapbox_token?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          mapbox_token?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       shipments: {
         Row: {
           created_at: string | null
