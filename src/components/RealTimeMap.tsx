@@ -9,17 +9,15 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { getMapboxToken, saveMapboxToken, deleteMapboxToken } from '@/utils/mapboxSettings';
 
-interface ShipmentLocation {
-  id: string;
-  no_surat_jalan: string;
-  tujuan: string;
+interface DriverLocation {
+  driver_id: string;
+  driver_name: string;
+  license_plate: string;
   current_lat: number;
   current_lng: number;
   updated_at: string;
-  drivers?: {
-    name: string;
-    license_plate: string;
-  } | null;
+  shipment_count: number;
+  destinations: string[];
 }
 
 const RealTimeMap = () => {
@@ -27,8 +25,8 @@ const RealTimeMap = () => {
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapboxToken, setMapboxToken] = useState('');
   const [tokenInput, setTokenInput] = useState('');
-  const [shipments, setShipments] = useState<ShipmentLocation[]>([]);
-  const [selectedShipment, setSelectedShipment] = useState<string | null>(null);
+  const [drivers, setDrivers] = useState<DriverLocation[]>([]);
+  const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
   const [markers, setMarkers] = useState<mapboxgl.Marker[]>([]);
   const [showTokenManager, setShowTokenManager] = useState(false);
   const [isLoadingToken, setIsLoadingToken] = useState(true);
@@ -70,8 +68,8 @@ const RealTimeMap = () => {
 
   useEffect(() => {
     if (mapboxToken && !isLoadingToken) {
-      fetchShipmentLocations();
-      const interval = setInterval(fetchShipmentLocations, 10000);
+      fetchDriverLocations();
+      const interval = setInterval(fetchDriverLocations, 3000); // Update every 3 seconds for live tracking
       subscribeToLocationUpdates();
       
       return () => {
@@ -138,7 +136,7 @@ const RealTimeMap = () => {
       
       map.current.on('load', () => {
         console.log('🗺️ Map loaded successfully');
-        fetchShipmentLocations(); // Fetch locations once map is ready
+        fetchDriverLocations(); // Fetch locations once map is ready
       });
 
       map.current.on('error', (e) => {
@@ -151,48 +149,82 @@ const RealTimeMap = () => {
     }
   };
 
-  const fetchShipmentLocations = async () => {
+  const fetchDriverLocations = async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
-      console.log('🗺️ Fetching GPS locations for map...');
+      console.log('🗺️ Fetching driver GPS locations for live map...');
       
+      // Get unique drivers with their latest location and shipment info
       const { data, error } = await supabase
         .from('shipments')
         .select(`
-          id, 
-          no_surat_jalan, 
-          tujuan, 
+          driver_id,
           current_lat, 
           current_lng,
           updated_at,
-          tanggal_kirim,
+          tujuan,
           drivers (name, license_plate)
         `)
         .eq('tanggal_kirim', today)
+        .eq('status', 'tertunda')
         .not('current_lat', 'is', null)
-        .not('current_lng', 'is', null);
+        .not('current_lng', 'is', null)
+        .not('driver_id', 'is', null);
 
       if (error) {
-        console.error('❌ Error fetching shipment locations:', error);
+        console.error('❌ Error fetching driver locations:', error);
         return;
       }
 
-      console.log('📍 GPS locations found:', data?.length || 0);
-      const shipmentData = (data || []) as ShipmentLocation[];
-      setShipments(shipmentData);
+      console.log('📍 Raw driver data:', data?.length || 0);
+      
+      // Group by driver_id to get unique drivers
+      const driverMap = new Map<string, DriverLocation>();
+      
+      data?.forEach((shipment: any) => {
+        if (!shipment.driver_id || !shipment.drivers) return;
+        
+        const driverId = shipment.driver_id;
+        const existing = driverMap.get(driverId);
+        
+        if (!existing || new Date(shipment.updated_at) > new Date(existing.updated_at)) {
+          // Use the most recent location for this driver
+          driverMap.set(driverId, {
+            driver_id: driverId,
+            driver_name: shipment.drivers.name,
+            license_plate: shipment.drivers.license_plate,
+            current_lat: shipment.current_lat,
+            current_lng: shipment.current_lng,
+            updated_at: shipment.updated_at,
+            shipment_count: 1,
+            destinations: [shipment.tujuan]
+          });
+        } else if (existing) {
+          // Update shipment count and destinations for existing driver
+          existing.shipment_count += 1;
+          if (!existing.destinations.includes(shipment.tujuan)) {
+            existing.destinations.push(shipment.tujuan);
+          }
+        }
+      });
+
+      const uniqueDrivers = Array.from(driverMap.values());
+      console.log('📍 Unique drivers with GPS:', uniqueDrivers.length);
+      
+      setDrivers(uniqueDrivers);
       
       if (map.current) {
-        updateMapMarkers(shipmentData);
+        updateMapMarkers(uniqueDrivers);
       }
     } catch (error) {
       console.error('💥 Error:', error);
     }
   };
 
-  const updateMapMarkers = (shipmentData: ShipmentLocation[]) => {
+  const updateMapMarkers = (driverData: DriverLocation[]) => {
     if (!map.current) return;
 
-    console.log('🗺️ Updating map markers for', shipmentData.length, 'locations');
+    console.log('🗺️ Updating map markers for', driverData.length, 'drivers');
 
     // Clear existing markers
     markers.forEach(marker => marker.remove());
@@ -200,65 +232,68 @@ const RealTimeMap = () => {
 
     const newMarkers: mapboxgl.Marker[] = [];
 
-    shipmentData.forEach((shipment) => {
+    driverData.forEach((driver) => {
       // Create custom marker element
       const el = document.createElement('div');
       el.className = 'marker';
-      el.style.width = '30px';
-      el.style.height = '30px';
+      el.style.width = '35px';
+      el.style.height = '35px';
       el.style.borderRadius = '50%';
       el.style.cursor = 'pointer';
-      el.style.border = selectedShipment === shipment.id ? '3px solid #FF6B6B' : '2px solid white';
-      el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+      el.style.border = selectedDriver === driver.driver_id ? '3px solid #FF6B6B' : '2px solid white';
+      el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.3)';
       
       // Use a truck emoji or color for the marker
-      el.style.backgroundColor = '#3B82F6';
+      el.style.backgroundColor = '#10B981';
       el.style.display = 'flex';
       el.style.alignItems = 'center';
       el.style.justifyContent = 'center';
-      el.style.fontSize = '16px';
+      el.style.fontSize = '18px';
       el.innerHTML = '🚛';
 
       // Add click event
       el.addEventListener('click', () => {
-        console.log('📍 Marker clicked:', shipment.drivers?.name);
-        setSelectedShipment(shipment.id);
-        // Zoom to selected shipment
+        console.log('📍 Driver marker clicked:', driver.driver_name);
+        setSelectedDriver(driver.driver_id);
+        // Zoom to selected driver
         map.current?.flyTo({
-          center: [shipment.current_lng, shipment.current_lat],
+          center: [driver.current_lng, driver.current_lat],
           zoom: 15,
           duration: 1000
         });
       });
 
-      // Create popup with more detailed info
-      const lastUpdate = new Date(shipment.updated_at);
+      // Create popup with detailed driver info
+      const lastUpdate = new Date(driver.updated_at);
       const timeAgo = Math.floor((new Date().getTime() - lastUpdate.getTime()) / 60000);
       
       const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(
-        `<div style="padding: 12px; font-family: sans-serif; min-width: 200px;">
+        `<div style="padding: 12px; font-family: sans-serif; min-width: 220px;">
           <h3 style="margin: 0 0 8px 0; color: #1f2937; font-size: 16px; font-weight: bold;">
-            🚛 ${shipment.drivers?.name || 'Driver Tidak Diketahui'}
+            🚛 ${driver.driver_name}
           </h3>
           <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 14px;">
-            📋 ${shipment.drivers?.license_plate || 'No. Polisi Tidak Diketahui'}
+            📋 ${driver.license_plate}
           </p>
           <p style="margin: 0 0 4px 0; color: #374151; font-size: 14px;">
-            📍 Tujuan: ${shipment.tujuan}
+            📦 ${driver.shipment_count} pengiriman aktif
           </p>
-          <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 12px;">
-            🕐 Update: ${timeAgo < 1 ? 'Baru saja' : `${timeAgo} menit lalu`}
+          <p style="margin: 0 0 8px 0; color: #374151; font-size: 14px;">
+            📍 Tujuan: ${driver.destinations.join(', ')}
+          </p>
+          <p style="margin: 0 0 8px 0; color: ${timeAgo < 1 ? '#10B981' : timeAgo < 5 ? '#F59E0B' : '#EF4444'}; font-size: 12px; font-weight: bold;">
+            🕐 ${timeAgo < 1 ? '🟢 LIVE' : `⏰ ${timeAgo} menit lalu`}
           </p>
           <p style="margin: 0; color: #9ca3af; font-size: 11px;">
-            Lat: ${shipment.current_lat.toFixed(6)}<br>
-            Lng: ${shipment.current_lng.toFixed(6)}
+            Lat: ${driver.current_lat.toFixed(6)}<br>
+            Lng: ${driver.current_lng.toFixed(6)}
           </p>
         </div>`
       );
 
       // Create marker
       const marker = new mapboxgl.Marker(el)
-        .setLngLat([shipment.current_lng, shipment.current_lat])
+        .setLngLat([driver.current_lng, driver.current_lat])
         .setPopup(popup)
         .addTo(map.current);
 
@@ -268,10 +303,10 @@ const RealTimeMap = () => {
     setMarkers(newMarkers);
 
     // Fit map to show all markers
-    if (shipmentData.length > 0) {
+    if (driverData.length > 0) {
       const bounds = new mapboxgl.LngLatBounds();
-      shipmentData.forEach(shipment => {
-        bounds.extend([shipment.current_lng, shipment.current_lat]);
+      driverData.forEach(driver => {
+        bounds.extend([driver.current_lng, driver.current_lat]);
       });
       
       map.current?.fitBounds(bounds, {
@@ -279,21 +314,21 @@ const RealTimeMap = () => {
         maxZoom: 15
       });
       
-      console.log('🗺️ Map bounds updated to show all', shipmentData.length, 'markers');
+      console.log('🗺️ Map bounds updated to show all', driverData.length, 'driver markers');
     }
   };
 
   const subscribeToLocationUpdates = () => {
     console.log('🔔 Map subscribing to realtime GPS updates...');
     const channel = supabase
-      .channel('shipment_locations_map')
+      .channel('driver_locations_live_map')
       .on('postgres_changes', {
         event: 'UPDATE',
         schema: 'public',
         table: 'shipments'
       }, (payload) => {
-        console.log('⚡ Map GPS update received:', payload.new?.id);
-        fetchShipmentLocations();
+        console.log('⚡ Live GPS update received:', payload.new?.driver_id);
+        fetchDriverLocations(); // Refresh driver locations immediately
       })
       .subscribe();
 
@@ -379,7 +414,7 @@ const RealTimeMap = () => {
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <MapPin className="h-5 w-5 text-blue-600" />
-              Peta Pelacakan Real-time - Driver Hari Ini
+              Peta Live Tracking - Driver Hari Ini
             </div>
             <Button
               variant="outline"
@@ -445,7 +480,7 @@ const RealTimeMap = () => {
           )}
 
           <div ref={mapContainer} className="h-96 w-full rounded-lg" />
-          {shipments.length === 0 && (
+          {drivers.length === 0 && (
             <div className="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
               <div className="flex items-center gap-2 text-yellow-800">
                 <AlertCircle className="h-5 w-5" />
@@ -458,53 +493,60 @@ const RealTimeMap = () => {
         </CardContent>
       </Card>
 
-      {/* Driver List */}
-      {shipments.length > 0 && (
+      {/* Active Drivers List */}
+      {drivers.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Navigation className="h-5 w-5 text-green-600" />
-              Driver Aktif di Peta ({shipments.length})
+              Driver Aktif Live ({drivers.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2 max-h-60 overflow-y-auto">
-              {shipments.map((shipment) => (
-                <div
-                  key={shipment.id}
-                  className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                    selectedShipment === shipment.id 
-                      ? 'bg-blue-50 border-blue-300' 
-                      : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                  }`}
-                  onClick={() => {
-                    setSelectedShipment(shipment.id);
-                    map.current?.flyTo({
-                      center: [shipment.current_lng, shipment.current_lat],
-                      zoom: 15,
-                      duration: 1000
-                    });
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-semibold text-gray-800">
-                        🚛 {shipment.drivers?.name || 'Driver Tidak Diketahui'}
+              {drivers.map((driver) => {
+                const timeAgo = Math.floor((new Date().getTime() - new Date(driver.updated_at).getTime()) / 60000);
+                return (
+                  <div
+                    key={driver.driver_id}
+                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                      selectedDriver === driver.driver_id 
+                        ? 'bg-blue-50 border-blue-300' 
+                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                    }`}
+                    onClick={() => {
+                      setSelectedDriver(driver.driver_id);
+                      map.current?.flyTo({
+                        center: [driver.current_lng, driver.current_lat],
+                        zoom: 15,
+                        duration: 1000
+                      });
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-semibold text-gray-800">
+                          🚛 {driver.driver_name}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          📋 {driver.license_plate}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          📦 {driver.shipment_count} pengiriman • {driver.destinations.join(', ')}
+                        </div>
                       </div>
-                      <div className="text-sm text-gray-600">
-                        📋 {shipment.drivers?.license_plate || 'No. Polisi Tidak Diketahui'}
+                      <div className="flex flex-col items-end gap-1">
+                        <div className={`flex items-center gap-1 ${timeAgo < 1 ? 'text-green-600' : timeAgo < 5 ? 'text-yellow-600' : 'text-red-600'}`}>
+                          <Navigation className="h-4 w-4 animate-pulse" />
+                          <span className="text-xs font-medium">
+                            {timeAgo < 1 ? 'LIVE' : `${timeAgo}m`}
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-sm text-gray-500">
-                        📍 Tujuan: {shipment.tujuan}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 text-green-600">
-                      <Navigation className="h-4 w-4 animate-pulse" />
-                      <span className="text-xs font-medium">GPS ON</span>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>

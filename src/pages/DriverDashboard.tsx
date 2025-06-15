@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,7 +17,7 @@ const DriverDashboard = () => {
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [isLoadingShipments, setIsLoadingShipments] = useState(true);
   const [gpsStatus, setGpsStatus] = useState<string>('Belum dimulai');
-  const [trackingShipments, setTrackingShipments] = useState<Set<string>>(new Set());
+  const [isGpsActive, setIsGpsActive] = useState(false);
 
   useEffect(() => {
     // Wait for auth to be ready
@@ -57,15 +58,6 @@ const DriverDashboard = () => {
       const mappedShipments = (data as SupabaseShipment[]).map(mapSupabaseShipment);
       setShipments(mappedShipments);
 
-      // Auto-start tracking for the first shipment with a delay
-      if (mappedShipments.length > 0) {
-        const firstShipment = mappedShipments[0];
-        console.log('Auto-starting GPS for first shipment:', firstShipment.id);
-        // Add a longer delay to ensure everything is ready
-        setTimeout(() => {
-          handleStartTracking(firstShipment.id);
-        }, 2000);
-      }
     } catch (error) {
       console.error('Error:', error);
       toast.error('Terjadi kesalahan saat memuat data');
@@ -114,17 +106,6 @@ const DriverDashboard = () => {
       }
 
       toast.success('Status berhasil diupdate: Terkirim');
-      
-      // Stop tracking for this shipment
-      if (trackingShipments.has(shipmentId)) {
-        await locationTracker.stopTracking();
-        setTrackingShipments(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(shipmentId);
-          return newSet;
-        });
-      }
-
       fetchDriverShipments();
     } catch (error) {
       console.error('Error:', error);
@@ -132,37 +113,32 @@ const DriverDashboard = () => {
     }
   };
 
-  const handleStartTracking = async (shipmentId: string) => {
-    try {
-      console.log('Starting GPS tracking for shipment:', shipmentId);
-      setGpsStatus('Memulai GPS...');
-      
-      await locationTracker.startTracking(shipmentId, (status) => {
-        console.log('GPS status update:', status);
-        setGpsStatus(status);
-      });
-      
-      setTrackingShipments(prev => new Set(prev).add(shipmentId));
-      console.log('GPS tracking started successfully');
-    } catch (error) {
-      console.error('Error starting tracking:', error);
-      setGpsStatus('Error GPS ❌');
-      toast.error('Gagal memulai pelacakan GPS');
-    }
-  };
+  const handleToggleGPS = async () => {
+    if (!profile?.driver_id) return;
 
-  const handleStopTracking = async (shipmentId: string) => {
     try {
-      await locationTracker.stopTracking();
-      setGpsStatus('GPS Dihentikan');
-      setTrackingShipments(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(shipmentId);
-        return newSet;
-      });
-      toast.success('GPS tracking dihentikan');
+      if (isGpsActive) {
+        // Stop GPS
+        await locationTracker.stopTracking();
+        setIsGpsActive(false);
+        setGpsStatus('GPS Dihentikan');
+      } else {
+        // Start GPS for this driver
+        console.log('Starting GPS tracking for driver:', profile.driver_id);
+        setGpsStatus('Memulai GPS...');
+        
+        await locationTracker.startTrackingForDriver(profile.driver_id, (status) => {
+          console.log('GPS status update:', status);
+          setGpsStatus(status);
+        });
+        
+        setIsGpsActive(true);
+        console.log('GPS tracking started successfully');
+      }
     } catch (error) {
-      console.error('Error stopping tracking:', error);
+      console.error('Error toggling GPS:', error);
+      setGpsStatus('Error GPS ❌');
+      toast.error('Gagal mengubah status GPS');
     }
   };
 
@@ -193,10 +169,10 @@ const DriverDashboard = () => {
             <p className="text-gray-600">Kelola pengiriman Anda dengan mudah</p>
           </div>
 
-          {/* GPS Status */}
+          {/* GPS Control Card */}
           <Card className="mb-6 bg-white shadow-lg">
             <CardContent className="pt-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Navigation className="h-5 w-5 text-blue-600" />
                   <span className="font-semibold">Status GPS:</span>
@@ -205,6 +181,34 @@ const DriverDashboard = () => {
                   {gpsStatus}
                 </Badge>
               </div>
+              
+              {/* Single GPS Toggle Button */}
+              <div className="flex justify-center">
+                <Button
+                  onClick={handleToggleGPS}
+                  className={`h-16 px-8 text-lg font-semibold flex items-center gap-3 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-105 ${
+                    isGpsActive 
+                      ? 'bg-red-600 hover:bg-red-700 text-white' 
+                      : 'bg-green-600 hover:bg-green-700 text-white'
+                  }`}
+                >
+                  {isGpsActive ? (
+                    <>
+                      <Navigation className="h-6 w-6 animate-pulse" />
+                      🔴 MATIKAN GPS
+                    </>
+                  ) : (
+                    <>
+                      <Navigation className="h-6 w-6" />
+                      🟢 AKTIFKAN GPS
+                    </>
+                  )}
+                </Button>
+              </div>
+              
+              <p className="text-center text-sm text-gray-600 mt-3">
+                GPS akan melacak lokasi Anda untuk semua pengiriman yang sedang berlangsung
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -253,29 +257,6 @@ const DriverDashboard = () => {
                     <div className="text-sm text-gray-600">
                       Tanggal Kirim: <span className="font-semibold">{shipment.tanggalKirim}</span>
                     </div>
-                  </div>
-
-                  {/* GPS Tracking Button */}
-                  <div className="flex justify-center mb-4">
-                    {trackingShipments.has(shipment.id) ? (
-                      <Button
-                        onClick={() => handleStopTracking(shipment.id)}
-                        variant="outline"
-                        className="flex items-center gap-2 bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
-                      >
-                        <Navigation className="h-4 w-4 animate-pulse" />
-                        GPS Aktif - Klik untuk Matikan
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={() => handleStartTracking(shipment.id)}
-                        variant="outline"
-                        className="flex items-center gap-2 bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100"
-                      >
-                        <Navigation className="h-4 w-4" />
-                        Aktifkan GPS
-                      </Button>
-                    )}
                   </div>
 
                   {/* Action Buttons */}

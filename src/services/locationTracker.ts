@@ -17,8 +17,9 @@ class LocationTracker {
   private watchId: string | number | null = null;
   private isTracking = false;
   private statusCallback: StatusCallback | null = null;
-  private currentShipmentId: string | null = null;
+  private currentDriverId: string | null = null;
   private isCapacitorAvailable = false;
+  private updateInterval: NodeJS.Timeout | null = null;
 
   constructor() {
     // Check if we're in a Capacitor environment
@@ -66,11 +67,11 @@ class LocationTracker {
     }
   }
 
-  async startTracking(shipmentId: string, onStatusChange?: StatusCallback): Promise<void> {
-    console.log('Starting GPS tracking for shipment:', shipmentId);
+  async startTrackingForDriver(driverId: string, onStatusChange?: StatusCallback): Promise<void> {
+    console.log('Starting GPS tracking for driver:', driverId);
     
-    if (this.isTracking && this.currentShipmentId === shipmentId) {
-      console.log('Already tracking this shipment');
+    if (this.isTracking && this.currentDriverId === driverId) {
+      console.log('Already tracking this driver');
       return;
     }
 
@@ -79,7 +80,7 @@ class LocationTracker {
       await this.stopTracking();
     }
 
-    this.currentShipmentId = shipmentId;
+    this.currentDriverId = driverId;
     this.statusCallback = onStatusChange || null;
     this.updateStatus('Meminta izin lokasi...');
 
@@ -92,7 +93,7 @@ class LocationTracker {
       }
 
       this.updateStatus('Memulai GPS...');
-      console.log('Starting location watch...');
+      console.log('Starting location watch for driver...');
 
       if (this.isCapacitorAvailable) {
         try {
@@ -116,8 +117,19 @@ class LocationTracker {
       }
 
       this.isTracking = true;
-      console.log('GPS tracking started successfully with watchId:', this.watchId);
+      console.log('GPS tracking started successfully for driver:', driverId);
       toast.success('GPS tracking berhasil dimulai');
+      
+      // Set up interval to update location more frequently
+      this.updateInterval = setInterval(() => {
+        if (this.isTracking) {
+          this.getCurrentPosition().then(coords => {
+            if (coords && this.currentDriverId) {
+              this.updateDriverLocation(this.currentDriverId, coords.lat, coords.lng);
+            }
+          });
+        }
+      }, 5000); // Update every 5 seconds
       
     } catch (error) {
       console.error('Error starting location tracking:', error);
@@ -137,9 +149,9 @@ class LocationTracker {
           timestamp: new Date(position.timestamp)
         });
         
-        if (this.currentShipmentId) {
-          this.updateShipmentLocation(
-            this.currentShipmentId, 
+        if (this.currentDriverId) {
+          this.updateDriverLocation(
+            this.currentDriverId, 
             position.coords.latitude, 
             position.coords.longitude
           );
@@ -155,7 +167,7 @@ class LocationTracker {
       {
         enableHighAccuracy: true,
         timeout: 10000,
-        maximumAge: 5000,
+        maximumAge: 3000, // Reduce cache time for more frequent updates
       }
     );
   }
@@ -168,7 +180,7 @@ class LocationTracker {
       return;
     }
 
-    if (position && this.currentShipmentId) {
+    if (position && this.currentDriverId) {
       console.log('Capacitor GPS position received:', {
         lat: position.coords.latitude,
         lng: position.coords.longitude,
@@ -176,8 +188,8 @@ class LocationTracker {
         timestamp: new Date(position.timestamp)
       });
       
-      this.updateShipmentLocation(
-        this.currentShipmentId, 
+      this.updateDriverLocation(
+        this.currentDriverId, 
         position.coords.latitude, 
         position.coords.longitude
       );
@@ -188,6 +200,12 @@ class LocationTracker {
 
   async stopTracking(): Promise<void> {
     console.log('Stopping GPS tracking...');
+    
+    if (this.updateInterval) {
+      clearInterval(this.updateInterval);
+      this.updateInterval = null;
+    }
+    
     if (this.watchId !== null) {
       try {
         if (this.isCapacitorAvailable) {
@@ -198,7 +216,7 @@ class LocationTracker {
         
         this.watchId = null;
         this.isTracking = false;
-        this.currentShipmentId = null;
+        this.currentDriverId = null;
         this.updateStatus('GPS Dihentikan');
         console.log('GPS tracking stopped successfully');
         toast.success('Pelacakan GPS dihentikan');
@@ -216,10 +234,11 @@ class LocationTracker {
     }
   }
 
-  private async updateShipmentLocation(shipmentId: string, lat: number, lng: number): Promise<void> {
+  private async updateDriverLocation(driverId: string, lat: number, lng: number): Promise<void> {
     try {
-      console.log('Updating shipment location in database:', { shipmentId, lat, lng });
+      console.log('Updating driver location in database:', { driverId, lat, lng });
       
+      // Update all shipments for this driver with current location
       const { error } = await supabase
         .from('shipments')
         .update({
@@ -227,13 +246,14 @@ class LocationTracker {
           current_lng: lng,
           updated_at: new Date().toISOString()
         })
-        .eq('id', shipmentId);
+        .eq('driver_id', driverId)
+        .eq('status', 'tertunda'); // Only update pending shipments
 
       if (error) {
-        console.error('Error updating shipment location:', error);
+        console.error('Error updating driver location:', error);
         toast.error('Gagal update lokasi: ' + error.message);
       } else {
-        console.log('✅ Location successfully updated in database');
+        console.log('✅ Driver location successfully updated in database');
       }
     } catch (error) {
       console.error('Error updating location:', error);
@@ -295,8 +315,8 @@ class LocationTracker {
     return this.isTracking;
   }
 
-  getCurrentShipmentId(): string | null {
-    return this.currentShipmentId;
+  getCurrentDriverId(): string | null {
+    return this.currentDriverId;
   }
 }
 
