@@ -201,7 +201,11 @@ const RealTimeMap = () => {
       map.current.on('load', () => {
         console.log('🗺️ Map loaded successfully');
         setMapInitialized(true);
-        fetchDriverLocations(); // Fetch locations once map is ready
+        console.log('✅ Map initialization state set to true');
+        // Wait a moment for state to update, then fetch locations
+        setTimeout(() => {
+          fetchDriverLocations();
+        }, 100);
       });
 
       map.current.on('error', (e) => {
@@ -303,11 +307,24 @@ const RealTimeMap = () => {
       
       setDrivers(uniqueDrivers);
       
+      console.log('🗺️ Checking map readiness - map.current:', !!map.current, 'mapInitialized:', mapInitialized);
+      
       if (map.current && mapInitialized) {
         console.log('🗺️ Map is ready, updating markers...');
         updateMapMarkersAndTrails(uniqueDrivers);
       } else {
         console.log('⚠️ Map not ready yet - map.current:', !!map.current, 'mapInitialized:', mapInitialized);
+        // Try again after a short delay if map exists but not initialized
+        if (map.current && !mapInitialized) {
+          setTimeout(() => {
+            console.log('🔄 Retrying marker update after delay...');
+            if (map.current) {
+              console.log('✅ Map found on retry, setting initialized and updating markers');
+              setMapInitialized(true);
+              updateMapMarkersAndTrails(uniqueDrivers);
+            }
+          }, 1000);
+        }
       }
     } catch (error) {
       console.error('💥 Error:', error);
@@ -403,8 +420,8 @@ const RealTimeMap = () => {
   };
 
   const updateMapMarkersAndTrails = (driverData: DriverLocation[]) => {
-    if (!map.current || !mapInitialized) {
-      console.log('⚠️ Map not ready for markers update - map.current:', !!map.current, 'mapInitialized:', mapInitialized);
+    if (!map.current) {
+      console.log('❌ No map instance available for markers update');
       return;
     }
 
