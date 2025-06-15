@@ -243,7 +243,7 @@ const RealTimeMap = () => {
 
       console.log('📍 Raw driver data:', data?.length || 0);
       
-      // Group by driver_id to get unique drivers
+      // Group by driver_id to get unique drivers with their combined data
       const driverMap = new Map<string, DriverLocation>();
       
       data?.forEach((shipment: any) => {
@@ -297,6 +297,8 @@ const RealTimeMap = () => {
   };
 
   const create3DTruckIcon = (color: string, driverName: string) => {
+    console.log('🚛 Creating 3D truck icon for:', driverName, 'with color:', color);
+    
     const canvas = document.createElement('canvas');
     canvas.width = 60;
     canvas.height = 60;
@@ -382,15 +384,30 @@ const RealTimeMap = () => {
   };
 
   const updateMapMarkersAndTrails = (driverData: DriverLocation[]) => {
-    if (!map.current || !mapInitialized) return;
+    if (!map.current || !mapInitialized) {
+      console.log('⚠️ Map not ready for markers update');
+      return;
+    }
 
     console.log('🗺️ Updating map markers and trails for', driverData.length, 'drivers');
+
+    // Clear existing markers that are no longer needed
+    const currentDriverIds = new Set(driverData.map(d => d.driver_id));
+    drivers_markers.forEach((marker, driverId) => {
+      if (!currentDriverIds.has(driverId)) {
+        console.log('🗑️ Removing outdated marker for driver:', driverId);
+        marker.remove();
+        drivers_markers.delete(driverId);
+      }
+    });
 
     // Update driver trails and markers
     driverData.forEach((driver, index) => {
       const driverColor = driverColors[index % driverColors.length];
       const driverId = driver.driver_id;
       const newPosition: [number, number] = [driver.current_lng, driver.current_lat];
+      
+      console.log('📍 Processing driver:', driver.driver_name, 'at position:', newPosition);
       
       // Update or create trail
       const existingTrail = driver_trails.get(driverId);
@@ -422,6 +439,7 @@ const RealTimeMap = () => {
       // Update or create driver marker
       const existingMarker = drivers_markers.get(driverId);
       if (existingMarker) {
+        console.log('🔄 Updating existing marker for:', driver.driver_name);
         // Smooth animate to new position
         const currentLngLat = existingMarker.getLngLat();
         const targetLngLat = new mapboxgl.LngLat(newPosition[0], newPosition[1]);
@@ -430,6 +448,7 @@ const RealTimeMap = () => {
           animateMarker(existingMarker, currentLngLat, targetLngLat, 2000); // 2 second animation
         }
       } else {
+        console.log('✨ Creating new marker for:', driver.driver_name);
         // Create new marker with 3D truck icon
         const truckIcon = create3DTruckIcon(driverColor, driver.driver_name);
         const el = document.createElement('div');
@@ -506,6 +525,7 @@ const RealTimeMap = () => {
           .setPopup(popup)
           .addTo(map.current);
 
+        console.log('✅ Marker created and added to map for:', driver.driver_name);
         drivers_markers.set(driverId, marker);
         setDriverMarkers(new Map(drivers_markers));
       }
@@ -559,21 +579,7 @@ const RealTimeMap = () => {
       });
     });
 
-    // Only fit bounds on first load and when no user interaction
-    if (driverData.length > 0 && !userInteracting && !mapInitialized) {
-      const bounds = new mapboxgl.LngLatBounds();
-      driverData.forEach(driver => {
-        bounds.extend([driver.current_lng, driver.current_lat]);
-      });
-      
-      map.current?.fitBounds(bounds, {
-        padding: 80,
-        maxZoom: 12,
-        duration: 1500
-      });
-      
-      console.log('🗺️ Initial map bounds set for', driverData.length, 'drivers');
-    }
+    console.log('✅ Map markers update completed. Active markers:', drivers_markers.size);
   };
 
   const updateTrailOnMap = (trail: DriverTrail) => {
