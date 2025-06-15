@@ -33,7 +33,7 @@ const TrackingMap = () => {
 
   useEffect(() => {
     fetchTodayDrivers();
-    const interval = setInterval(fetchTodayDrivers, 15000); // Refresh setiap 15 detik untuk lebih sering
+    const interval = setInterval(fetchTodayDrivers, 10000); // Refresh setiap 10 detik lebih sering
     subscribeToLocationUpdates();
     
     return () => {
@@ -76,7 +76,7 @@ const TrackingMap = () => {
         setDebugInfo(`Total hari ini: ${allTodayShipments?.length || 0}, GPS aktif: ${allTodayShipments?.filter(s => s.current_lat && s.current_lng).length || 0}`);
       }
 
-      // Now get the filtered data for display
+      // Now get the filtered data for display (show all today's shipments, not just tertunda)
       const { data, error } = await supabase
         .from('shipments')
         .select(`
@@ -91,7 +91,6 @@ const TrackingMap = () => {
           tanggal_kirim,
           drivers (name, license_plate)
         `)
-        .eq('status', 'tertunda')
         .eq('tanggal_kirim', today)
         .order('updated_at', { ascending: false });
 
@@ -140,11 +139,17 @@ const TrackingMap = () => {
         schema: 'public',
         table: 'shipments'
       }, (payload) => {
-        console.log('⚡ Realtime update received:', payload.eventType, payload.new?.id);
+        console.log('⚡ Realtime update received:', payload.eventType);
+        // Add type checking for payload
+        if (payload.new && typeof payload.new === 'object' && 'id' in payload.new) {
+          console.log('📍 Updated shipment ID:', payload.new.id);
+        }
         fetchTodayDrivers();
         toast.success('📍 Data lokasi diperbarui secara real-time!');
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('🔔 Subscription status:', status);
+      });
 
     return () => {
       console.log('🔌 Unsubscribing from realtime updates');
@@ -291,6 +296,9 @@ const TrackingMap = () => {
                       </div>
                       <div className="text-sm text-gray-500">
                         {shipment.perusahaan}
+                      </div>
+                      <div className="text-xs text-blue-600 mt-1">
+                        Status: {shipment.status.toUpperCase()}
                       </div>
                       {shipment.current_lat && shipment.current_lng ? (
                         <div className="text-xs text-green-600 mt-1">
