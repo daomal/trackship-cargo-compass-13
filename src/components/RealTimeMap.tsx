@@ -41,6 +41,7 @@ const RealTimeMap = () => {
   const [isLoadingToken, setIsLoadingToken] = useState(true);
   const [isSavingToken, setIsSavingToken] = useState(false);
   const [userInteracting, setUserInteracting] = useState(false);
+  const [mapInitialized, setMapInitialized] = useState(false);
 
   // Color palette for different drivers
   const driverColors = [
@@ -108,6 +109,7 @@ const RealTimeMap = () => {
         if (map.current) {
           map.current.remove();
           map.current = null;
+          setMapInitialized(false);
         }
         
         setShowTokenManager(false);
@@ -129,6 +131,7 @@ const RealTimeMap = () => {
       if (map.current) {
         map.current.remove();
         map.current = null;
+        setMapInitialized(false);
       }
       
       setShowTokenManager(false);
@@ -196,9 +199,13 @@ const RealTimeMap = () => {
       });
       
       map.current.on('load', () => {
-        console.log('🗺️ Map loaded successfully - ready for markers!');
-        // Immediately fetch and update markers after map is loaded
-        fetchDriverLocations();
+        console.log('🗺️ Map loaded successfully');
+        setMapInitialized(true);
+        console.log('✅ Map initialization state set to true');
+        // Wait a moment for state to update, then fetch locations
+        setTimeout(() => {
+          fetchDriverLocations();
+        }, 100);
       });
 
       map.current.on('error', (e) => {
@@ -300,18 +307,24 @@ const RealTimeMap = () => {
       
       setDrivers(uniqueDrivers);
       
-      // Update markers if map is available and has loaded
-      if (map.current && map.current.loaded()) {
-        console.log('🗺️ Map is loaded and ready, updating markers immediately...');
+      console.log('🗺️ Checking map readiness - map.current:', !!map.current, 'mapInitialized:', mapInitialized);
+      
+      if (map.current && mapInitialized) {
+        console.log('🗺️ Map is ready, updating markers...');
         updateMapMarkersAndTrails(uniqueDrivers);
-      } else if (map.current) {
-        console.log('⏳ Map exists but not loaded yet, waiting for load event...');
-        map.current.once('load', () => {
-          console.log('🔄 Map loaded event fired, now updating markers...');
-          updateMapMarkersAndTrails(uniqueDrivers);
-        });
       } else {
-        console.log('⚠️ No map instance available yet');
+        console.log('⚠️ Map not ready yet - map.current:', !!map.current, 'mapInitialized:', mapInitialized);
+        // Try again after a short delay if map exists but not initialized
+        if (map.current && !mapInitialized) {
+          setTimeout(() => {
+            console.log('🔄 Retrying marker update after delay...');
+            if (map.current) {
+              console.log('✅ Map found on retry, setting initialized and updating markers');
+              setMapInitialized(true);
+              updateMapMarkersAndTrails(uniqueDrivers);
+            }
+          }, 1000);
+        }
       }
     } catch (error) {
       console.error('💥 Error:', error);
@@ -319,156 +332,91 @@ const RealTimeMap = () => {
   };
 
   const create3DTruckIcon = (color: string, driverName: string) => {
-    console.log('🚛 Creating realistic 3D truck icon for:', driverName);
+    console.log('🚛 Creating 3D truck icon for:', driverName, 'with color:', color);
     
-    // Create main container with fixed positioning
-    const container = document.createElement('div');
-    container.style.cssText = `
-      position: relative;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      pointer-events: auto;
-      cursor: pointer;
-      transform-origin: center center;
-    `;
+    const canvas = document.createElement('canvas');
+    canvas.width = 60;
+    canvas.height = 60;
+    const ctx = canvas.getContext('2d');
     
-    // Create truck SVG with realistic 3D design
-    const truckSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    truckSvg.setAttribute('width', '40');
-    truckSvg.setAttribute('height', '40');
-    truckSvg.setAttribute('viewBox', '0 0 40 40');
-    truckSvg.style.cssText = `
-      filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
-      transform: rotate(-45deg);
-    `;
+    if (ctx) {
+      // Create shadow
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetX = 3;
+      ctx.shadowOffsetY = 3;
+      
+      // Draw main truck body with gradient
+      const gradient = ctx.createLinearGradient(0, 0, 0, 40);
+      gradient.addColorStop(0, color);
+      gradient.addColorStop(0.5, color);
+      gradient.addColorStop(1, '#000');
+      
+      ctx.fillStyle = gradient;
+      ctx.fillRect(12, 18, 36, 18);
+      
+      // Draw truck cabin with 3D effect
+      const cabinGradient = ctx.createLinearGradient(0, 0, 0, 25);
+      cabinGradient.addColorStop(0, '#ffffff');
+      cabinGradient.addColorStop(0.3, color);
+      cabinGradient.addColorStop(1, '#000');
+      
+      ctx.fillStyle = cabinGradient;
+      ctx.fillRect(12, 10, 18, 25);
+      
+      // Reset shadow for other elements
+      ctx.shadowColor = 'transparent';
+      
+      // Draw windshield
+      ctx.fillStyle = 'rgba(135, 206, 235, 0.8)';
+      ctx.fillRect(14, 12, 14, 8);
+      
+      // Draw wheels with 3D effect
+      const wheelGradient = ctx.createRadialGradient(18, 40, 2, 18, 40, 6);
+      wheelGradient.addColorStop(0, '#666');
+      wheelGradient.addColorStop(0.7, '#333');
+      wheelGradient.addColorStop(1, '#000');
+      
+      ctx.fillStyle = wheelGradient;
+      ctx.beginPath();
+      ctx.arc(18, 40, 6, 0, 2 * Math.PI);
+      ctx.arc(36, 40, 6, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      // Add wheel rims
+      ctx.fillStyle = '#999';
+      ctx.beginPath();
+      ctx.arc(18, 40, 3, 0, 2 * Math.PI);
+      ctx.arc(36, 40, 3, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      // Draw headlights
+      ctx.fillStyle = '#FFFF99';
+      ctx.fillRect(48, 22, 3, 4);
+      ctx.fillRect(48, 28, 3, 4);
+      
+      // Add driver initial with better styling
+      ctx.fillStyle = '#FFF';
+      ctx.font = 'bold 14px Arial';
+      ctx.textAlign = 'center';
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 1;
+      const initial = driverName.charAt(0).toUpperCase();
+      ctx.strokeText(initial, 21, 22);
+      ctx.fillText(initial, 21, 22);
+      
+      // Add direction arrow
+      ctx.fillStyle = '#FFD700';
+      ctx.beginPath();
+      ctx.moveTo(45, 15);
+      ctx.lineTo(55, 20);
+      ctx.lineTo(45, 25);
+      ctx.closePath();
+      ctx.fill();
+    }
     
-    // Define gradient for 3D effect
-    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-    const gradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
-    gradient.setAttribute('id', `truck-grad-${driverName.replace(/\s+/g, '')}`);
-    gradient.setAttribute('x1', '0%');
-    gradient.setAttribute('y1', '0%');
-    gradient.setAttribute('x2', '100%');
-    gradient.setAttribute('y2', '100%');
-    
-    const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
-    stop1.setAttribute('offset', '0%');
-    stop1.setAttribute('stop-color', color);
-    
-    const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
-    stop2.setAttribute('offset', '100%');
-    stop2.setAttribute('stop-color', '#000000');
-    stop2.setAttribute('stop-opacity', '0.4');
-    
-    gradient.appendChild(stop1);
-    gradient.appendChild(stop2);
-    defs.appendChild(gradient);
-    truckSvg.appendChild(defs);
-    
-    // Truck cabin (front part)
-    const cabin = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    cabin.setAttribute('x', '2');
-    cabin.setAttribute('y', '12');
-    cabin.setAttribute('width', '12');
-    cabin.setAttribute('height', '16');
-    cabin.setAttribute('rx', '2');
-    cabin.setAttribute('fill', `url(#truck-grad-${driverName.replace(/\s+/g, '')})`);
-    cabin.setAttribute('stroke', '#000');
-    cabin.setAttribute('stroke-width', '1');
-    truckSvg.appendChild(cabin);
-    
-    // Truck cargo/trailer (back part)
-    const cargo = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    cargo.setAttribute('x', '14');
-    cargo.setAttribute('y', '14');
-    cargo.setAttribute('width', '22');
-    cargo.setAttribute('height', '12');
-    cargo.setAttribute('rx', '1');
-    cargo.setAttribute('fill', `url(#truck-grad-${driverName.replace(/\s+/g, '')})`);
-    cargo.setAttribute('stroke', '#000');
-    cargo.setAttribute('stroke-width', '1');
-    truckSvg.appendChild(cargo);
-    
-    // Windshield
-    const windshield = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    windshield.setAttribute('x', '4');
-    windshield.setAttribute('y', '14');
-    windshield.setAttribute('width', '8');
-    windshield.setAttribute('height', '6');
-    windshield.setAttribute('rx', '1');
-    windshield.setAttribute('fill', '#87CEEB');
-    windshield.setAttribute('stroke', '#000');
-    windshield.setAttribute('stroke-width', '0.5');
-    truckSvg.appendChild(windshield);
-    
-    // Front wheels
-    const wheel1 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    wheel1.setAttribute('cx', '8');
-    wheel1.setAttribute('cy', '30');
-    wheel1.setAttribute('r', '3');
-    wheel1.setAttribute('fill', '#333');
-    wheel1.setAttribute('stroke', '#000');
-    wheel1.setAttribute('stroke-width', '0.5');
-    truckSvg.appendChild(wheel1);
-    
-    // Back wheels
-    const wheel2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    wheel2.setAttribute('cx', '25');
-    wheel2.setAttribute('cy', '30');
-    wheel2.setAttribute('r', '3');
-    wheel2.setAttribute('fill', '#333');
-    wheel2.setAttribute('stroke', '#000');
-    wheel2.setAttribute('stroke-width', '0.5');
-    truckSvg.appendChild(wheel2);
-    
-    const wheel3 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    wheel3.setAttribute('cx', '30');
-    wheel3.setAttribute('cy', '30');
-    wheel3.setAttribute('r', '3');
-    wheel3.setAttribute('fill', '#333');
-    wheel3.setAttribute('stroke', '#000');
-    wheel3.setAttribute('stroke-width', '0.5');
-    truckSvg.appendChild(wheel3);
-    
-    // Direction arrow
-    const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-    arrow.setAttribute('points', '36,18 38,20 36,22');
-    arrow.setAttribute('fill', '#FFD700');
-    arrow.setAttribute('stroke', '#000');
-    arrow.setAttribute('stroke-width', '0.5');
-    truckSvg.appendChild(arrow);
-    
-    container.appendChild(truckSvg);
-    
-    // Driver name label - fixed position
-    const nameLabel = document.createElement('div');
-    nameLabel.style.cssText = `
-      background: ${color};
-      color: white;
-      padding: 4px 8px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: bold;
-      white-space: nowrap;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-      border: 1px solid rgba(255,255,255,0.2);
-      text-shadow: 0 1px 1px rgba(0,0,0,0.5);
-      position: relative;
-      z-index: 10;
-    `;
-    nameLabel.textContent = driverName;
-    
-    container.appendChild(nameLabel);
-    
-    // Click handler - no hover effects to prevent movement
-    container.addEventListener('click', (e) => {
-      e.stopPropagation();
-      console.log('🚛 Truck marker clicked for:', driverName);
-    });
-    
-    console.log('✅ Realistic 3D truck icon created successfully');
-    return container;
+    console.log('✅ 3D truck icon created successfully');
+    return canvas;
   };
 
   const updateMapMarkersAndTrails = (driverData: DriverLocation[]) => {
@@ -477,7 +425,7 @@ const RealTimeMap = () => {
       return;
     }
 
-    console.log('🗺️ Starting marker update for', driverData.length, 'drivers');
+    console.log('🗺️ Updating map markers and trails for', driverData.length, 'drivers');
     console.log('📊 Driver data for markers:', driverData);
 
     // Clear existing markers that are no longer needed
@@ -494,9 +442,9 @@ const RealTimeMap = () => {
     driverData.forEach((driver, index) => {
       const driverColor = driverColors[index % driverColors.length];
       const driverId = driver.driver_id;
-      const exactPosition: [number, number] = [driver.current_lng, driver.current_lat];
+      const newPosition: [number, number] = [driver.current_lng, driver.current_lat];
       
-      console.log('📍 Processing driver:', driver.driver_name, 'at exact position:', exactPosition);
+      console.log('📍 Processing driver:', driver.driver_name, 'at position:', newPosition);
       console.log('🎨 Driver color:', driverColor);
       
       // Validate coordinates
@@ -510,8 +458,8 @@ const RealTimeMap = () => {
       if (existingTrail) {
         // Add new position if it's different from the last one
         const lastPos = existingTrail.coordinates[existingTrail.coordinates.length - 1];
-        if (!lastPos || lastPos[0] !== exactPosition[0] || lastPos[1] !== exactPosition[1]) {
-          existingTrail.coordinates.push(exactPosition);
+        if (!lastPos || lastPos[0] !== newPosition[0] || lastPos[1] !== newPosition[1]) {
+          existingTrail.coordinates.push(newPosition);
           
           // Keep only last 50 points to prevent memory issues
           if (existingTrail.coordinates.length > 50) {
@@ -524,7 +472,7 @@ const RealTimeMap = () => {
         // Create new trail
         const newTrail: DriverTrail = {
           driver_id: driverId,
-          coordinates: [exactPosition],
+          coordinates: [newPosition],
           color: driverColor
         };
         driver_trails.set(driverId, newTrail);
@@ -532,36 +480,59 @@ const RealTimeMap = () => {
         updateTrailOnMap(newTrail);
       }
       
-      // Update or create driver marker with EXACT positioning
+      // Update or create driver marker
       const existingMarker = drivers_markers.get(driverId);
       if (existingMarker) {
-        console.log('🔄 Updating existing marker position for:', driver.driver_name);
-        existingMarker.setLngLat(exactPosition);
+        console.log('🔄 Updating existing marker for:', driver.driver_name);
+        // Smooth animate to new position
+        const currentLngLat = existingMarker.getLngLat();
+        const targetLngLat = new mapboxgl.LngLat(newPosition[0], newPosition[1]);
+        
+        if (currentLngLat.lng !== targetLngLat.lng || currentLngLat.lat !== targetLngLat.lat) {
+          animateMarker(existingMarker, currentLngLat, targetLngLat, 2000); // 2 second animation
+        }
       } else {
-        console.log('✨ Creating new fixed-position marker for:', driver.driver_name);
+        console.log('✨ Creating new marker for:', driver.driver_name);
         
         try {
-          // Create new marker with realistic 3D truck design
-          const truckIconElement = create3DTruckIcon(driverColor, driver.driver_name);
-          console.log('🚛 Realistic truck icon created, adding to map at exact coordinates...');
+          // Create new marker with 3D truck icon
+          const truckIcon = create3DTruckIcon(driverColor, driver.driver_name);
+          console.log('🚛 Truck icon created, adding to DOM...');
           
-          truckIconElement.addEventListener('click', () => {
+          const el = document.createElement('div');
+          el.appendChild(truckIcon);
+          el.style.cursor = 'pointer';
+          el.style.transform = 'translate(-50%, -50%)';
+          el.style.transition = 'all 0.3s ease';
+          
+          console.log('📦 DOM element created for marker');
+          
+          el.addEventListener('mouseenter', () => {
+            el.style.transform = 'translate(-50%, -50%) scale(1.1)';
+          });
+          
+          el.addEventListener('mouseleave', () => {
+            el.style.transform = 'translate(-50%, -50%) scale(1)';
+          });
+          
+          el.addEventListener('click', () => {
             console.log('📍 Driver marker clicked:', driver.driver_name);
             setSelectedDriver(driver.driver_id);
             map.current?.flyTo({
-              center: exactPosition,
+              center: newPosition,
               zoom: 16,
               duration: 1000
             });
           });
 
+          console.log('🔧 Event listeners added to marker element');
+
           // Create enhanced popup
           const timeAgo = Math.floor((new Date().getTime() - new Date(driver.updated_at).getTime()) / 60000);
           const popup = new mapboxgl.Popup({ 
-            offset: [0, -10],
+            offset: 30,
             closeButton: true,
-            closeOnClick: false,
-            anchor: 'bottom'
+            closeOnClick: false
           }).setHTML(
             `<div style="padding: 16px; font-family: 'Segoe UI', sans-serif; min-width: 280px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.15);">
               <div style="text-align: center; margin-bottom: 12px;">
@@ -601,16 +572,15 @@ const RealTimeMap = () => {
             </div>`
           );
 
-          console.log('🗺️ Creating marker at EXACT position:', exactPosition);
-          const marker = new mapboxgl.Marker({
-            element: truckIconElement,
-            anchor: 'center'
-          })
-            .setLngLat(exactPosition)
+          console.log('💬 Popup created for marker');
+
+          console.log('🗺️ Creating marker at position:', newPosition);
+          const marker = new mapboxgl.Marker(el)
+            .setLngLat(newPosition)
             .setPopup(popup)
             .addTo(map.current);
 
-          console.log('✅ Marker successfully created and positioned exactly at GPS coordinates for:', driver.driver_name);
+          console.log('✅ Marker created and added to map for:', driver.driver_name);
           drivers_markers.set(driverId, marker);
           setDriverMarkers(new Map(drivers_markers));
           
@@ -630,6 +600,15 @@ const RealTimeMap = () => {
           destEl.style.cursor = 'pointer';
           destEl.style.transform = 'translate(-50%, -100%)';
           destEl.style.filter = 'drop-shadow(2px 2px 4px rgba(0,0,0,0.3))';
+          destEl.style.transition = 'all 0.3s ease';
+          
+          destEl.addEventListener('mouseenter', () => {
+            destEl.style.transform = 'translate(-50%, -100%) scale(1.2)';
+          });
+          
+          destEl.addEventListener('mouseleave', () => {
+            destEl.style.transform = 'translate(-50%, -100%) scale(1)';
+          });
           
           const destPopup = new mapboxgl.Popup({ offset: 15 }).setHTML(
             `<div style="padding: 12px; font-family: sans-serif; background: linear-gradient(135deg, #10B981, #059669); color: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
@@ -650,7 +629,7 @@ const RealTimeMap = () => {
           // For demo, place delivered markers near the current position
           // In real implementation, you'd have actual destination coordinates
           const destMarker = new mapboxgl.Marker(destEl)
-            .setLngLat([exactPosition[0] + (destIndex * 0.001), exactPosition[1] + (destIndex * 0.001)])
+            .setLngLat([newPosition[0] + (destIndex * 0.001), newPosition[1] + (destIndex * 0.001)])
             .setPopup(destPopup)
             .addTo(map.current);
             
@@ -660,7 +639,7 @@ const RealTimeMap = () => {
       });
     });
 
-    console.log('✅ Map markers update completed with exact positioning. Active markers:', drivers_markers.size);
+    console.log('✅ Map markers update completed. Active markers:', drivers_markers.size);
   };
 
   const updateTrailOnMap = (trail: DriverTrail) => {
