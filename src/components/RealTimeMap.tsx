@@ -332,86 +332,48 @@ const RealTimeMap = () => {
   };
 
   const create3DTruckIcon = (color: string, driverName: string) => {
-    console.log('🚛 Creating 3D truck icon for:', driverName, 'with color:', color);
+    console.log('🚗 Creating car icon for:', driverName, 'with color:', color);
     
-    // Create SVG for 3D isometric truck similar to the uploaded image
+    // Create a simple, clear car SVG icon
     const svgContent = `
-      <svg width="80" height="60" viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+      <svg width="60" height="40" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-            <feDropShadow dx="2" dy="4" stdDeviation="3" flood-color="rgba(0,0,0,0.3)"/>
+            <feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.4)"/>
           </filter>
-          <linearGradient id="truckGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:${color}"/>
-            <stop offset="50%" style="stop-color:${color}"/>
-            <stop offset="100%" style="stop-color:#000"/>
-          </linearGradient>
-          <linearGradient id="cabGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#ffffff"/>
-            <stop offset="30%" style="stop-color:${color}"/>
-            <stop offset="100%" style="stop-color:#000"/>
-          </linearGradient>
         </defs>
         
-        <!-- Shadow base -->
-        <ellipse cx="40" cy="52" rx="30" ry="6" fill="rgba(0,0,0,0.2)"/>
+        <!-- Car body -->
+        <rect x="5" y="15" width="35" height="15" rx="3" fill="${color}" stroke="#000" stroke-width="1" filter="url(#shadow)"/>
         
-        <!-- Truck body (cargo area) - 3D isometric view -->
-        <path d="M25 20 L55 20 L60 25 L60 40 L55 45 L25 45 L20 40 L20 25 Z" 
-              fill="url(#truckGradient)" stroke="#000" stroke-width="1"/>
+        <!-- Car windshield -->
+        <rect x="10" y="8" width="25" height="10" rx="2" fill="${color}" stroke="#000" stroke-width="1" opacity="0.9"/>
         
-        <!-- Truck body top face -->
-        <path d="M25 20 L55 20 L60 15 L30 15 Z" 
-              fill="${color}" stroke="#000" stroke-width="1" opacity="0.9"/>
+        <!-- Car windows -->
+        <rect x="12" y="10" width="8" height="6" rx="1" fill="rgba(173, 216, 230, 0.8)" stroke="#000" stroke-width="0.5"/>
+        <rect x="25" y="10" width="8" height="6" rx="1" fill="rgba(173, 216, 230, 0.8)" stroke="#000" stroke-width="0.5"/>
         
-        <!-- Truck body right face -->
-        <path d="M55 20 L60 15 L60 30 L55 35 L55 20 Z" 
-              fill="${color}" stroke="#000" stroke-width="1" opacity="0.7"/>
+        <!-- Car wheels -->
+        <circle cx="12" cy="30" r="4" fill="#333" stroke="#000" stroke-width="1"/>
+        <circle cx="12" cy="30" r="2.5" fill="#666"/>
+        <circle cx="33" cy="30" r="4" fill="#333" stroke="#000" stroke-width="1"/>
+        <circle cx="33" cy="30" r="2.5" fill="#666"/>
         
-        <!-- Truck cabin - 3D isometric -->
-        <path d="M10 25 L25 25 L25 40 L10 40 L5 35 L5 30 Z" 
-              fill="url(#cabGradient)" stroke="#000" stroke-width="1"/>
+        <!-- Car headlights -->
+        <circle cx="40" cy="18" r="2" fill="#FFFF99" stroke="#FFD700" stroke-width="1"/>
+        <circle cx="40" cy="27" r="2" fill="#FFFF99" stroke="#FFD700" stroke-width="1"/>
         
-        <!-- Cabin top -->
-        <path d="M10 25 L25 25 L30 20 L15 20 Z" 
-              fill="#ffffff" stroke="#000" stroke-width="1" opacity="0.9"/>
+        <!-- Car grille -->
+        <rect x="40" y="20" width="2" height="5" fill="#333"/>
         
-        <!-- Cabin right side -->
-        <path d="M25 25 L30 20 L30 35 L25 40 Z" 
-              fill="${color}" stroke="#000" stroke-width="1" opacity="0.8"/>
+        <!-- Direction arrow -->
+        <polygon points="45,18 50,22 45,26" fill="#FF4444" stroke="#CC0000" stroke-width="1"/>
         
-        <!-- Windshield -->
-        <rect x="12" y="27" width="10" height="6" fill="rgba(135, 206, 235, 0.8)" 
-              stroke="#000" stroke-width="0.5"/>
-        
-        <!-- Wheels - 3D effect -->
-        <ellipse cx="15" cy="42" rx="5" ry="3" fill="#333" stroke="#000" stroke-width="1"/>
-        <ellipse cx="15" cy="40" rx="4" ry="2.5" fill="#666"/>
-        <ellipse cx="15" cy="39" rx="2" ry="1.5" fill="#999"/>
-        
-        <ellipse cx="45" cy="42" rx="5" ry="3" fill="#333" stroke="#000" stroke-width="1"/>
-        <ellipse cx="45" cy="40" rx="4" ry="2.5" fill="#666"/>
-        <ellipse cx="45" cy="39" rx="2" ry="1.5" fill="#999"/>
-        
-        <!-- Headlights -->
-        <circle cx="5" cy="30" r="2" fill="#FFFF99" stroke="#FFD700" stroke-width="1"/>
-        <circle cx="5" cy="35" r="2" fill="#FFFF99" stroke="#FFD700" stroke-width="1"/>
-        
-        <!-- Grille details -->
-        <rect x="6" y="28" width="3" height="1" fill="#666"/>
-        <rect x="6" y="30" width="3" height="1" fill="#666"/>
-        <rect x="6" y="32" width="3" height="1" fill="#666"/>
-        <rect x="6" y="34" width="3" height="1" fill="#666"/>
-        <rect x="6" y="36" width="3" height="1" fill="#666"/>
-        
-        <!-- Direction indicator -->
-        <polygon points="65,18 70,22 65,26" fill="#FFD700" stroke="#FF8C00" stroke-width="1"/>
-        
-        <!-- Driver name label with better positioning -->
-        <rect x="12" y="5" width="${Math.max(driverName.length * 6, 40)}" height="12" 
+        <!-- Driver name label -->
+        <rect x="8" y="35" width="${Math.max(driverName.length * 4, 30)}" height="10" 
               fill="rgba(255,255,255,0.95)" stroke="${color}" stroke-width="1" rx="2"/>
-        <text x="${12 + Math.max(driverName.length * 3, 20)}" y="13" 
-              text-anchor="middle" font-family="Arial, sans-serif" font-size="9" 
+        <text x="${8 + Math.max(driverName.length * 2, 15)}" y="42" 
+              text-anchor="middle" font-family="Arial, sans-serif" font-size="8" 
               font-weight="bold" fill="#333">${driverName}</text>
       </svg>
     `;
@@ -420,13 +382,12 @@ const RealTimeMap = () => {
     const div = document.createElement('div');
     div.innerHTML = svgContent;
     div.style.cursor = 'pointer';
-    div.style.transform = 'translate(-50%, -100%)'; // Center horizontally, bottom-align to GPS point
-    div.style.transformOrigin = 'center bottom';
     div.style.position = 'absolute';
     div.style.pointerEvents = 'auto';
     div.style.zIndex = '1000';
+    div.style.transform = 'translate(-50%, -100%)'; // Center on GPS point
     
-    console.log('✅ 3D truck SVG icon created successfully');
+    console.log('✅ Car icon created successfully');
     return div;
   };
 
@@ -543,7 +504,7 @@ const RealTimeMap = () => {
                   <span style="font-size: 14px;">${driver.shipment_count} pengiriman aktif</span>
                 </div>
                 <div style="display: flex; align-items: flex-start; margin-bottom: 8px;">
-                  <span style="font-size: 16px; margin-right: 8px; margin-top: 2px;">📍</span>
+                  <span style="font-size: 16px; margin-right: 8px;">📍</span>
                   <span style="font-size: 13px; line-height: 1.4;">${driver.destinations.join(', ')}</span>
                 </div>
                 ${driver.delivered_destinations.length > 0 ? 
