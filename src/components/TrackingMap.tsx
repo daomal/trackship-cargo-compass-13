@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MapPin, Truck, Users, Navigation, RefreshCw } from 'lucide-react';
+import { MapPin, Truck, Users, Navigation, RefreshCw, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import RealTimeMap from './RealTimeMap';
@@ -29,10 +29,11 @@ const TrackingMap = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [todayDrivers, setTodayDrivers] = useState(0);
   const [trackedDrivers, setTrackedDrivers] = useState(0);
+  const [debugInfo, setDebugInfo] = useState<string>('');
 
   useEffect(() => {
     fetchTodayDrivers();
-    const interval = setInterval(fetchTodayDrivers, 30000); // Refresh setiap 30 detik
+    const interval = setInterval(fetchTodayDrivers, 15000); // Refresh setiap 15 detik untuk lebih sering
     subscribeToLocationUpdates();
     
     return () => {
@@ -41,10 +42,41 @@ const TrackingMap = () => {
   }, []);
 
   const fetchTodayDrivers = async () => {
-    console.log('Fetching today drivers with GPS data...');
+    console.log('🔍 Fetching today drivers with GPS data...');
+    setIsRefreshing(true);
+    
     try {
       const today = new Date().toISOString().split('T')[0];
+      console.log('📅 Today date filter:', today);
 
+      // First, let's get all shipments for today regardless of status to debug
+      const { data: allTodayShipments, error: debugError } = await supabase
+        .from('shipments')
+        .select(`
+          id, 
+          no_surat_jalan, 
+          perusahaan, 
+          tujuan, 
+          current_lat, 
+          current_lng, 
+          status,
+          updated_at,
+          tanggal_kirim,
+          driver_id,
+          drivers (name, license_plate)
+        `)
+        .eq('tanggal_kirim', today);
+
+      if (debugError) {
+        console.error('❌ Debug query error:', debugError);
+      } else {
+        console.log('🔍 All shipments today:', allTodayShipments?.length || 0);
+        console.log('📍 Shipments with GPS:', allTodayShipments?.filter(s => s.current_lat && s.current_lng).length || 0);
+        
+        setDebugInfo(`Total hari ini: ${allTodayShipments?.length || 0}, GPS aktif: ${allTodayShipments?.filter(s => s.current_lat && s.current_lng).length || 0}`);
+      }
+
+      // Now get the filtered data for display
       const { data, error } = await supabase
         .from('shipments')
         .select(`
@@ -64,20 +96,29 @@ const TrackingMap = () => {
         .order('updated_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching today drivers:', error);
+        console.error('❌ Error fetching today drivers:', error);
         toast.error('Gagal memuat data driver hari ini');
         return;
       }
 
-      console.log('Fetched today drivers data:', data);
+      console.log('✅ Fetched shipments data:', data?.length || 0);
+      console.log('📊 Sample data:', data?.[0]);
+      
       const shipmentData = data as ShipmentLocation[];
       setShipments(shipmentData);
       setTodayDrivers(shipmentData.length);
-      setTrackedDrivers(shipmentData.filter(s => s.current_lat && s.current_lng).length);
       
-      toast.success(`Data diperbarui: ${shipmentData.length} driver hari ini`);
+      const withGPS = shipmentData.filter(s => s.current_lat && s.current_lng);
+      setTrackedDrivers(withGPS.length);
+      
+      console.log('📍 GPS Active drivers:', withGPS.length);
+      withGPS.forEach(s => {
+        console.log(`🚛 ${s.drivers?.name || 'Unknown'}: ${s.current_lat}, ${s.current_lng} (${s.updated_at})`);
+      });
+      
+      toast.success(`Data diperbarui: ${shipmentData.length} driver, ${withGPS.length} GPS aktif`);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('💥 Error:', error);
       toast.error('Terjadi kesalahan saat memuat data');
     } finally {
       setIsLoading(false);
@@ -86,12 +127,12 @@ const TrackingMap = () => {
   };
 
   const handleRefresh = async () => {
-    setIsRefreshing(true);
+    console.log('🔄 Manual refresh triggered');
     await fetchTodayDrivers();
   };
 
   const subscribeToLocationUpdates = () => {
-    console.log('Setting up realtime subscription...');
+    console.log('🔔 Setting up realtime subscription...');
     const channel = supabase
       .channel('shipment_locations_admin')
       .on('postgres_changes', {
@@ -99,13 +140,14 @@ const TrackingMap = () => {
         schema: 'public',
         table: 'shipments'
       }, (payload) => {
-        console.log('Realtime update received:', payload);
+        console.log('⚡ Realtime update received:', payload.eventType, payload.new?.id);
         fetchTodayDrivers();
-        toast.success('Data lokasi diperbarui secara real-time!');
+        toast.success('📍 Data lokasi diperbarui secara real-time!');
       })
       .subscribe();
 
     return () => {
+      console.log('🔌 Unsubscribing from realtime updates');
       supabase.removeChannel(channel);
     };
   };
@@ -126,23 +168,31 @@ const TrackingMap = () => {
   if (isLoading) {
     return (
       <div className="flex h-64 w-full items-center justify-center">
-        <div className="animate-spin h-12 w-12 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+        <div className="text-center">
+          <div className="animate-spin h-12 w-12 border-4 border-blue-500 rounded-full border-t-transparent mx-auto mb-4"></div>
+          <p>Memuat data driver...</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header with Refresh Button */}
+      {/* Header with Refresh Button and Debug Info */}
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Pelacakan Driver Hari Ini</h2>
+        <div>
+          <h2 className="text-2xl font-bold">Pelacakan Driver Hari Ini</h2>
+          {debugInfo && (
+            <p className="text-sm text-gray-600 mt-1">Debug: {debugInfo}</p>
+          )}
+        </div>
         <Button 
           onClick={handleRefresh} 
           disabled={isRefreshing}
           className="flex items-center gap-2"
         >
           <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-          {isRefreshing ? 'Memperbarui...' : 'Refresh Data'}
+          {isRefreshing ? 'Memuat...' : 'Refresh Data'}
         </Button>
       </div>
 
@@ -184,6 +234,21 @@ const TrackingMap = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Alert if no GPS data */}
+      {todayDrivers > 0 && trackedDrivers === 0 && (
+        <Card className="border-yellow-200 bg-yellow-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-yellow-800">
+              <AlertCircle className="h-5 w-5" />
+              <div>
+                <p className="font-semibold">Tidak ada GPS aktif</p>
+                <p className="text-sm">Driver sudah terdaftar tapi belum mengaktifkan GPS. Pastikan driver mengklik tombol "Aktifkan GPS" di dashboard mereka.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Real-time Map Component */}
       <RealTimeMap />
@@ -227,9 +292,13 @@ const TrackingMap = () => {
                       <div className="text-sm text-gray-500">
                         {shipment.perusahaan}
                       </div>
-                      {shipment.current_lat && shipment.current_lng && (
+                      {shipment.current_lat && shipment.current_lng ? (
                         <div className="text-xs text-green-600 mt-1">
-                          📍 {shipment.current_lat.toFixed(4)}, {shipment.current_lng.toFixed(4)}
+                          📍 Lat: {shipment.current_lat.toFixed(6)}, Lng: {shipment.current_lng.toFixed(6)}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-orange-600 mt-1">
+                          📍 GPS belum aktif
                         </div>
                       )}
                     </div>
