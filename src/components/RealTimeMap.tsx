@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -318,92 +319,204 @@ const RealTimeMap = () => {
     }
   };
 
-  const create3DTruckIcon = (color: string, driverName: string) => {
-    console.log('🚛 Creating 3D truck icon for:', driverName, 'with color:', color);
+  const create3DTruckMarker = (color: string, driverName: string) => {
+    console.log('🚛 Creating enhanced 3D truck marker for:', driverName, 'with color:', color);
     
-    const canvas = document.createElement('canvas');
-    canvas.width = 60;
-    canvas.height = 60;
-    const ctx = canvas.getContext('2d');
+    // Create main container
+    const container = document.createElement('div');
+    container.style.cssText = `
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      pointer-events: auto;
+      cursor: pointer;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+      transform-origin: center;
+      transition: all 0.3s ease;
+    `;
     
-    if (ctx) {
-      // Create shadow
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-      ctx.shadowBlur = 8;
-      ctx.shadowOffsetX = 3;
-      ctx.shadowOffsetY = 3;
-      
-      // Draw main truck body with gradient
-      const gradient = ctx.createLinearGradient(0, 0, 0, 40);
-      gradient.addColorStop(0, color);
-      gradient.addColorStop(0.5, color);
-      gradient.addColorStop(1, '#000');
-      
-      ctx.fillStyle = gradient;
-      ctx.fillRect(12, 18, 36, 18);
-      
-      // Draw truck cabin with 3D effect
-      const cabinGradient = ctx.createLinearGradient(0, 0, 0, 25);
-      cabinGradient.addColorStop(0, '#ffffff');
-      cabinGradient.addColorStop(0.3, color);
-      cabinGradient.addColorStop(1, '#000');
-      
-      ctx.fillStyle = cabinGradient;
-      ctx.fillRect(12, 10, 18, 25);
-      
-      // Reset shadow for other elements
-      ctx.shadowColor = 'transparent';
-      
-      // Draw windshield
-      ctx.fillStyle = 'rgba(135, 206, 235, 0.8)';
-      ctx.fillRect(14, 12, 14, 8);
-      
-      // Draw wheels with 3D effect
-      const wheelGradient = ctx.createRadialGradient(18, 40, 2, 18, 40, 6);
-      wheelGradient.addColorStop(0, '#666');
-      wheelGradient.addColorStop(0.7, '#333');
-      wheelGradient.addColorStop(1, '#000');
-      
-      ctx.fillStyle = wheelGradient;
-      ctx.beginPath();
-      ctx.arc(18, 40, 6, 0, 2 * Math.PI);
-      ctx.arc(36, 40, 6, 0, 2 * Math.PI);
-      ctx.fill();
-      
-      // Add wheel rims
-      ctx.fillStyle = '#999';
-      ctx.beginPath();
-      ctx.arc(18, 40, 3, 0, 2 * Math.PI);
-      ctx.arc(36, 40, 3, 0, 2 * Math.PI);
-      ctx.fill();
-      
-      // Draw headlights
-      ctx.fillStyle = '#FFFF99';
-      ctx.fillRect(48, 22, 3, 4);
-      ctx.fillRect(48, 28, 3, 4);
-      
-      // Add driver initial with better styling
-      ctx.fillStyle = '#FFF';
-      ctx.font = 'bold 14px Arial';
-      ctx.textAlign = 'center';
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = 1;
-      const initial = driverName.charAt(0).toUpperCase();
-      ctx.strokeText(initial, 21, 22);
-      ctx.fillText(initial, 21, 22);
-      
-      // Add direction arrow
-      ctx.fillStyle = '#FFD700';
-      ctx.beginPath();
-      ctx.moveTo(45, 15);
-      ctx.lineTo(55, 20);
-      ctx.lineTo(45, 25);
-      ctx.closePath();
-      ctx.fill();
-    }
+    // Create truck icon container
+    const truckContainer = document.createElement('div');
+    truckContainer.style.cssText = `
+      position: relative;
+      width: 48px;
+      height: 48px;
+      transform: rotate(-45deg);
+    `;
     
-    console.log('✅ 3D truck icon created successfully');
-    return canvas;
+    // Create truck SVG
+    const truckSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    truckSvg.setAttribute('width', '48');
+    truckSvg.setAttribute('height', '48');
+    truckSvg.setAttribute('viewBox', '0 0 48 48');
+    truckSvg.style.cssText = `
+      filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.4));
+    `;
+    
+    // Create gradient for 3D effect
+    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    const gradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+    gradient.setAttribute('id', `truck-gradient-${driverName.replace(/\s+/g, '')}`);
+    gradient.setAttribute('x1', '0%');
+    gradient.setAttribute('y1', '0%');
+    gradient.setAttribute('x2', '100%');
+    gradient.setAttribute('y2', '100%');
+    
+    const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    stop1.setAttribute('offset', '0%');
+    stop1.setAttribute('stop-color', color);
+    stop1.setAttribute('stop-opacity', '1');
+    
+    const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    stop2.setAttribute('offset', '50%');
+    stop2.setAttribute('stop-color', color);
+    stop2.setAttribute('stop-opacity', '0.8');
+    
+    const stop3 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    stop3.setAttribute('offset', '100%');
+    stop3.setAttribute('stop-color', '#000000');
+    stop3.setAttribute('stop-opacity', '0.3');
+    
+    gradient.appendChild(stop1);
+    gradient.appendChild(stop2);
+    gradient.appendChild(stop3);
+    defs.appendChild(gradient);
+    truckSvg.appendChild(defs);
+    
+    // Create truck body
+    const truckBody = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    truckBody.setAttribute('x', '8');
+    truckBody.setAttribute('y', '20');
+    truckBody.setAttribute('width', '32');
+    truckBody.setAttribute('height', '16');
+    truckBody.setAttribute('rx', '2');
+    truckBody.setAttribute('fill', `url(#truck-gradient-${driverName.replace(/\s+/g, '')})`);
+    truckBody.setAttribute('stroke', '#000');
+    truckBody.setAttribute('stroke-width', '1');
+    truckSvg.appendChild(truckBody);
+    
+    // Create truck cabin
+    const truckCabin = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    truckCabin.setAttribute('x', '8');
+    truckCabin.setAttribute('y', '12');
+    truckCabin.setAttribute('width', '16');
+    truckCabin.setAttribute('height', '20');
+    truckCabin.setAttribute('rx', '2');
+    truckCabin.setAttribute('fill', `url(#truck-gradient-${driverName.replace(/\s+/g, '')})`);
+    truckCabin.setAttribute('stroke', '#000');
+    truckCabin.setAttribute('stroke-width', '1');
+    truckSvg.appendChild(truckCabin);
+    
+    // Create windshield
+    const windshield = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    windshield.setAttribute('x', '10');
+    windshield.setAttribute('y', '14');
+    windshield.setAttribute('width', '12');
+    windshield.setAttribute('height', '8');
+    windshield.setAttribute('rx', '1');
+    windshield.setAttribute('fill', 'rgba(135, 206, 235, 0.8)');
+    windshield.setAttribute('stroke', '#000');
+    windshield.setAttribute('stroke-width', '0.5');
+    truckSvg.appendChild(windshield);
+    
+    // Create wheels
+    const wheel1 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    wheel1.setAttribute('cx', '16');
+    wheel1.setAttribute('cy', '38');
+    wheel1.setAttribute('r', '4');
+    wheel1.setAttribute('fill', '#333');
+    wheel1.setAttribute('stroke', '#000');
+    wheel1.setAttribute('stroke-width', '1');
+    truckSvg.appendChild(wheel1);
+    
+    const wheel2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    wheel2.setAttribute('cx', '32');
+    wheel2.setAttribute('cy', '38');
+    wheel2.setAttribute('r', '4');
+    wheel2.setAttribute('fill', '#333');
+    wheel2.setAttribute('stroke', '#000');
+    wheel2.setAttribute('stroke-width', '1');
+    truckSvg.appendChild(wheel2);
+    
+    // Add wheel rims
+    const rim1 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    rim1.setAttribute('cx', '16');
+    rim1.setAttribute('cy', '38');
+    rim1.setAttribute('r', '2');
+    rim1.setAttribute('fill', '#666');
+    truckSvg.appendChild(rim1);
+    
+    const rim2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    rim2.setAttribute('cx', '32');
+    rim2.setAttribute('cy', '38');
+    rim2.setAttribute('r', '2');
+    rim2.setAttribute('fill', '#666');
+    truckSvg.appendChild(rim2);
+    
+    // Add direction indicator
+    const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    arrow.setAttribute('points', '42,20 46,24 42,28');
+    arrow.setAttribute('fill', '#FFD700');
+    arrow.setAttribute('stroke', '#000');
+    arrow.setAttribute('stroke-width', '0.5');
+    truckSvg.appendChild(arrow);
+    
+    truckContainer.appendChild(truckSvg);
+    
+    // Create name label
+    const nameLabel = document.createElement('div');
+    nameLabel.style.cssText = `
+      background: linear-gradient(135deg, ${color}, ${color}dd);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: bold;
+      white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+      transform: rotate(0deg);
+      position: relative;
+      z-index: 10;
+    `;
+    nameLabel.textContent = driverName;
+    
+    // Add initial on truck for identification
+    const initial = document.createElement('div');
+    initial.style.cssText = `
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(45deg);
+      color: white;
+      font-size: 10px;
+      font-weight: bold;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+      z-index: 5;
+      pointer-events: none;
+    `;
+    initial.textContent = driverName.charAt(0).toUpperCase();
+    truckContainer.appendChild(initial);
+    
+    // Assemble the marker
+    container.appendChild(truckContainer);
+    container.appendChild(nameLabel);
+    
+    // Add hover effects
+    container.addEventListener('mouseenter', () => {
+      container.style.transform = 'scale(1.1)';
+      nameLabel.style.transform = 'scale(0.95)';
+    });
+    
+    container.addEventListener('mouseleave', () => {
+      container.style.transform = 'scale(1)';
+      nameLabel.style.transform = 'scale(1)';
+    });
+    
+    console.log('✅ Enhanced 3D truck marker created successfully');
+    return container;
   };
 
   const updateMapMarkersAndTrails = (driverData: DriverLocation[]) => {
@@ -482,27 +595,11 @@ const RealTimeMap = () => {
         console.log('✨ Creating new marker for:', driver.driver_name);
         
         try {
-          // Create new marker with 3D truck icon
-          const truckIcon = create3DTruckIcon(driverColor, driver.driver_name);
-          console.log('🚛 Truck icon created, adding to DOM...');
+          // Create new marker with enhanced 3D truck design
+          const truckMarkerElement = create3DTruckMarker(driverColor, driver.driver_name);
+          console.log('🚛 Enhanced truck marker created, adding to map...');
           
-          const el = document.createElement('div');
-          el.appendChild(truckIcon);
-          el.style.cursor = 'pointer';
-          el.style.transform = 'translate(-50%, -50%)';
-          el.style.transition = 'all 0.3s ease';
-          
-          console.log('📦 DOM element created for marker');
-          
-          el.addEventListener('mouseenter', () => {
-            el.style.transform = 'translate(-50%, -50%) scale(1.1)';
-          });
-          
-          el.addEventListener('mouseleave', () => {
-            el.style.transform = 'translate(-50%, -50%) scale(1)';
-          });
-          
-          el.addEventListener('click', () => {
+          truckMarkerElement.addEventListener('click', () => {
             console.log('📍 Driver marker clicked:', driver.driver_name);
             setSelectedDriver(driver.driver_id);
             map.current?.flyTo({
@@ -517,9 +614,10 @@ const RealTimeMap = () => {
           // Create enhanced popup
           const timeAgo = Math.floor((new Date().getTime() - new Date(driver.updated_at).getTime()) / 60000);
           const popup = new mapboxgl.Popup({ 
-            offset: 30,
+            offset: [0, -10],
             closeButton: true,
-            closeOnClick: false
+            closeOnClick: false,
+            anchor: 'bottom'
           }).setHTML(
             `<div style="padding: 16px; font-family: 'Segoe UI', sans-serif; min-width: 280px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.15);">
               <div style="text-align: center; margin-bottom: 12px;">
@@ -562,7 +660,12 @@ const RealTimeMap = () => {
           console.log('💬 Popup created for marker');
 
           console.log('🗺️ Creating marker at position:', newPosition);
-          const marker = new mapboxgl.Marker(el)
+          const marker = new mapboxgl.Marker({
+            element: truckMarkerElement,
+            anchor: 'center',
+            pitchAlignment: 'map',
+            rotationAlignment: 'map'
+          })
             .setLngLat(newPosition)
             .setPopup(popup)
             .addTo(map.current);
