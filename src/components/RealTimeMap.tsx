@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -332,49 +333,87 @@ const RealTimeMap = () => {
   };
 
   const create3DTruckIcon = (color: string, driverName: string) => {
-    console.log('🚗 Creating car icon for:', driverName, 'with color:', color);
+    console.log('🚗 Creating improved car icon for:', driverName, 'with color:', color);
     
-    // Create a simple, clear car SVG icon
+    // Create a clearer, more realistic car SVG icon
     const svgContent = `
-      <svg width="60" height="40" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
+      <svg width="80" height="60" viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
         <defs>
-          <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-            <feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.4)"/>
+          <filter id="shadow-${driverName.replace(/\s+/g, '')}" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="2" dy="3" stdDeviation="3" flood-color="rgba(0,0,0,0.5)"/>
           </filter>
+          <linearGradient id="carGradient-${driverName.replace(/\s+/g, '')}" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+            <stop offset="100%" style="stop-color:${color};stop-opacity:0.8" />
+          </linearGradient>
         </defs>
         
-        <!-- Car body -->
-        <rect x="5" y="15" width="35" height="15" rx="3" fill="${color}" stroke="#000" stroke-width="1" filter="url(#shadow)"/>
+        <!-- Car shadow -->
+        <ellipse cx="40" cy="52" rx="30" ry="5" fill="rgba(0,0,0,0.2)"/>
         
-        <!-- Car windshield -->
-        <rect x="10" y="8" width="25" height="10" rx="2" fill="${color}" stroke="#000" stroke-width="1" opacity="0.9"/>
+        <!-- Car main body -->
+        <rect x="10" y="25" width="60" height="20" rx="8" ry="8" 
+              fill="url(#carGradient-${driverName.replace(/\s+/g, '')})" 
+              stroke="#333" stroke-width="2" 
+              filter="url(#shadow-${driverName.replace(/\s+/g, '')})"/>
         
-        <!-- Car windows -->
-        <rect x="12" y="10" width="8" height="6" rx="1" fill="rgba(173, 216, 230, 0.8)" stroke="#000" stroke-width="0.5"/>
-        <rect x="25" y="10" width="8" height="6" rx="1" fill="rgba(173, 216, 230, 0.8)" stroke="#000" stroke-width="0.5"/>
+        <!-- Car roof/cabin -->
+        <rect x="20" y="15" width="40" height="15" rx="6" ry="6" 
+              fill="url(#carGradient-${driverName.replace(/\s+/g, '')})" 
+              stroke="#333" stroke-width="2" opacity="0.9"/>
         
-        <!-- Car wheels -->
-        <circle cx="12" cy="30" r="4" fill="#333" stroke="#000" stroke-width="1"/>
-        <circle cx="12" cy="30" r="2.5" fill="#666"/>
-        <circle cx="33" cy="30" r="4" fill="#333" stroke="#000" stroke-width="1"/>
-        <circle cx="33" cy="30" r="2.5" fill="#666"/>
+        <!-- Front windshield -->
+        <rect x="22" y="17" width="12" height="10" rx="2" ry="2" 
+              fill="rgba(135, 206, 250, 0.8)" stroke="#333" stroke-width="1"/>
         
-        <!-- Car headlights -->
-        <circle cx="40" cy="18" r="2" fill="#FFFF99" stroke="#FFD700" stroke-width="1"/>
-        <circle cx="40" cy="27" r="2" fill="#FFFF99" stroke="#FFD700" stroke-width="1"/>
+        <!-- Rear windshield -->
+        <rect x="46" y="17" width="12" height="10" rx="2" ry="2" 
+              fill="rgba(135, 206, 250, 0.8)" stroke="#333" stroke-width="1"/>
+        
+        <!-- Side windows -->
+        <rect x="35" y="17" width="10" height="10" rx="1" ry="1" 
+              fill="rgba(135, 206, 250, 0.6)" stroke="#333" stroke-width="1"/>
+        
+        <!-- Front wheels -->
+        <circle cx="20" cy="45" r="6" fill="#2C2C2C" stroke="#000" stroke-width="2"/>
+        <circle cx="20" cy="45" r="4" fill="#444" stroke="#666" stroke-width="1"/>
+        <circle cx="20" cy="45" r="2" fill="#888"/>
+        
+        <!-- Rear wheels -->
+        <circle cx="60" cy="45" r="6" fill="#2C2C2C" stroke="#000" stroke-width="2"/>
+        <circle cx="60" cy="45" r="4" fill="#444" stroke="#666" stroke-width="1"/>
+        <circle cx="60" cy="45" r="2" fill="#888"/>
+        
+        <!-- Headlights -->
+        <circle cx="72" cy="30" r="3" fill="#FFFF99" stroke="#FFD700" stroke-width="1.5"/>
+        <circle cx="72" cy="40" r="3" fill="#FFFF99" stroke="#FFD700" stroke-width="1.5"/>
+        
+        <!-- Tail lights -->
+        <circle cx="8" cy="30" r="2" fill="#FF4444" stroke="#CC0000" stroke-width="1"/>
+        <circle cx="8" cy="40" r="2" fill="#FF4444" stroke="#CC0000" stroke-width="1"/>
         
         <!-- Car grille -->
-        <rect x="40" y="20" width="2" height="5" fill="#333"/>
+        <rect x="70" y="32" width="4" height="6" fill="#333" rx="1"/>
+        <line x1="71" y1="33" x2="71" y2="37" stroke="#666" stroke-width="0.5"/>
+        <line x1="73" y1="33" x2="73" y2="37" stroke="#666" stroke-width="0.5"/>
         
-        <!-- Direction arrow -->
-        <polygon points="45,18 50,22 45,26" fill="#FF4444" stroke="#CC0000" stroke-width="1"/>
+        <!-- Direction indicator -->
+        <polygon points="75,25 78,30 78,40 75,45" fill="#32CD32" stroke="#228B22" stroke-width="1"/>
         
-        <!-- Driver name label -->
-        <rect x="8" y="35" width="${Math.max(driverName.length * 4, 30)}" height="10" 
-              fill="rgba(255,255,255,0.95)" stroke="${color}" stroke-width="1" rx="2"/>
-        <text x="${8 + Math.max(driverName.length * 2, 15)}" y="42" 
-              text-anchor="middle" font-family="Arial, sans-serif" font-size="8" 
+        <!-- Driver name label with better styling -->
+        <rect x="5" y="2" width="${Math.max(driverName.length * 6 + 10, 70)}" height="12" 
+              fill="rgba(255,255,255,0.95)" stroke="${color}" stroke-width="2" rx="6" ry="6"
+              filter="url(#shadow-${driverName.replace(/\s+/g, '')})"/>
+        <text x="${5 + Math.max(driverName.length * 3 + 5, 35)}" y="10" 
+              text-anchor="middle" font-family="Arial, sans-serif" font-size="10" 
               font-weight="bold" fill="#333">${driverName}</text>
+        
+        <!-- Car door lines for detail -->
+        <line x1="35" y1="25" x2="35" y2="42" stroke="#333" stroke-width="1" opacity="0.5"/>
+        <line x1="45" y1="25" x2="45" y2="42" stroke="#333" stroke-width="1" opacity="0.5"/>
+        
+        <!-- Car hood line -->
+        <line x1="62" y1="28" x2="62" y2="42" stroke="#333" stroke-width="1" opacity="0.5"/>
       </svg>
     `;
 
@@ -386,8 +425,9 @@ const RealTimeMap = () => {
     div.style.pointerEvents = 'auto';
     div.style.zIndex = '1000';
     div.style.transform = 'translate(-50%, -100%)'; // Center on GPS point
+    div.style.transition = 'none'; // Remove any transitions to prevent movement
     
-    console.log('✅ Car icon created successfully');
+    console.log('✅ Improved car icon created successfully');
     return div;
   };
 
