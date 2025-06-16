@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { LogIn, User, UserCog, BarChart2, Truck, Menu, X, Sparkles, Zap, Shield } from "lucide-react";
+import { LogIn, User, UserCog, BarChart2, Truck, Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import ShipmentTable from "./ShipmentTable";
 import DataFilters from "./DataFilters";
@@ -11,7 +11,7 @@ import { getShipments } from "@/lib/shipmentService";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
-import DashboardNav from "./DashboardNav";
+import DashboardNav from "./Dash boardNav";
 import DashboardHome from "./DashboardHome";
 
 const DashboardLayout = () => {
@@ -33,7 +33,6 @@ const DashboardLayout = () => {
     searchQuery: ""
   });
 
-  // Fetch shipments on component mount
   useEffect(() => {
     fetchShipments();
   }, []);
@@ -56,13 +55,11 @@ const DashboardLayout = () => {
     }
   };
 
-  // Function to handle filtering
   const handleFilter = (filters: FilterOptions) => {
     setFilterOptions(filters);
     
     let filtered = [...shipments];
     
-    // Filter by date range
     if (filters.dateRange[0] && filters.dateRange[1]) {
       const startDate = filters.dateRange[0];
       const endDate = filters.dateRange[1];
@@ -73,22 +70,18 @@ const DashboardLayout = () => {
       });
     }
     
-    // Filter by status
     if (filters.status !== "all") {
       filtered = filtered.filter(shipment => shipment.status === filters.status);
     }
     
-    // Filter by driver
     if (filters.driver !== "all") {
       filtered = filtered.filter(shipment => shipment.drivers?.name === filters.driver);
     }
 
-    // Filter by company
     if (filters.company && filters.company !== "all") {
       filtered = filtered.filter(shipment => shipment.perusahaan === filters.company);
     }
     
-    // Filter by search query
     if (filters.searchQuery && filters.searchQuery.trim() !== "") {
       const query = filters.searchQuery.toLowerCase().trim();
       filtered = filtered.filter(shipment => 
@@ -102,7 +95,6 @@ const DashboardLayout = () => {
     setFilteredShipments(filtered);
   };
 
-  // Handle real-time search changes
   useEffect(() => {
     handleFilter({
       ...filterOptions,
@@ -110,20 +102,16 @@ const DashboardLayout = () => {
     });
   }, [searchQuery]);
 
-  // Extract all drivers for filter
   const drivers = Array.from(new Set(shipments.map(s => s.drivers?.name).filter(Boolean))) as string[];
-  
-  // Extract all companies for filter
   const companies = Array.from(new Set(shipments.map(s => s.perusahaan))).filter(Boolean);
 
-  // Render active view
   const renderView = () => {
     switch (activeView) {
       case "dashboard":
         return <DashboardHome shipments={filteredShipments} />;
       case "shipments":
         return (
-          <div className="space-y-4 w-full">
+          <div className="space-y-6 w-full">
             <DataFilters 
               onFilter={handleFilter} 
               drivers={drivers}
@@ -143,22 +131,22 @@ const DashboardLayout = () => {
   };
 
   const renderTopButtons = () => (
-    <div className={`flex ${isMobile ? 'flex-col w-full space-y-3' : 'items-center'} gap-4`}>
+    <div className={`flex ${isMobile ? 'flex-col w-full space-y-3' : 'items-center'} gap-3`}>
       <Button 
         variant="outline" 
         asChild 
-        className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:-translate-y-1 rounded-2xl border-0 backdrop-blur-sm"
+        className="border-gray-200 hover:bg-gray-50 shadow-sm"
       >
         <Link to="/public-data" className="flex items-center justify-center gap-2">
-          <BarChart2 className="h-5 w-5" />
-          <span>📊 Data Publik</span>
+          <BarChart2 className="h-4 w-4" />
+          <span>Data Publik</span>
         </Link>
       </Button>
       
       <Button 
         variant="outline" 
         asChild 
-        className="bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:-translate-y-1 rounded-2xl border-0 backdrop-blur-sm"
+        className="border-gray-200 hover:bg-gray-50 shadow-sm"
       >
         <a 
           href="https://trayekbaru.netlify.app/" 
@@ -166,22 +154,22 @@ const DashboardLayout = () => {
           rel="noopener noreferrer"
           className="flex items-center justify-center gap-2"
         >
-          <Truck className="h-5 w-5" />
-          <span>🚛 Trayek Driver</span>
+          <Truck className="h-4 w-4" />
+          <span>Trayek Driver</span>
         </a>
       </Button>
       
       {user ? (
-        <div className={`flex ${isMobile ? 'flex-col w-full space-y-3' : 'items-center'} gap-4`}>
+        <div className={`flex ${isMobile ? 'flex-col w-full space-y-3' : 'items-center'} gap-3`}>
           {isAdmin && (
             <Button 
               variant="default" 
-              className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:-translate-y-1 rounded-2xl border-0 backdrop-blur-sm" 
+              className="bg-blue-600 hover:bg-blue-700 shadow-sm" 
               asChild
             >
               <Link to="/admin" className="flex items-center justify-center gap-2">
-                <UserCog className="h-5 w-5" />
-                <span>👑 Panel Admin</span>
+                <UserCog className="h-4 w-4" />
+                <span>Panel Admin</span>
               </Link>
             </Button>
           )}
@@ -189,20 +177,20 @@ const DashboardLayout = () => {
           <Button 
             variant="outline" 
             onClick={() => signOut()}
-            className="bg-gradient-to-r from-red-600 to-pink-600 text-white hover:from-red-700 hover:to-pink-700 shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:-translate-y-1 rounded-2xl border-0 backdrop-blur-sm"
+            className="border-red-200 text-red-600 hover:bg-red-50 shadow-sm"
           >
-            <span>🚪 Logout</span>
+            <span>Logout</span>
           </Button>
         </div>
       ) : (
         <Button 
           variant="default" 
-          className="bg-gradient-to-r from-green-600 to-blue-600 text-white hover:from-green-700 hover:to-blue-700 shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:-translate-y-1 rounded-2xl border-0 backdrop-blur-sm" 
+          className="bg-blue-600 hover:bg-blue-700 shadow-sm" 
           asChild
         >
           <Link to="/auth" className="flex items-center justify-center gap-2">
-            <LogIn className="h-5 w-5" />
-            <span>🔑 Login</span>
+            <LogIn className="h-4 w-4" />
+            <span>Login</span>
           </Link>
         </Button>
       )}
@@ -210,44 +198,22 @@ const DashboardLayout = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative overflow-hidden">
-      {/* Background Elements */}
-      <div className="absolute inset-0">
-        <div className="absolute top-20 left-20 w-72 h-72 bg-blue-500/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-20 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl"></div>
-      </div>
-
-      <div className="container mx-auto py-6 px-4 md:px-8 max-w-full 2xl:max-w-[1800px] relative z-10">
-        <div className="flex flex-col space-y-6 animate-fade-in">
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto py-6 px-4 md:px-8 max-w-full 2xl:max-w-[1800px]">
+        <div className="flex flex-col space-y-6">
           <div className={`flex ${isMobile ? 'flex-col space-y-4' : 'flex-row'} justify-between items-center`}>
-            <div className="text-center md:text-left animate-slide-in">
+            <div className="text-center md:text-left">
               <div className="flex items-center justify-center md:justify-start gap-3 mb-4">
-                <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-3 rounded-2xl shadow-2xl">
-                  <Truck className="h-10 w-10 text-white" />
+                <div className="bg-blue-600 p-3 rounded-lg shadow-sm">
+                  <Truck className="h-6 w-6 text-white" />
                 </div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+                <h1 className="text-3xl font-bold text-gray-900">
                   DeliveryPro
                 </h1>
               </div>
-              <p className="text-slate-300 text-lg mb-4">
-                Sistem pengiriman terdepan dengan teknologi canggih
+              <p className="text-gray-600 mb-4">
+                Sistem pengiriman modern dan profesional
               </p>
-              
-              {/* Feature badges */}
-              <div className="flex justify-center md:justify-start gap-2">
-                <div className="flex items-center gap-1 bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full text-xs text-blue-200">
-                  <Sparkles className="h-3 w-3" />
-                  Real-time
-                </div>
-                <div className="flex items-center gap-1 bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full text-xs text-indigo-200">
-                  <Shield className="h-3 w-3" />
-                  Secure
-                </div>
-                <div className="flex items-center gap-1 bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full text-xs text-purple-200">
-                  <Zap className="h-3 w-3" />
-                  Fast
-                </div>
-              </div>
             </div>
             
             {isMobile ? (
@@ -256,39 +222,35 @@ const DashboardLayout = () => {
                   variant="outline" 
                   size="icon" 
                   onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                  className="relative z-20 md:hidden bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20"
+                  className="md:hidden border-gray-200 hover:bg-gray-50"
                 >
                   {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                 </Button>
 
-                {/* Mobile menu overlay */}
                 {isMobileMenuOpen && (
                   <div className="fixed inset-0 bg-black/50 z-10" onClick={() => setIsMobileMenuOpen(false)}></div>
                 )}
 
-                {/* Mobile menu */}
-                <div className={`fixed top-0 right-0 h-screen bg-gradient-to-b from-slate-900 to-blue-900 shadow-2xl w-4/5 max-w-xs transform transition-transform duration-300 ease-in-out z-10 p-6 backdrop-blur-xl border-l border-white/20 ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+                <div className={`fixed top-0 right-0 h-screen bg-white shadow-lg w-4/5 max-w-xs transform transition-transform duration-300 ease-in-out z-10 p-6 ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
                   <div className="flex flex-col space-y-6 pt-12">
-                    <h3 className="text-2xl font-bold mb-4 text-white">Menu</h3>
+                    <h3 className="text-xl font-semibold mb-4 text-gray-900">Menu</h3>
                     {renderTopButtons()}
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-4 animate-slide-in" style={{animationDelay: "0.2s"}}>
+              <div className="flex items-center gap-3">
                 {renderTopButtons()}
               </div>
             )}
           </div>
           
-          {/* Dashboard Navigation */}
-          <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
             <DashboardNav activeView={activeView} onViewChange={setActiveView} />
           </div>
           
-          {/* Active View Content */}
           <div className="w-full">
-            <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
               {renderView()}
             </div>
           </div>

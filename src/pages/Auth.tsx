@@ -1,284 +1,214 @@
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { Truck, LogIn, UserPlus, Sparkles, Shield, Zap } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
+import { Eye, EyeOff, Mail, Lock, UserPlus, LogIn, Truck } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 const Auth = () => {
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
-  const { signIn, signUp, user, profile, isLoading } = useAuth();
-  const [isSigningIn, setIsSigningIn] = useState(false);
-  const [isSigningUp, setIsSigningUp] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-
-  // Form states
-  const [signInData, setSignInData] = useState({
-    email: '',
-    password: ''
-  });
-
-  const [signUpData, setSignUpData] = useState({
-    email: '',
-    password: '',
-    name: ''
-  });
+  const { toast } = useToast();
 
   useEffect(() => {
-    if (user && profile) {
-      // Redirect based on user role and driver status
-      if (profile.driver_id) {
-        // User is a driver, redirect to driver dashboard
-        navigate('/dashboard-supir');
-      } else if (profile.role === 'admin') {
-        // User is admin, redirect to main dashboard
-        navigate('/');
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent, mode: 'signin' | 'signup') => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      if (mode === 'signin') {
+        await signIn(email, password);
+        toast({
+          title: "Login berhasil",
+          description: "Selamat datang kembali!",
+        });
       } else {
-        // Regular user, redirect to main dashboard
-        navigate('/');
+        await signUp(email, password);
+        toast({
+          title: "Registrasi berhasil",
+          description: "Silakan cek email untuk verifikasi akun.",
+        });
       }
+    } catch (error: any) {
+      toast({
+        title: mode === 'signin' ? "Login gagal" : "Registrasi gagal",
+        description: error.message || "Terjadi kesalahan",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
-  }, [user, profile, navigate]);
-
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSigningIn(true);
-    setError('');
-    setSuccess('');
-
-    const { error } = await signIn(signInData.email, signInData.password);
-
-    if (error) {
-      setError(error.message || 'Gagal login. Periksa email dan password Anda.');
-    } else {
-      setSuccess('Login berhasil! Mengalihkan...');
-    }
-
-    setIsSigningIn(false);
   };
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSigningUp(true);
-    setError('');
-    setSuccess('');
-
-    const { error } = await signUp(signUpData.email, signUpData.password, signUpData.name);
-
-    if (error) {
-      setError(error.message || 'Gagal mendaftar. Silakan coba lagi.');
-    } else {
-      setSuccess('Pendaftaran berhasil! Silakan cek email Anda untuk verifikasi.');
-    }
-
-    setIsSigningUp(false);
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
-        <div className="flex flex-col items-center">
-          <div className="animate-spin h-16 w-16 border-4 border-blue-400 rounded-full border-t-transparent mb-4"></div>
-          <p className="text-white text-lg">Loading...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 p-4 relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0">
-        <div className="absolute top-20 left-20 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-20 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-500"></div>
-      </div>
-
-      <div className="w-full max-w-md relative z-10">
-        {/* Header */}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-6">
-            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 rounded-2xl shadow-2xl">
-              <Truck className="h-12 w-12 text-white" />
-            </div>
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4 shadow-sm">
+            <Truck className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent mb-2">
-            DeliveryPro
-          </h1>
-          <p className="text-slate-300 text-lg">Sistem Pengiriman Terdepan</p>
-          
-          {/* Feature badges */}
-          <div className="flex justify-center gap-2 mt-4">
-            <div className="flex items-center gap-1 bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full text-xs text-blue-200">
-              <Sparkles className="h-3 w-3" />
-              Real-time
-            </div>
-            <div className="flex items-center gap-1 bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full text-xs text-indigo-200">
-              <Shield className="h-3 w-3" />
-              Secure
-            </div>
-            <div className="flex items-center gap-1 bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full text-xs text-purple-200">
-              <Zap className="h-3 w-3" />
-              Fast
-            </div>
-          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">DeliveryPro</h1>
+          <p className="text-gray-600">Sistem manajemen pengiriman modern</p>
         </div>
 
-        {/* Auth Card */}
-        <Card className="shadow-2xl border-0 bg-white/10 backdrop-blur-xl">
+        <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
           <CardHeader className="text-center pb-4">
-            <CardTitle className="text-2xl text-white">Selamat Datang</CardTitle>
-            <CardDescription className="text-slate-300">
-              Akses dashboard pengiriman premium Anda
-            </CardDescription>
+            <CardTitle className="text-xl font-semibold text-gray-900">
+              Selamat Datang
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="signin" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-2 bg-black/20 border border-white/10">
+            <Tabs defaultValue="signin" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100">
                 <TabsTrigger 
                   value="signin" 
-                  className="flex items-center gap-2 data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-200 text-slate-300"
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
                 >
-                  <LogIn className="h-4 w-4" />
+                  <LogIn className="h-4 w-4 mr-2" />
                   Masuk
                 </TabsTrigger>
                 <TabsTrigger 
-                  value="signup" 
-                  className="flex items-center gap-2 data-[state=active]:bg-indigo-500/20 data-[state=active]:text-indigo-200 text-slate-300"
+                  value="signup"
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
                 >
-                  <UserPlus className="h-4 w-4" />
+                  <UserPlus className="h-4 w-4 mr-2" />
                   Daftar
                 </TabsTrigger>
               </TabsList>
 
-              {error && (
-                <Alert className="border-red-500/50 bg-red-500/10 backdrop-blur-sm">
-                  <AlertDescription className="text-red-200">{error}</AlertDescription>
-                </Alert>
-              )}
-
-              {success && (
-                <Alert className="border-green-500/50 bg-green-500/10 backdrop-blur-sm">
-                  <AlertDescription className="text-green-200">{success}</AlertDescription>
-                </Alert>
-              )}
-
-              <TabsContent value="signin">
-                <form onSubmit={handleSignIn} className="space-y-4">
+              <TabsContent value="signin" className="space-y-4">
+                <form onSubmit={(e) => handleSubmit(e, 'signin')} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email" className="text-slate-200">Email</Label>
-                    <Input
-                      id="signin-email"
-                      type="email"
-                      placeholder="nama@email.com"
-                      value={signInData.email}
-                      onChange={(e) => setSignInData(prev => ({
-                        ...prev,
-                        email: e.target.value
-                      }))}
-                      className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 focus:border-blue-400"
-                      required
-                    />
+                    <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                      Email
+                    </Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="nama@email.com"
+                        className="pl-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
                   </div>
+                  
                   <div className="space-y-2">
-                    <Label htmlFor="signin-password" className="text-slate-200">Password</Label>
-                    <Input
-                      id="signin-password"
-                      type="password"
-                      placeholder="Masukkan password"
-                      value={signInData.password}
-                      onChange={(e) => setSignInData(prev => ({
-                        ...prev,
-                        password: e.target.value
-                      }))}
-                      className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 focus:border-blue-400"
-                      required
-                    />
+                    <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                      Password
+                    </Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Masukkan password"
+                        className="pl-10 pr-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                        required
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4 text-gray-400" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-gray-400" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
-                  <Button
-                    type="submit"
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 h-12"
-                    disabled={isSigningIn}
+
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                    disabled={isLoading}
                   >
-                    {isSigningIn ? (
-                      <div className="flex items-center gap-2">
-                        <div className="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent"></div>
-                        Memproses...
-                      </div>
-                    ) : (
-                      'Masuk'
-                    )}
+                    {isLoading ? "Memproses..." : "Masuk"}
                   </Button>
                 </form>
               </TabsContent>
 
-              <TabsContent value="signup">
-                <form onSubmit={handleSignUp} className="space-y-4">
+              <TabsContent value="signup" className="space-y-4">
+                <form onSubmit={(e) => handleSubmit(e, 'signup')} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name" className="text-slate-200">Nama Lengkap</Label>
-                    <Input
-                      id="signup-name"
-                      type="text"
-                      placeholder="Masukkan nama lengkap"
-                      value={signUpData.name}
-                      onChange={(e) => setSignUpData(prev => ({
-                        ...prev,
-                        name: e.target.value
-                      }))}
-                      className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 focus:border-indigo-400"
-                      required
-                    />
+                    <Label htmlFor="signup-email" className="text-sm font-medium text-gray-700">
+                      Email
+                    </Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="nama@email.com"
+                        className="pl-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
                   </div>
+                  
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email" className="text-slate-200">Email</Label>
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="nama@email.com"
-                      value={signUpData.email}
-                      onChange={(e) => setSignUpData(prev => ({
-                        ...prev,
-                        email: e.target.value
-                      }))}
-                      className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 focus:border-indigo-400"
-                      required
-                    />
+                    <Label htmlFor="signup-password" className="text-sm font-medium text-gray-700">
+                      Password
+                    </Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="signup-password"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Minimal 6 karakter"
+                        className="pl-10 pr-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                        required
+                        minLength={6}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4 text-gray-400" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-gray-400" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password" className="text-slate-200">Password</Label>
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      placeholder="Minimal 6 karakter"
-                      value={signUpData.password}
-                      onChange={(e) => setSignUpData(prev => ({
-                        ...prev,
-                        password: e.target.value
-                      }))}
-                      className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 focus:border-indigo-400"
-                      required
-                      minLength={6}
-                    />
-                  </div>
-                  <Button
-                    type="submit"
-                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 h-12"
-                    disabled={isSigningUp}
+
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                    disabled={isLoading}
                   >
-                    {isSigningUp ? (
-                      <div className="flex items-center gap-2">
-                        <div className="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent"></div>
-                        Memproses...
-                      </div>
-                    ) : (
-                      'Daftar'
-                    )}
+                    {isLoading ? "Memproses..." : "Daftar"}
                   </Button>
                 </form>
               </TabsContent>
@@ -286,11 +216,9 @@ const Auth = () => {
           </CardContent>
         </Card>
 
-        {/* Footer */}
-        <div className="text-center mt-6 text-slate-400">
-          <p className="text-sm">Sistem Manajemen Pengiriman Premium</p>
-          <p className="text-xs mt-1 opacity-75">Untuk supir dan admin profesional</p>
-        </div>
+        <p className="text-center text-sm text-gray-500 mt-6">
+          Dengan masuk, Anda menyetujui syarat dan ketentuan kami
+        </p>
       </div>
     </div>
   );
