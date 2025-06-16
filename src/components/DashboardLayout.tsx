@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { LogIn, User, UserCog, BarChart2, Truck, Menu, X } from "lucide-react";
@@ -15,7 +16,7 @@ import DashboardHome from "./DashboardHome";
 
 const DashboardLayout = () => {
   const { toast } = useToast();
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, profile, isAdmin, signOut } = useAuth();
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [filteredShipments, setFilteredShipments] = useState<Shipment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -160,6 +161,18 @@ const DashboardLayout = () => {
       
       {user ? (
         <div className={`flex ${isMobile ? 'flex-col w-full space-y-3' : 'items-center'} gap-3`}>
+          {/* Driver Dashboard Button - Always show if user is logged in */}
+          <Button 
+            variant="default" 
+            className="bg-green-600 hover:bg-green-700 shadow-sm" 
+            asChild
+          >
+            <Link to="/dashboard-supir" className="flex items-center justify-center gap-2">
+              <Truck className="h-4 w-4" />
+              <span>Dashboard Supir</span>
+            </Link>
+          </Button>
+
           {isAdmin && (
             <Button 
               variant="default" 
