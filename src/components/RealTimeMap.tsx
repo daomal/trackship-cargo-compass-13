@@ -1,240 +1,773 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { MapPin, Navigation, AlertCircle, Settings, Trash2, Save } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { MapPin, Truck, Users, RefreshCw, Maximize2, Minimize2, AlertTriangle, Settings } from 'lucide-react';
-import { getMapboxToken, saveMapboxToken } from '@/utils/mapboxSettings';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { getMapboxToken, saveMapboxToken, deleteMapboxToken } from '@/utils/mapboxSettings';
 
 interface DriverLocation {
   driver_id: string;
-  latitude: number;
-  longitude: number;
+  driver_name: string;
+  license_plate: string;
+  current_lat: number;
+  current_lng: number;
   updated_at: string;
-  driver_name?: string;
-  license_plate?: string;
+  shipment_count: number;
+  destinations: string[];
+  delivered_destinations: string[];
+}
+
+interface DriverTrail {
+  driver_id: string;
+  coordinates: [number, number][];
+  color: string;
 }
 
 const RealTimeMap = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const markers = useRef<{ [key: string]: mapboxgl.Marker }>({});
-  const [driverLocations, setDriverLocations] = useState<DriverLocation[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [mapboxToken, setMapboxToken] = useState<string>('');
-  const [showTokenInput, setShowTokenInput] = useState(false);
+  const [mapboxToken, setMapboxToken] = useState('');
   const [tokenInput, setTokenInput] = useState('');
+  const [drivers, setDrivers] = useState<DriverLocation[]>([]);
+  const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
+  const [drivers_markers, setDriverMarkers] = useState<Map<string, mapboxgl.Marker>>(new Map());
+  const [destination_markers, setDestinationMarkers] = useState<Map<string, mapboxgl.Marker>>(new Map());
+  const [driver_trails, setDriverTrails] = useState<Map<string, DriverTrail>>(new Map());
+  const [showTokenManager, setShowTokenManager] = useState(false);
+  const [isLoadingToken, setIsLoadingToken] = useState(true);
+  const [isSavingToken, setIsSavingToken] = useState(false);
+  const [userInteracting, setUserInteracting] = useState(false);
+  const [mapInitialized, setMapInitialized] = useState(false);
 
+  // Color palette for different drivers
+  const driverColors = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57',
+    '#FF9FF3', '#54A0FF', '#5F27CD', '#00D2D3', '#FF9F43',
+    '#EE5A24', '#0FB9B1', '#3742FA', '#2F3542', '#FF3838'
+  ];
+
+  // Load token from Supabase on component mount
   useEffect(() => {
-    const initMapbox = async () => {
-      try {
-        const token = await getMapboxToken();
-        if (!token) {
-          setShowTokenInput(true);
-          setIsLoading(false);
-          return;
-        }
-        setMapboxToken(token);
-        
-        if (mapContainer.current) {
-          initializeMap(token);
-        }
-      } catch (error) {
-        console.error('Error getting Mapbox token:', error);
-        setShowTokenInput(true);
-        setIsLoading(false);
-      }
-    };
-    
-    initMapbox();
+    loadTokenFromDatabase();
   }, []);
 
+  const loadTokenFromDatabase = async () => {
+    setIsLoadingToken(true);
+    console.log('🔑 Loading Mapbox token from Supabase...');
+    
+    const token = await getMapboxToken();
+    
+    if (token) {
+      setMapboxToken(token);
+      setTokenInput(token);
+      console.log('✅ Loaded Mapbox token from Supabase');
+    } else {
+      // Set default token if no saved token
+      const defaultToken = 'pk.eyJ1Ijoia2Vsb2xhc2VuamEiLCJhIjoiY21id3gzbnA0MTc1cTJycHVuZHJyMWo2ciJ9.84jSVtrqyFb8MJwKFeGm1g';
+      setMapboxToken(defaultToken);
+      setTokenInput(defaultToken);
+      // Save default token to database
+      await saveMapboxToken(defaultToken);
+      console.log('📱 Set and saved default Mapbox token');
+    }
+    
+    setIsLoadingToken(false);
+  };
+
   useEffect(() => {
-    if (mapboxToken) {
+    if (mapboxToken && mapContainer.current && !map.current && !isLoadingToken) {
+      initializeMap();
+    }
+  }, [mapboxToken, isLoadingToken]);
+
+  useEffect(() => {
+    if (mapboxToken && !isLoadingToken) {
       fetchDriverLocations();
-      const interval = setInterval(fetchDriverLocations, 30000);
-
-      const channel = supabase
-        .channel('shipments_realtime')
-        .on('postgres_changes', {
-          event: '*',
-          schema: 'public',
-          table: 'shipments'
-        }, () => {
-          fetchDriverLocations();
-        })
-        .subscribe();
-
+      const interval = setInterval(fetchDriverLocations, 3000); // Update every 3 seconds for live tracking
+      subscribeToLocationUpdates();
+      
       return () => {
         clearInterval(interval);
-        supabase.removeChannel(channel);
       };
     }
-  }, [mapboxToken]);
+  }, [mapboxToken, isLoadingToken]);
 
-  const handleTokenSave = async () => {
-    if (!tokenInput.trim()) {
-      toast.error('Masukkan token Mapbox yang valid');
-      return;
-    }
-
-    const success = await saveMapboxToken(tokenInput.trim());
-    if (success) {
-      setMapboxToken(tokenInput.trim());
-      setShowTokenInput(false);
-      if (mapContainer.current) {
-        initializeMap(tokenInput.trim());
+  const handleTokenSubmit = async () => {
+    if (tokenInput.trim()) {
+      setIsSavingToken(true);
+      const newToken = tokenInput.trim();
+      
+      const success = await saveMapboxToken(newToken);
+      if (success) {
+        setMapboxToken(newToken);
+        
+        // Reinitialize map with new token
+        if (map.current) {
+          map.current.remove();
+          map.current = null;
+          setMapInitialized(false);
+        }
+        
+        setShowTokenManager(false);
       }
+      setIsSavingToken(false);
+    } else {
+      toast.error('Masukkan Mapbox token yang valid');
     }
   };
 
-  const initializeMap = (token: string) => {
+  const handleClearToken = async () => {
+    setIsSavingToken(true);
+    const success = await deleteMapboxToken();
+    
+    if (success) {
+      setMapboxToken('');
+      setTokenInput('');
+      
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+        setMapInitialized(false);
+      }
+      
+      setShowTokenManager(false);
+    }
+    setIsSavingToken(false);
+  };
+
+  const initializeMap = () => {
     if (!mapContainer.current) return;
 
+    mapboxgl.accessToken = mapboxToken;
+    
     try {
-      mapboxgl.accessToken = token;
-      
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/light-v11',
+        style: 'mapbox://styles/mapbox/streets-v12',
         center: [106.8456, -6.2088], // Jakarta coordinates
         zoom: 11,
-        attributionControl: false
       });
 
       map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-      map.current.addControl(new mapboxgl.FullscreenControl(), 'top-right');
       
-      setIsLoading(false);
+      // Track user interaction to prevent auto zoom-out
+      map.current.on('mousedown', () => {
+        setUserInteracting(true);
+        console.log('🖱️ User started interacting with map');
+      });
+      map.current.on('touchstart', () => {
+        setUserInteracting(true);
+        console.log('👆 User started touching map');
+      });
+      map.current.on('dragstart', () => {
+        setUserInteracting(true);
+        console.log('🖱️ User started dragging map');
+      });
+      map.current.on('zoomstart', () => {
+        setUserInteracting(true);
+        console.log('🔍 User started zooming map');
+      });
+      
+      // Long delay before allowing auto-fit again
+      map.current.on('mouseup', () => {
+        setTimeout(() => {
+          setUserInteracting(false);
+          console.log('🖱️ User interaction timeout - allowing auto-fit');
+        }, 10000); // 10 seconds delay
+      });
+      map.current.on('touchend', () => {
+        setTimeout(() => {
+          setUserInteracting(false);
+          console.log('👆 Touch interaction timeout - allowing auto-fit');
+        }, 10000);
+      });
+      map.current.on('dragend', () => {
+        setTimeout(() => {
+          setUserInteracting(false);
+          console.log('🖱️ Drag interaction timeout - allowing auto-fit');
+        }, 10000);
+      });
+      map.current.on('zoomend', () => {
+        setTimeout(() => {
+          setUserInteracting(false);
+          console.log('🔍 Zoom interaction timeout - allowing auto-fit');
+        }, 10000);
+      });
+      
+      map.current.on('load', () => {
+        console.log('🗺️ Map loaded successfully');
+        setMapInitialized(true);
+        console.log('✅ Map initialization state set to true');
+        // Wait a moment for state to update, then fetch locations
+        setTimeout(() => {
+          fetchDriverLocations();
+        }, 100);
+      });
+
+      map.current.on('error', (e) => {
+        console.error('❌ Map error:', e);
+        toast.error('Error loading map. Please check your Mapbox token.');
+      });
     } catch (error) {
-      console.error('Error initializing map:', error);
-      toast.error('Token Mapbox tidak valid. Silakan coba lagi.');
-      setShowTokenInput(true);
-      setIsLoading(false);
+      console.error('❌ Map initialization error:', error);
+      toast.error('Failed to initialize map. Please check your Mapbox token.');
     }
   };
 
   const fetchDriverLocations = async () => {
     try {
+      const today = new Date().toISOString().split('T')[0];
+      console.log('🗺️ Fetching driver GPS locations for live map...');
+      
+      // Get unique drivers with their latest location and shipment info
       const { data, error } = await supabase
         .from('shipments')
         .select(`
           driver_id,
-          current_lat,
+          current_lat, 
           current_lng,
           updated_at,
-          drivers (
-            name,
-            license_plate
-          )
+          tujuan,
+          status,
+          drivers (name, license_plate)
         `)
-        .not('driver_id', 'is', null)
+        .eq('tanggal_kirim', today)
         .not('current_lat', 'is', null)
         .not('current_lng', 'is', null)
-        .gte('updated_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+        .not('driver_id', 'is', null);
 
-    if (error) {
-      console.error('Error fetching driver locations:', error);
+      if (error) {
+        console.error('❌ Error fetching driver locations:', error);
+        return;
+      }
+
+      console.log('📍 Raw driver data:', data?.length || 0);
+      console.log('📊 Raw data sample:', data?.slice(0, 2));
+      
+      // Group by driver_id to get unique drivers with their combined data
+      const driverMap = new Map<string, DriverLocation>();
+      
+      data?.forEach((shipment: any) => {
+        if (!shipment.driver_id || !shipment.drivers) {
+          console.log('⚠️ Skipping shipment - missing driver data:', shipment);
+          return;
+        }
+        
+        console.log('🔍 Processing shipment:', {
+          driver_id: shipment.driver_id,
+          driver_name: shipment.drivers?.name,
+          lat: shipment.current_lat,
+          lng: shipment.current_lng
+        });
+        
+        const driverId = shipment.driver_id;
+        const existing = driverMap.get(driverId);
+        
+        if (!existing || new Date(shipment.updated_at) > new Date(existing.updated_at)) {
+          const delivered = shipment.status === 'terkirim' ? [shipment.tujuan] : [];
+          const destinations = [shipment.tujuan];
+          
+          if (existing) {
+            destinations.push(...existing.destinations.filter(d => d !== shipment.tujuan));
+            delivered.push(...existing.delivered_destinations);
+          }
+          
+          const driverLocation: DriverLocation = {
+            driver_id: driverId,
+            driver_name: shipment.drivers.name,
+            license_plate: shipment.drivers.license_plate,
+            current_lat: shipment.current_lat,
+            current_lng: shipment.current_lng,
+            updated_at: shipment.updated_at,
+            shipment_count: (existing?.shipment_count || 0) + 1,
+            destinations: destinations,
+            delivered_destinations: delivered
+          };
+          
+          console.log('✅ Created driver location object:', driverLocation);
+          driverMap.set(driverId, driverLocation);
+        } else if (existing) {
+          existing.shipment_count += 1;
+          if (!existing.destinations.includes(shipment.tujuan)) {
+            existing.destinations.push(shipment.tujuan);
+          }
+          if (shipment.status === 'terkirim' && !existing.delivered_destinations.includes(shipment.tujuan)) {
+            existing.delivered_destinations.push(shipment.tujuan);
+          }
+        }
+      });
+
+      const uniqueDrivers = Array.from(driverMap.values());
+      console.log('📍 Unique drivers with GPS:', uniqueDrivers.length);
+      console.log('📊 Driver objects:', uniqueDrivers);
+      
+      setDrivers(uniqueDrivers);
+      
+      console.log('🗺️ Checking map readiness - map.current:', !!map.current, 'mapInitialized:', mapInitialized);
+      
+      if (map.current && mapInitialized) {
+        console.log('🗺️ Map is ready, updating markers...');
+        updateMapMarkersAndTrails(uniqueDrivers);
+      } else {
+        console.log('⚠️ Map not ready yet - map.current:', !!map.current, 'mapInitialized:', mapInitialized);
+        // Try again after a short delay if map exists but not initialized
+        if (map.current && !mapInitialized) {
+          setTimeout(() => {
+            console.log('🔄 Retrying marker update after delay...');
+            if (map.current) {
+              console.log('✅ Map found on retry, setting initialized and updating markers');
+              setMapInitialized(true);
+              updateMapMarkersAndTrails(uniqueDrivers);
+            }
+          }, 1000);
+        }
+      }
+    } catch (error) {
+      console.error('💥 Error:', error);
+    }
+  };
+
+  const create3DTruckIcon = (color: string, driverName: string) => {
+    console.log('🚗 Creating improved car icon for:', driverName, 'with color:', color);
+    
+    // Create a clearer, more realistic car SVG icon
+    const svgContent = `
+      <svg width="80" height="60" viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="shadow-${driverName.replace(/\s+/g, '')}" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="2" dy="3" stdDeviation="3" flood-color="rgba(0,0,0,0.5)"/>
+          </filter>
+          <linearGradient id="carGradient-${driverName.replace(/\s+/g, '')}" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+            <stop offset="100%" style="stop-color:${color};stop-opacity:0.8" />
+          </linearGradient>
+        </defs>
+        
+        <!-- Car shadow -->
+        <ellipse cx="40" cy="52" rx="30" ry="5" fill="rgba(0,0,0,0.2)"/>
+        
+        <!-- Car main body -->
+        <rect x="10" y="25" width="60" height="20" rx="8" ry="8" 
+              fill="url(#carGradient-${driverName.replace(/\s+/g, '')})" 
+              stroke="#333" stroke-width="2" 
+              filter="url(#shadow-${driverName.replace(/\s+/g, '')})"/>
+        
+        <!-- Car roof/cabin -->
+        <rect x="20" y="15" width="40" height="15" rx="6" ry="6" 
+              fill="url(#carGradient-${driverName.replace(/\s+/g, '')})" 
+              stroke="#333" stroke-width="2" opacity="0.9"/>
+        
+        <!-- Front windshield -->
+        <rect x="22" y="17" width="12" height="10" rx="2" ry="2" 
+              fill="rgba(135, 206, 250, 0.8)" stroke="#333" stroke-width="1"/>
+        
+        <!-- Rear windshield -->
+        <rect x="46" y="17" width="12" height="10" rx="2" ry="2" 
+              fill="rgba(135, 206, 250, 0.8)" stroke="#333" stroke-width="1"/>
+        
+        <!-- Side windows -->
+        <rect x="35" y="17" width="10" height="10" rx="1" ry="1" 
+              fill="rgba(135, 206, 250, 0.6)" stroke="#333" stroke-width="1"/>
+        
+        <!-- Front wheels -->
+        <circle cx="20" cy="45" r="6" fill="#2C2C2C" stroke="#000" stroke-width="2"/>
+        <circle cx="20" cy="45" r="4" fill="#444" stroke="#666" stroke-width="1"/>
+        <circle cx="20" cy="45" r="2" fill="#888"/>
+        
+        <!-- Rear wheels -->
+        <circle cx="60" cy="45" r="6" fill="#2C2C2C" stroke="#000" stroke-width="2"/>
+        <circle cx="60" cy="45" r="4" fill="#444" stroke="#666" stroke-width="1"/>
+        <circle cx="60" cy="45" r="2" fill="#888"/>
+        
+        <!-- Headlights -->
+        <circle cx="72" cy="30" r="3" fill="#FFFF99" stroke="#FFD700" stroke-width="1.5"/>
+        <circle cx="72" cy="40" r="3" fill="#FFFF99" stroke="#FFD700" stroke-width="1.5"/>
+        
+        <!-- Tail lights -->
+        <circle cx="8" cy="30" r="2" fill="#FF4444" stroke="#CC0000" stroke-width="1"/>
+        <circle cx="8" cy="40" r="2" fill="#FF4444" stroke="#CC0000" stroke-width="1"/>
+        
+        <!-- Car grille -->
+        <rect x="70" y="32" width="4" height="6" fill="#333" rx="1"/>
+        <line x1="71" y1="33" x2="71" y2="37" stroke="#666" stroke-width="0.5"/>
+        <line x1="73" y1="33" x2="73" y2="37" stroke="#666" stroke-width="0.5"/>
+        
+        <!-- Direction indicator -->
+        <polygon points="75,25 78,30 78,40 75,45" fill="#32CD32" stroke="#228B22" stroke-width="1"/>
+        
+        <!-- Driver name label with better styling -->
+        <rect x="5" y="2" width="${Math.max(driverName.length * 6 + 10, 70)}" height="12" 
+              fill="rgba(255,255,255,0.95)" stroke="${color}" stroke-width="2" rx="6" ry="6"
+              filter="url(#shadow-${driverName.replace(/\s+/g, '')})"/>
+        <text x="${5 + Math.max(driverName.length * 3 + 5, 35)}" y="10" 
+              text-anchor="middle" font-family="Arial, sans-serif" font-size="10" 
+              font-weight="bold" fill="#333">${driverName}</text>
+        
+        <!-- Car door lines for detail -->
+        <line x1="35" y1="25" x2="35" y2="42" stroke="#333" stroke-width="1" opacity="0.5"/>
+        <line x1="45" y1="25" x2="45" y2="42" stroke="#333" stroke-width="1" opacity="0.5"/>
+        
+        <!-- Car hood line -->
+        <line x1="62" y1="28" x2="62" y2="42" stroke="#333" stroke-width="1" opacity="0.5"/>
+      </svg>
+    `;
+
+    // Create DOM element from SVG
+    const div = document.createElement('div');
+    div.innerHTML = svgContent;
+    div.style.cursor = 'pointer';
+    div.style.position = 'absolute';
+    div.style.pointerEvents = 'auto';
+    div.style.zIndex = '1000';
+    div.style.transform = 'translate(-50%, -100%)'; // Center on GPS point
+    div.style.transition = 'none'; // Remove any transitions to prevent movement
+    
+    console.log('✅ Improved car icon created successfully');
+    return div;
+  };
+
+  const updateMapMarkersAndTrails = (driverData: DriverLocation[]) => {
+    if (!map.current) {
+      console.log('❌ No map instance available for markers update');
       return;
     }
 
-    const locations: DriverLocation[] = data?.map((item: any) => ({
-      driver_id: item.driver_id,
-      latitude: item.current_lat,
-      longitude: item.current_lng,
-      updated_at: item.updated_at,
-      driver_name: item.drivers?.name,
-      license_plate: item.drivers?.license_plate
-    })) || [];
+    console.log('🗺️ Updating map markers and trails for', driverData.length, 'drivers');
+    console.log('📊 Driver data for markers:', driverData);
 
-    setDriverLocations(locations);
-    setLastUpdate(new Date());
-    updateMarkers(locations);
-  } catch (error) {
-    console.error('Error:', error);
-  } finally {
-    setIsLoading(false);
-  }
-};
+    // Clear existing markers that are no longer needed
+    const currentDriverIds = new Set(driverData.map(d => d.driver_id));
+    drivers_markers.forEach((marker, driverId) => {
+      if (!currentDriverIds.has(driverId)) {
+        console.log('🗑️ Removing outdated marker for driver:', driverId);
+        marker.remove();
+        drivers_markers.delete(driverId);
+      }
+    });
 
-const updateMarkers = (locations: DriverLocation[]) => {
-  if (!map.current) return;
+    // Update driver trails and markers
+    driverData.forEach((driver, index) => {
+      const driverColor = driverColors[index % driverColors.length];
+      const driverId = driver.driver_id;
+      const newPosition: [number, number] = [driver.current_lng, driver.current_lat];
+      
+      console.log('📍 Processing driver:', driver.driver_name, 'at position:', newPosition);
+      console.log('🎨 Driver color:', driverColor);
+      
+      // Validate coordinates
+      if (!driver.current_lat || !driver.current_lng || isNaN(driver.current_lat) || isNaN(driver.current_lng)) {
+        console.error('❌ Invalid coordinates for driver:', driver.driver_name, 'lat:', driver.current_lat, 'lng:', driver.current_lng);
+        return;
+      }
+      
+      // Update or create trail
+      const existingTrail = driver_trails.get(driverId);
+      if (existingTrail) {
+        // Add new position if it's different from the last one
+        const lastPos = existingTrail.coordinates[existingTrail.coordinates.length - 1];
+        if (!lastPos || lastPos[0] !== newPosition[0] || lastPos[1] !== newPosition[1]) {
+          existingTrail.coordinates.push(newPosition);
+          
+          // Keep only last 50 points to prevent memory issues
+          if (existingTrail.coordinates.length > 50) {
+            existingTrail.coordinates = existingTrail.coordinates.slice(-50);
+          }
+          
+          updateTrailOnMap(existingTrail);
+        }
+      } else {
+        // Create new trail
+        const newTrail: DriverTrail = {
+          driver_id: driverId,
+          coordinates: [newPosition],
+          color: driverColor
+        };
+        driver_trails.set(driverId, newTrail);
+        setDriverTrails(new Map(driver_trails));
+        updateTrailOnMap(newTrail);
+      }
+      
+      // Update or create driver marker
+      const existingMarker = drivers_markers.get(driverId);
+      if (existingMarker) {
+        console.log('🔄 Updating existing marker position for:', driver.driver_name);
+        // Update position without animation to prevent floating
+        existingMarker.setLngLat(newPosition);
+      } else {
+        console.log('✨ Creating new marker for:', driver.driver_name);
+        
+        try {
+          // Create new marker with 3D truck icon
+          const truckElement = create3DTruckIcon(driverColor, driver.driver_name);
+          console.log('🚛 Truck element created, adding to map...');
+          
+          truckElement.addEventListener('click', (e) => {
+            e.stopPropagation();
+            console.log('📍 Driver marker clicked:', driver.driver_name);
+            setSelectedDriver(driver.driver_id);
+            map.current?.flyTo({
+              center: newPosition,
+              zoom: 16,
+              duration: 1000
+            });
+          });
 
-  Object.values(markers.current).forEach(marker => marker.remove());
-  markers.current = {};
+          console.log('🔧 Event listeners added to marker element');
 
-  locations.forEach((location) => {
-    const driverName = location.driver_name || `Driver ${location.driver_id}`;
-    
-    const carMarker = document.createElement('div');
-    carMarker.innerHTML = `
-      <div class="flex flex-col items-center">
-        <div class="bg-blue-600 rounded-full p-1.5 shadow-lg border-2 border-white">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="white">
-            <path d="M5 11l1.5-4.5h11L19 11m-1.5 5a1.5 1.5 0 0 1-3 0 1.5 1.5 0 0 1-3 0m-7 0a1.5 1.5 0 0 1-3 0 1.5 1.5 0 0 1-3 0m0 0V11a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v5"/>
-          </svg>
-        </div>
-        <div class="bg-white text-gray-800 text-xs px-2 py-1 rounded shadow mt-1 max-w-16 truncate border">
-          ${driverName}
-        </div>
-      </div>
-    `;
+          // Create enhanced popup
+          const timeAgo = Math.floor((new Date().getTime() - new Date(driver.updated_at).getTime()) / 60000);
+          const popup = new mapboxgl.Popup({ 
+            offset: [0, -60], // Offset to account for truck height
+            closeButton: true,
+            closeOnClick: false,
+            anchor: 'bottom'
+          }).setHTML(
+            `<div style="padding: 16px; font-family: 'Segoe UI', sans-serif; min-width: 280px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.15);">
+              <div style="text-align: center; margin-bottom: 12px;">
+                <h3 style="margin: 0; font-size: 18px; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">
+                  🚛 ${driver.driver_name}
+                </h3>
+                <div style="width: 30px; height: 3px; background: ${driverColor}; margin: 8px auto; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.3);"></div>
+              </div>
+              <div style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; margin-bottom: 12px; backdrop-filter: blur(10px);">
+                <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                  <span style="font-size: 16px; margin-right: 8px;">📋</span>
+                  <span style="font-size: 14px; font-weight: 500;">${driver.license_plate}</span>
+                </div>
+                <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                  <span style="font-size: 16px; margin-right: 8px;">📦</span>
+                  <span style="font-size: 14px;">${driver.shipment_count} pengiriman aktif</span>
+                </div>
+                <div style="display: flex; align-items: flex-start; margin-bottom: 8px;">
+                  <span style="font-size: 16px; margin-right: 8px;">📍</span>
+                  <span style="font-size: 13px; line-height: 1.4;">${driver.destinations.join(', ')}</span>
+                </div>
+                ${driver.delivered_destinations.length > 0 ? 
+                  `<div style="display: flex; align-items: flex-start; margin-bottom: 8px;">
+                    <span style="font-size: 16px; margin-right: 8px; margin-top: 2px;">✅</span>
+                    <span style="font-size: 13px; color: #90EE90; line-height: 1.4;">${driver.delivered_destinations.join(', ')}</span>
+                  </div>` : ''
+                }
+              </div>
+              <div style="text-align: center; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 6px;">
+                <div style="color: ${timeAgo < 1 ? '#90EE90' : timeAgo < 5 ? '#FFD700' : '#FF6B6B'}; font-size: 14px; font-weight: bold; margin-bottom: 4px;">
+                  ${timeAgo < 1 ? '🟢 LIVE TRACKING' : `⏰ ${timeAgo} menit yang lalu`}
+                </div>
+                <div style="font-size: 11px; color: rgba(255,255,255,0.8);">
+                  ${driver.current_lat.toFixed(6)}, ${driver.current_lng.toFixed(6)}
+                </div>
+              </div>
+            </div>`
+          );
 
-    const marker = new mapboxgl.Marker(carMarker)
-      .setLngLat([location.longitude, location.latitude])
-      .addTo(map.current!);
+          console.log('💬 Popup created for marker');
 
-    const popup = new mapboxgl.Popup({ offset: 25 })
-      .setHTML(`
-        <div class="p-3">
-          <h3 class="font-semibold text-sm">${driverName}</h3>
-          ${location.license_plate ? `<p class="text-xs text-gray-600">${location.license_plate}</p>` : ''}
-          <p class="text-xs text-gray-600">
-            Update: ${new Date(location.updated_at).toLocaleTimeString('id-ID')}
-          </p>
-        </div>
-      `);
+          console.log('🗺️ Creating marker at exact GPS position:', newPosition);
+          const marker = new mapboxgl.Marker({
+            element: truckElement,
+            anchor: 'bottom' // Anchor at bottom to align with GPS point
+          })
+            .setLngLat(newPosition)
+            .setPopup(popup)
+            .addTo(map.current);
 
-    marker.setPopup(popup);
-    markers.current[location.driver_id] = marker;
-  });
-};
+          console.log('✅ Marker created and added to map for:', driver.driver_name);
+          drivers_markers.set(driverId, marker);
+          setDriverMarkers(new Map(drivers_markers));
+          
+          console.log('📊 Current markers count:', drivers_markers.size);
+        } catch (markerError) {
+          console.error('❌ Error creating marker for', driver.driver_name, ':', markerError);
+        }
+      }
+      
+      // Add destination markers for delivered locations
+      driver.delivered_destinations.forEach((destination, destIndex) => {
+        const destKey = `${driverId}-${destination}`;
+        if (!destination_markers.has(destKey)) {
+          const destEl = document.createElement('div');
+          destEl.innerHTML = '🎯';
+          destEl.style.fontSize = '28px';
+          destEl.style.cursor = 'pointer';
+          destEl.style.transform = 'translate(-50%, -100%)';
+          destEl.style.filter = 'drop-shadow(2px 2px 4px rgba(0,0,0,0.3))';
+          destEl.style.transition = 'all 0.3s ease';
+          
+          destEl.addEventListener('mouseenter', () => {
+            destEl.style.transform = 'translate(-50%, -100%) scale(1.2)';
+          });
+          
+          destEl.addEventListener('mouseleave', () => {
+            destEl.style.transform = 'translate(-50%, -100%) scale(1)';
+          });
+          
+          const destPopup = new mapboxgl.Popup({ offset: 15 }).setHTML(
+            `<div style="padding: 12px; font-family: sans-serif; background: linear-gradient(135deg, #10B981, #059669); color: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+              <h4 style="margin: 0 0 8px 0; font-size: 16px; text-align: center;">
+                ✅ Pengiriman Berhasil
+              </h4>
+              <div style="background: rgba(255,255,255,0.1); padding: 8px; border-radius: 4px; margin-bottom: 8px;">
+                <p style="margin: 0 0 4px 0; font-size: 14px; font-weight: bold;">
+                  📍 ${destination}
+                </p>
+                <p style="margin: 0; font-size: 12px; opacity: 0.9;">
+                  oleh: ${driver.driver_name}
+                </p>
+              </div>
+            </div>`
+          );
+          
+          // For demo, place delivered markers near the current position
+          // In real implementation, you'd have actual destination coordinates
+          const destMarker = new mapboxgl.Marker(destEl)
+            .setLngLat([newPosition[0] + (destIndex * 0.001), newPosition[1] + (destIndex * 0.001)])
+            .setPopup(destPopup)
+            .addTo(map.current);
+            
+          destination_markers.set(destKey, destMarker);
+          setDestinationMarkers(new Map(destination_markers));
+        }
+      });
+    });
 
-  const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
+    console.log('✅ Map markers update completed. Active markers:', drivers_markers.size);
   };
 
-  if (showTokenInput) {
+  const updateTrailOnMap = (trail: DriverTrail) => {
+    if (!map.current) return;
+    
+    const sourceId = `trail-${trail.driver_id}`;
+    const layerId = `trail-layer-${trail.driver_id}`;
+    
+    const source = map.current.getSource(sourceId);
+    if (source) {
+      // Update existing trail
+      (source as mapboxgl.GeoJSONSource).setData({
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'LineString',
+          coordinates: trail.coordinates
+        }
+      });
+    } else {
+      // Create new trail
+      map.current.addSource(sourceId, {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'LineString',
+            coordinates: trail.coordinates
+          }
+        }
+      });
+      
+      map.current.addLayer({
+        id: layerId,
+        type: 'line',
+        source: sourceId,
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': trail.color,
+          'line-width': 4,
+          'line-opacity': 0.8
+        }
+      });
+    }
+  };
+
+  const subscribeToLocationUpdates = () => {
+    console.log('🔔 Map subscribing to realtime GPS updates...');
+    const channel = supabase
+      .channel('driver_locations_live_map')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'shipments'
+      }, (payload) => {
+        console.log('⚡ Live GPS update received:', payload.new?.driver_id);
+        fetchDriverLocations();
+      })
+      .subscribe();
+
+    return () => {
+      console.log('🔌 Map unsubscribing from realtime updates');
+      supabase.removeChannel(channel);
+    };
+  };
+
+  if (isLoadingToken) {
     return (
-      <Card className="border border-yellow-200 bg-yellow-50">
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent mr-3"></div>
+            <p>Memuat pengaturan Mapbox...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!mapboxToken) {
+    return (
+      <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-yellow-800">
-            <Settings className="h-5 w-5" />
-            Konfigurasi Token Mapbox
+          <CardTitle className="flex items-center gap-2">
+            <MapPin className="h-5 w-5 text-blue-600" />
+            Peta Pelacakan Real-time
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-yellow-700">
-            Token Mapbox diperlukan untuk menampilkan peta. Dapatkan token gratis di{' '}
-            <a href="https://mapbox.com/" target="_blank" rel="noopener noreferrer" className="underline">
-              mapbox.com
-            </a>
-          </p>
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <p className="text-sm text-blue-700 mb-3">
+              <strong>Token Mapbox tidak ditemukan</strong>
+            </p>
+            <p className="text-xs text-blue-600 mb-4">
+              Untuk menggunakan peta real-time, masukkan token Mapbox di bawah ini.
+              Token akan disimpan di database dan dapat diakses dari komputer manapun.
+            </p>
+            <div className="bg-green-50 p-3 rounded border border-green-200">
+              <p className="text-xs text-green-700">
+                ✅ <strong>Mapbox Gratis:</strong> 50,000 map loads per bulan tanpa biaya
+              </p>
+            </div>
+          </div>
           <div className="flex gap-2">
             <Input
-              placeholder="Masukkan token Mapbox..."
+              type="text"
+              placeholder="Masukkan Mapbox Public Token..."
               value={tokenInput}
               onChange={(e) => setTokenInput(e.target.value)}
               className="flex-1"
+              disabled={isSavingToken}
             />
-            <Button onClick={handleTokenSave} className="bg-blue-600 hover:bg-blue-700">
-              Simpan
+            <Button 
+              onClick={handleTokenSubmit}
+              disabled={isSavingToken}
+              className="flex items-center gap-2"
+            >
+              {isSavingToken ? (
+                <>
+                  <div className="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent"></div>
+                  Menyimpan...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  Simpan Token
+                </>
+              )}
             </Button>
           </div>
         </CardContent>
@@ -242,69 +775,160 @@ const updateMarkers = (locations: DriverLocation[]) => {
     );
   }
 
-  if (isLoading) {
-    return (
-      <Card className="border-0 shadow-sm">
-        <CardContent className="p-8 text-center">
-          <div className="animate-spin h-8 w-8 border-2 border-blue-500 rounded-full border-t-transparent mx-auto mb-4"></div>
-          <p className="text-gray-600">Memuat peta...</p>
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-blue-600" />
+              Peta Live Tracking - Driver Hari Ini
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowTokenManager(!showTokenManager)}
+              className="flex items-center gap-2"
+            >
+              <Settings className="h-4 w-4" />
+              Kelola Token
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* Token Manager */}
+          {showTokenManager && (
+            <div className="mb-4 p-4 bg-gray-50 rounded-lg border">
+              <h4 className="font-semibold mb-3">Pengaturan Mapbox Token</h4>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm text-gray-600 mb-1 block">Token Aktif Saat Ini:</label>
+                  <div className="bg-white p-2 rounded text-xs font-mono border break-all">
+                    {mapboxToken ? `${mapboxToken.substring(0, 20)}...${mapboxToken.substring(mapboxToken.length - 10)}` : 'Tidak ada token'}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    placeholder="Masukkan token baru..."
+                    value={tokenInput}
+                    onChange={(e) => setTokenInput(e.target.value)}
+                    className="flex-1"
+                    disabled={isSavingToken}
+                  />
+                  <Button 
+                    onClick={handleTokenSubmit} 
+                    size="sm"
+                    disabled={isSavingToken}
+                    className="flex items-center gap-1"
+                  >
+                    {isSavingToken ? (
+                      <div className="animate-spin h-3 w-3 border-2 border-white rounded-full border-t-transparent"></div>
+                    ) : (
+                      <Save className="h-3 w-3" />
+                    )}
+                    Update
+                  </Button>
+                  <Button 
+                    onClick={handleClearToken} 
+                    variant="destructive" 
+                    size="sm"
+                    disabled={isSavingToken}
+                    className="flex items-center gap-1"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    Hapus
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500">
+                  💡 Token disimpan di database dan dapat diakses dari komputer manapun
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div ref={mapContainer} className="h-[600px] w-full rounded-lg border-2 border-gray-200 shadow-lg" />
+          {drivers.length === 0 && (
+            <div className="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+              <div className="flex items-center gap-2 text-yellow-800">
+                <AlertCircle className="h-5 w-5" />
+                <p className="text-sm">
+                  Tidak ada driver dengan GPS aktif hari ini. Pastikan driver mengaktifkan GPS di dashboard mereka.
+                </p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
-    );
-  }
 
-  return (
-    <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-white' : 'h-96'} flex flex-col rounded-lg overflow-hidden border border-gray-200 shadow-sm`}>
-      <div className="flex justify-between items-center p-4 bg-white border-b border-gray-100">
-        <div className="flex items-center gap-3">
-          <div className="bg-blue-100 p-2 rounded-lg">
-            <MapPin className="h-4 w-4 text-blue-600" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-gray-900">Live Driver Tracking</h3>
-            <p className="text-sm text-gray-500">
-              Update: {lastUpdate.toLocaleTimeString('id-ID')}
-            </p>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
-            <Users className="h-3 w-3 mr-1" />
-            {driverLocations.length}
-          </Badge>
-          
-          <Button
-            onClick={fetchDriverLocations}
-            disabled={isLoading}
-            size="sm"
-            variant="outline"
-            className="border-gray-200 hover:bg-gray-50"
-          >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </Button>
-          
-          <Button
-            onClick={toggleFullscreen}
-            size="sm"
-            variant="outline"
-            className="border-gray-200 hover:bg-gray-50"
-          >
-            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-          </Button>
-        </div>
-      </div>
-      
-      <div ref={mapContainer} className="flex-1 relative">
-        {isLoading && (
-          <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
-            <div className="bg-white rounded-lg p-4 flex items-center gap-3 shadow-sm border">
-              <RefreshCw className="h-4 w-4 animate-spin text-blue-500" />
-              <span className="text-sm text-gray-600">Memuat lokasi driver...</span>
+      {/* Active Drivers List */}
+      {drivers.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Navigation className="h-5 w-5 text-green-600" />
+              Driver Aktif Live ({drivers.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {drivers.map((driver, index) => {
+                const timeAgo = Math.floor((new Date().getTime() - new Date(driver.updated_at).getTime()) / 60000);
+                const driverColor = driverColors[index % driverColors.length];
+                return (
+                  <div
+                    key={driver.driver_id}
+                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                      selectedDriver === driver.driver_id 
+                        ? 'bg-blue-50 border-blue-300' 
+                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                    }`}
+                    onClick={() => {
+                      setSelectedDriver(driver.driver_id);
+                      map.current?.flyTo({
+                        center: [driver.current_lng, driver.current_lat],
+                        zoom: 16,
+                        duration: 1000
+                      });
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-semibold text-gray-800 flex items-center gap-2">
+                          <div 
+                            className="w-4 h-4 rounded" 
+                            style={{ backgroundColor: driverColor }}
+                          ></div>
+                          🚛 {driver.driver_name}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          📋 {driver.license_plate}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          📦 {driver.shipment_count} pengiriman • {driver.destinations.join(', ')}
+                        </div>
+                        {driver.delivered_destinations.length > 0 && (
+                          <div className="text-sm text-green-600">
+                            ✅ Selesai: {driver.delivered_destinations.join(', ')}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <div className={`flex items-center gap-1 ${timeAgo < 1 ? 'text-green-600' : timeAgo < 5 ? 'text-yellow-600' : 'text-red-600'}`}>
+                          <Navigation className="h-4 w-4 animate-pulse" />
+                          <span className="text-xs font-medium">
+                            {timeAgo < 1 ? 'LIVE' : `${timeAgo}m`}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          </div>
-        )}
-      </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
