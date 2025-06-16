@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Truck, CheckCircle2, AlertTriangle, Navigation } from 'lucide-react';
+import { MapPin, Truck, CheckCircle2, AlertTriangle, Navigation, Clock, Package, Star } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Shipment, SupabaseShipment } from '@/lib/types';
@@ -148,114 +148,187 @@ const DriverDashboard = () => {
 
   if (isLoading || isLoadingShipments) {
     return (
-      <div className="flex h-screen w-full items-center justify-center">
+      <div className="flex h-screen w-full items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
         <div className="text-center">
-          <div className="animate-spin h-12 w-12 border-4 border-blue-500 rounded-full border-t-transparent mx-auto mb-4"></div>
-          <p>Memuat dashboard supir...</p>
+          <div className="animate-spin h-16 w-16 border-4 border-blue-400 rounded-full border-t-transparent mx-auto mb-4"></div>
+          <p className="text-white text-lg">Memuat dashboard supir...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="container mx-auto max-w-4xl">
-        <div className="mb-8">
-          <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center justify-center gap-2">
-              <Truck className="h-8 w-8 text-blue-600" />
-              Dashboard Supir
-            </h1>
-            <p className="text-gray-600">Kelola pengiriman Anda dengan mudah</p>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 p-4 relative overflow-hidden">
+      {/* Background Elements */}
+      <div className="absolute inset-0">
+        <div className="absolute top-20 left-20 w-72 h-72 bg-blue-500/5 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-20 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl"></div>
+      </div>
 
-          {/* GPS Control Card */}
-          <Card className="mb-6 bg-white shadow-lg">
-            <CardContent className="pt-4">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Navigation className="h-5 w-5 text-blue-600" />
-                  <span className="font-semibold">Status GPS:</span>
+      <div className="container mx-auto max-w-6xl relative z-10">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center mb-4">
+            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 rounded-2xl shadow-2xl">
+              <Truck className="h-10 w-10 text-white" />
+            </div>
+          </div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent mb-2">
+            Driver Dashboard
+          </h1>
+          <p className="text-slate-300 text-lg">Kelola pengiriman Anda dengan mudah dan profesional</p>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="bg-white/10 backdrop-blur-xl border-white/20 shadow-2xl">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-slate-300 text-sm">Total Pengiriman</p>
+                  <p className="text-3xl font-bold text-white">{shipments.length}</p>
                 </div>
-                <Badge variant={gpsStatus.includes('✅') || gpsStatus.includes('Aktif') ? 'default' : 'secondary'}>
-                  {gpsStatus}
-                </Badge>
+                <Package className="h-10 w-10 text-blue-400" />
               </div>
-              
-              {/* Single GPS Toggle Button */}
-              <div className="flex justify-center">
-                <Button
-                  onClick={handleToggleGPS}
-                  className={`h-16 px-8 text-lg font-semibold flex items-center gap-3 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-105 ${
-                    isGpsActive 
-                      ? 'bg-red-600 hover:bg-red-700 text-white' 
-                      : 'bg-green-600 hover:bg-green-700 text-white'
-                  }`}
-                >
-                  {isGpsActive ? (
-                    <>
-                      <Navigation className="h-6 w-6 animate-pulse" />
-                      🔴 MATIKAN GPS
-                    </>
-                  ) : (
-                    <>
-                      <Navigation className="h-6 w-6" />
-                      🟢 AKTIFKAN GPS
-                    </>
-                  )}
-                </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white/10 backdrop-blur-xl border-white/20 shadow-2xl">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-slate-300 text-sm">Status GPS</p>
+                  <p className="text-lg font-semibold text-white">{gpsStatus}</p>
+                </div>
+                <Navigation className={`h-10 w-10 ${isGpsActive ? 'text-green-400 animate-pulse' : 'text-slate-400'}`} />
               </div>
-              
-              <p className="text-center text-sm text-gray-600 mt-3">
-                GPS akan melacak lokasi Anda untuk semua pengiriman yang sedang berlangsung
-              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white/10 backdrop-blur-xl border-white/20 shadow-2xl">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-slate-300 text-sm">Rating</p>
+                  <div className="flex items-center gap-1">
+                    <Star className="h-5 w-5 text-yellow-400 fill-current" />
+                    <p className="text-2xl font-bold text-white">4.9</p>
+                  </div>
+                </div>
+                <Star className="h-10 w-10 text-yellow-400" />
+              </div>
             </CardContent>
           </Card>
         </div>
 
+        {/* GPS Control Card */}
+        <Card className="mb-8 bg-white/10 backdrop-blur-xl border-white/20 shadow-2xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3 text-white">
+              <div className="bg-gradient-to-br from-green-500 to-blue-600 p-2 rounded-lg">
+                <Navigation className="h-6 w-6 text-white" />
+              </div>
+              GPS Tracking Control
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center justify-between p-4 bg-black/20 rounded-xl border border-white/10">
+              <div className="flex items-center gap-3">
+                <div className={`w-3 h-3 rounded-full ${gpsStatus.includes('✅') || gpsStatus.includes('Aktif') ? 'bg-green-400 animate-pulse' : 'bg-slate-400'}`}></div>
+                <span className="text-slate-200 font-medium">Status:</span>
+                <Badge variant={gpsStatus.includes('✅') || gpsStatus.includes('Aktif') ? 'default' : 'secondary'} className="bg-blue-500/20 text-blue-200">
+                  {gpsStatus}
+                </Badge>
+              </div>
+            </div>
+            
+            <div className="flex justify-center">
+              <Button
+                onClick={handleToggleGPS}
+                className={`h-16 px-12 text-lg font-bold flex items-center gap-4 rounded-2xl shadow-2xl transform transition-all duration-300 hover:scale-105 ${
+                  isGpsActive 
+                    ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white' 
+                    : 'bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white'
+                }`}
+              >
+                {isGpsActive ? (
+                  <>
+                    <Navigation className="h-8 w-8 animate-pulse" />
+                    🔴 MATIKAN GPS
+                  </>
+                ) : (
+                  <>
+                    <Navigation className="h-8 w-8" />
+                    🟢 AKTIFKAN GPS
+                  </>
+                )}
+              </Button>
+            </div>
+            
+            <p className="text-center text-sm text-slate-300 bg-black/20 p-3 rounded-lg">
+              GPS akan melacak lokasi Anda secara real-time untuk semua pengiriman yang sedang berlangsung
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Shipments */}
         {shipments.length === 0 ? (
-          <Card className="text-center py-12">
+          <Card className="text-center py-16 bg-white/10 backdrop-blur-xl border-white/20 shadow-2xl">
             <CardContent>
-              <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-gray-800 mb-2">
+              <CheckCircle2 className="h-20 w-20 text-green-400 mx-auto mb-6" />
+              <h2 className="text-2xl font-bold text-white mb-3">
                 Tidak Ada Pengiriman Tertunda
               </h2>
-              <p className="text-gray-600">
+              <p className="text-slate-300 text-lg">
                 Semua pengiriman Anda sudah selesai. Selamat beristirahat!
               </p>
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-6">
+          <div className="grid gap-8">
             {shipments.map((shipment) => (
-              <Card key={shipment.id} className="shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-l-blue-500">
+              <Card key={shipment.id} className="bg-white/10 backdrop-blur-xl border-white/20 shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:-translate-y-1">
                 <CardHeader className="pb-4">
                   <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-xl text-gray-800 mb-2 flex items-center gap-2">
-                        <MapPin className="h-5 w-5 text-blue-600" />
+                    <div className="space-y-2">
+                      <CardTitle className="text-2xl text-white flex items-center gap-3">
+                        <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-lg">
+                          <MapPin className="h-6 w-6 text-white" />
+                        </div>
                         {shipment.tujuan}
                       </CardTitle>
-                      <p className="text-sm text-gray-600">
-                        No. Surat Jalan: <span className="font-semibold">{shipment.noSuratJalan}</span>
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Perusahaan: <span className="font-semibold">{shipment.perusahaan}</span>
-                      </p>
+                      <div className="space-y-1 text-slate-300">
+                        <p className="flex items-center gap-2">
+                          <span className="font-medium">No. Surat Jalan:</span>
+                          <span className="font-bold text-blue-300">{shipment.noSuratJalan}</span>
+                        </p>
+                        <p className="flex items-center gap-2">
+                          <span className="font-medium">Perusahaan:</span>
+                          <span className="font-bold text-indigo-300">{shipment.perusahaan}</span>
+                        </p>
+                      </div>
                     </div>
-                    <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
+                    <Badge className="bg-yellow-500/20 text-yellow-300 border-yellow-500/50 px-3 py-1">
                       {shipment.status.toUpperCase()}
                     </Badge>
                   </div>
                 </CardHeader>
                 
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-600">
-                      Qty: <span className="font-semibold">{shipment.qty}</span>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4 p-4 bg-black/20 rounded-xl">
+                    <div className="flex items-center gap-2">
+                      <Package className="h-5 w-5 text-blue-400" />
+                      <div>
+                        <p className="text-xs text-slate-400">Qty</p>
+                        <p className="font-bold text-white">{shipment.qty}</p>
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-600">
-                      Tanggal Kirim: <span className="font-semibold">{shipment.tanggalKirim}</span>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-indigo-400" />
+                      <div>
+                        <p className="text-xs text-slate-400">Tanggal Kirim</p>
+                        <p className="font-bold text-white">{shipment.tanggalKirim}</p>
+                      </div>
                     </div>
                   </div>
 
@@ -263,18 +336,17 @@ const DriverDashboard = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Button
                       onClick={() => handleDelivered(shipment.id)}
-                      className="bg-green-600 hover:bg-green-700 text-white h-14 text-lg font-semibold flex items-center justify-center gap-2 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-105"
+                      className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white h-16 text-lg font-bold flex items-center justify-center gap-3 rounded-2xl shadow-2xl transform transition-all duration-300 hover:scale-105"
                     >
-                      <CheckCircle2 className="h-6 w-6" />
+                      <CheckCircle2 className="h-8 w-8" />
                       ✅ SAMPAI TUJUAN
                     </Button>
                     
                     <Button
                       onClick={() => handleForumKendala(shipment.id)}
-                      variant="destructive"
-                      className="bg-red-600 hover:bg-red-700 text-white h-14 text-lg font-semibold flex items-center justify-center gap-2 rounded-xl shadow-lg transform transition-all duration-200 hover:scale-105"
+                      className="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white h-16 text-lg font-bold flex items-center justify-center gap-3 rounded-2xl shadow-2xl transform transition-all duration-300 hover:scale-105"
                     >
-                      <AlertTriangle className="h-6 w-6" />
+                      <AlertTriangle className="h-8 w-8" />
                       ⚠️ LAPOR KENDALA
                     </Button>
                   </div>
