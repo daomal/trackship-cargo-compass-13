@@ -37,7 +37,9 @@ const Auth = () => {
           description: "Selamat datang kembali!",
         });
       } else {
-        await signUp(email, password);
+        await signUp(email, password, {
+          emailRedirectTo: `${window.location.origin}/`
+        });
         toast({
           title: "Registrasi berhasil",
           description: "Silakan cek email untuk verifikasi akun.",
@@ -55,87 +57,87 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4 shadow-sm">
-            <Truck className="h-8 w-8 text-white" />
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-700 rounded-3xl mb-6 shadow-lg">
+            <Truck className="h-10 w-10 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">DeliveryPro</h1>
-          <p className="text-gray-600">Sistem manajemen pengiriman modern</p>
+          <h1 className="text-3xl font-bold text-slate-900 mb-3 tracking-tight">DeliveryPro</h1>
+          <p className="text-slate-600 text-lg">Sistem manajemen pengiriman modern</p>
         </div>
 
-        <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
-          <CardHeader className="text-center pb-4">
-            <CardTitle className="text-xl font-semibold text-gray-900">
+        <Card className="border-0 shadow-xl bg-white/95 backdrop-blur-sm">
+          <CardHeader className="text-center pb-6">
+            <CardTitle className="text-2xl font-semibold text-slate-900">
               Selamat Datang
             </CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100">
+              <TabsList className="grid w-full grid-cols-2 mb-8 bg-slate-100 p-1">
                 <TabsTrigger 
                   value="signin" 
-                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-slate-600 font-medium"
                 >
                   <LogIn className="h-4 w-4 mr-2" />
                   Masuk
                 </TabsTrigger>
                 <TabsTrigger 
                   value="signup"
-                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-slate-600 font-medium"
                 >
                   <UserPlus className="h-4 w-4 mr-2" />
                   Daftar
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="signin" className="space-y-4">
-                <form onSubmit={(e) => handleSubmit(e, 'signin')} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+              <TabsContent value="signin" className="space-y-6">
+                <form onSubmit={(e) => handleSubmit(e, 'signin')} className="space-y-6">
+                  <div className="space-y-3">
+                    <Label htmlFor="email" className="text-sm font-semibold text-slate-700">
                       Email
                     </Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
                       <Input
                         id="email"
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="nama@email.com"
-                        className="pl-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                        className="pl-12 h-12 border-slate-200 focus:border-blue-500 focus:ring-blue-500 bg-slate-50 focus:bg-white transition-colors"
                         required
                       />
                     </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                  <div className="space-y-3">
+                    <Label htmlFor="password" className="text-sm font-semibold text-slate-700">
                       Password
                     </Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
                       <Input
                         id="password"
                         type={showPassword ? "text" : "password"}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Masukkan password"
-                        className="pl-10 pr-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                        className="pl-12 pr-12 h-12 border-slate-200 focus:border-blue-500 focus:ring-blue-500 bg-slate-50 focus:bg-white transition-colors"
                         required
                       />
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        className="absolute right-0 top-0 h-full px-4 py-2 hover:bg-transparent"
                         onClick={() => setShowPassword(!showPassword)}
                       >
                         {showPassword ? (
-                          <EyeOff className="h-4 w-4 text-gray-400" />
+                          <EyeOff className="h-5 w-5 text-slate-400" />
                         ) : (
-                          <Eye className="h-4 w-4 text-gray-400" />
+                          <Eye className="h-5 w-5 text-slate-400" />
                         )}
                       </Button>
                     </div>
@@ -143,7 +145,7 @@ const Auth = () => {
 
                   <Button 
                     type="submit" 
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                    className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
                     disabled={isLoading}
                   >
                     {isLoading ? "Memproses..." : "Masuk"}
@@ -151,39 +153,39 @@ const Auth = () => {
                 </form>
               </TabsContent>
 
-              <TabsContent value="signup" className="space-y-4">
-                <form onSubmit={(e) => handleSubmit(e, 'signup')} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email" className="text-sm font-medium text-gray-700">
+              <TabsContent value="signup" className="space-y-6">
+                <form onSubmit={(e) => handleSubmit(e, 'signup')} className="space-y-6">
+                  <div className="space-y-3">
+                    <Label htmlFor="signup-email" className="text-sm font-semibold text-slate-700">
                       Email
                     </Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
                       <Input
                         id="signup-email"
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="nama@email.com"
-                        className="pl-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                        className="pl-12 h-12 border-slate-200 focus:border-blue-500 focus:ring-blue-500 bg-slate-50 focus:bg-white transition-colors"
                         required
                       />
                     </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password" className="text-sm font-medium text-gray-700">
+                  <div className="space-y-3">
+                    <Label htmlFor="signup-password" className="text-sm font-semibold text-slate-700">
                       Password
                     </Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
                       <Input
                         id="signup-password"
                         type={showPassword ? "text" : "password"}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Minimal 6 karakter"
-                        className="pl-10 pr-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                        className="pl-12 pr-12 h-12 border-slate-200 focus:border-blue-500 focus:ring-blue-500 bg-slate-50 focus:bg-white transition-colors"
                         required
                         minLength={6}
                       />
@@ -191,13 +193,13 @@ const Auth = () => {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        className="absolute right-0 top-0 h-full px-4 py-2 hover:bg-transparent"
                         onClick={() => setShowPassword(!showPassword)}
                       >
                         {showPassword ? (
-                          <EyeOff className="h-4 w-4 text-gray-400" />
+                          <EyeOff className="h-5 w-5 text-slate-400" />
                         ) : (
-                          <Eye className="h-4 w-4 text-gray-400" />
+                          <Eye className="h-5 w-5 text-slate-400" />
                         )}
                       </Button>
                     </div>
@@ -205,7 +207,7 @@ const Auth = () => {
 
                   <Button 
                     type="submit" 
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                    className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
                     disabled={isLoading}
                   >
                     {isLoading ? "Memproses..." : "Daftar"}
@@ -216,7 +218,7 @@ const Auth = () => {
           </CardContent>
         </Card>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <p className="text-center text-sm text-slate-500 mt-8">
           Dengan masuk, Anda menyetujui syarat dan ketentuan kami
         </p>
       </div>

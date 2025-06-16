@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { LogIn, User, UserCog, BarChart2, Truck, Menu, X } from "lucide-react";
@@ -11,7 +10,7 @@ import { getShipments } from "@/lib/shipmentService";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
-import DashboardNav from "./Dash boardNav";
+import DashboardNav from "./DashboardNav";
 import DashboardHome from "./DashboardHome";
 
 const DashboardLayout = () => {
