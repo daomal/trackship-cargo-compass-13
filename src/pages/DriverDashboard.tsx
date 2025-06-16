@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Truck, CheckCircle2, AlertTriangle, Navigation, Clock, Package, Star } from 'lucide-react';
+import { MapPin, Truck, CheckCircle2, AlertTriangle, Navigation, Clock, Package, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Shipment, SupabaseShipment } from '@/lib/types';
@@ -16,21 +16,18 @@ const DriverDashboard = () => {
   const navigate = useNavigate();
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [isLoadingShipments, setIsLoadingShipments] = useState(true);
-  const [gpsStatus, setGpsStatus] = useState<string>('Belum dimulai');
+  const [gpsStatus, setGpsStatus] = useState<string>('GPS Belum Aktif');
   const [isGpsActive, setIsGpsActive] = useState(false);
 
   useEffect(() => {
-    // Wait for auth to be ready
     if (isLoading) return;
     
-    // Redirect if not a driver
     if (!profile?.driver_id) {
       console.log('User is not a driver, redirecting to home');
       navigate('/');
       return;
     }
 
-    console.log('Driver dashboard initializing for driver:', profile.driver_id);
     fetchDriverShipments();
   }, [profile, isLoading, navigate]);
 
@@ -39,8 +36,6 @@ const DriverDashboard = () => {
 
     setIsLoadingShipments(true);
     try {
-      console.log('Fetching shipments for driver:', profile.driver_id);
-      
       const { data, error } = await supabase
         .from('shipments')
         .select('*')
@@ -54,7 +49,6 @@ const DriverDashboard = () => {
         return;
       }
 
-      console.log('Fetched shipments:', data?.length || 0);
       const mappedShipments = (data as SupabaseShipment[]).map(mapSupabaseShipment);
       setShipments(mappedShipments);
 
@@ -105,7 +99,7 @@ const DriverDashboard = () => {
         return;
       }
 
-      toast.success('Status berhasil diupdate: Terkirim');
+      toast.success('Pengiriman berhasil diselesaikan!');
       fetchDriverShipments();
     } catch (error) {
       console.error('Error:', error);
@@ -118,26 +112,23 @@ const DriverDashboard = () => {
 
     try {
       if (isGpsActive) {
-        // Stop GPS
         await locationTracker.stopTracking();
         setIsGpsActive(false);
         setGpsStatus('GPS Dihentikan');
+        toast.success('GPS berhasil dimatikan');
       } else {
-        // Start GPS for this driver
-        console.log('Starting GPS tracking for driver:', profile.driver_id);
-        setGpsStatus('Memulai GPS...');
+        setGpsStatus('Mengaktifkan GPS...');
         
         await locationTracker.startTrackingForDriver(profile.driver_id, (status) => {
-          console.log('GPS status update:', status);
           setGpsStatus(status);
         });
         
         setIsGpsActive(true);
-        console.log('GPS tracking started successfully');
+        toast.success('GPS berhasil diaktifkan');
       }
     } catch (error) {
       console.error('Error toggling GPS:', error);
-      setGpsStatus('Error GPS ❌');
+      setGpsStatus('Error GPS');
       toast.error('Gagal mengubah status GPS');
     }
   };
@@ -148,206 +139,163 @@ const DriverDashboard = () => {
 
   if (isLoading || isLoadingShipments) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
+      <div className="flex h-screen w-full items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin h-16 w-16 border-4 border-blue-400 rounded-full border-t-transparent mx-auto mb-4"></div>
-          <p className="text-white text-lg">Memuat dashboard supir...</p>
+          <div className="animate-spin h-16 w-16 border-4 border-blue-500 rounded-full border-t-transparent mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">Memuat dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 p-4 relative overflow-hidden">
-      {/* Background Elements */}
-      <div className="absolute inset-0">
-        <div className="absolute top-20 left-20 w-72 h-72 bg-blue-500/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-20 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl"></div>
-      </div>
-
-      <div className="container mx-auto max-w-6xl relative z-10">
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto max-w-4xl p-4">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 rounded-2xl shadow-2xl">
-              <Truck className="h-10 w-10 text-white" />
+        <div className="mb-6">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/')}
+            className="mb-4 hover:bg-gray-100"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Kembali ke Dashboard
+          </Button>
+          
+          <div className="text-center">
+            <div className="flex items-center justify-center mb-4">
+              <div className="bg-blue-600 p-3 rounded-xl shadow-lg">
+                <Truck className="h-8 w-8 text-white" />
+              </div>
             </div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Dashboard Supir
+            </h1>
+            <p className="text-gray-600">Kelola pengiriman Anda dengan mudah</p>
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent mb-2">
-            Driver Dashboard
-          </h1>
-          <p className="text-slate-300 text-lg">Kelola pengiriman Anda dengan mudah dan profesional</p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-white/10 backdrop-blur-xl border-white/20 shadow-2xl">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-slate-300 text-sm">Total Pengiriman</p>
-                  <p className="text-3xl font-bold text-white">{shipments.length}</p>
-                </div>
-                <Package className="h-10 w-10 text-blue-400" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white/10 backdrop-blur-xl border-white/20 shadow-2xl">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-slate-300 text-sm">Status GPS</p>
-                  <p className="text-lg font-semibold text-white">{gpsStatus}</p>
-                </div>
-                <Navigation className={`h-10 w-10 ${isGpsActive ? 'text-green-400 animate-pulse' : 'text-slate-400'}`} />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white/10 backdrop-blur-xl border-white/20 shadow-2xl">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-slate-300 text-sm">Rating</p>
-                  <div className="flex items-center gap-1">
-                    <Star className="h-5 w-5 text-yellow-400 fill-current" />
-                    <p className="text-2xl font-bold text-white">4.9</p>
-                  </div>
-                </div>
-                <Star className="h-10 w-10 text-yellow-400" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* GPS Control Card */}
-        <Card className="mb-8 bg-white/10 backdrop-blur-xl border-white/20 shadow-2xl">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3 text-white">
-              <div className="bg-gradient-to-br from-green-500 to-blue-600 p-2 rounded-lg">
-                <Navigation className="h-6 w-6 text-white" />
-              </div>
-              GPS Tracking Control
+        {/* GPS Control */}
+        <Card className="mb-6 border-0 shadow-md">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-3">
+              <Navigation className={`h-5 w-5 ${isGpsActive ? 'text-green-600' : 'text-gray-400'}`} />
+              Kontrol GPS
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between p-4 bg-black/20 rounded-xl border border-white/10">
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-3">
-                <div className={`w-3 h-3 rounded-full ${gpsStatus.includes('✅') || gpsStatus.includes('Aktif') ? 'bg-green-400 animate-pulse' : 'bg-slate-400'}`}></div>
-                <span className="text-slate-200 font-medium">Status:</span>
-                <Badge variant={gpsStatus.includes('✅') || gpsStatus.includes('Aktif') ? 'default' : 'secondary'} className="bg-blue-500/20 text-blue-200">
+                <div className={`w-3 h-3 rounded-full ${isGpsActive ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
+                <span className="font-medium text-gray-700">Status:</span>
+                <Badge variant={isGpsActive ? 'default' : 'secondary'} className={isGpsActive ? 'bg-green-100 text-green-800' : ''}>
                   {gpsStatus}
                 </Badge>
               </div>
             </div>
             
-            <div className="flex justify-center">
-              <Button
-                onClick={handleToggleGPS}
-                className={`h-16 px-12 text-lg font-bold flex items-center gap-4 rounded-2xl shadow-2xl transform transition-all duration-300 hover:scale-105 ${
-                  isGpsActive 
-                    ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white' 
-                    : 'bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white'
-                }`}
-              >
-                {isGpsActive ? (
-                  <>
-                    <Navigation className="h-8 w-8 animate-pulse" />
-                    🔴 MATIKAN GPS
-                  </>
-                ) : (
-                  <>
-                    <Navigation className="h-8 w-8" />
-                    🟢 AKTIFKAN GPS
-                  </>
-                )}
-              </Button>
-            </div>
+            <Button
+              onClick={handleToggleGPS}
+              className={`w-full h-12 text-lg font-semibold ${
+                isGpsActive 
+                  ? 'bg-red-600 hover:bg-red-700 text-white' 
+                  : 'bg-green-600 hover:bg-green-700 text-white'
+              }`}
+            >
+              <Navigation className="h-5 w-5 mr-2" />
+              {isGpsActive ? 'Matikan GPS' : 'Aktifkan GPS'}
+            </Button>
             
-            <p className="text-center text-sm text-slate-300 bg-black/20 p-3 rounded-lg">
-              GPS akan melacak lokasi Anda secara real-time untuk semua pengiriman yang sedang berlangsung
+            <p className="text-center text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+              GPS akan melacak lokasi Anda untuk semua pengiriman yang sedang berlangsung
             </p>
           </CardContent>
         </Card>
 
-        {/* Shipments */}
+        {/* Shipment Stats */}
+        <Card className="mb-6 border-0 shadow-md">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm">Total Pengiriman Tertunda</p>
+                <p className="text-3xl font-bold text-blue-600">{shipments.length}</p>
+              </div>
+              <Package className="h-12 w-12 text-blue-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Shipments List */}
         {shipments.length === 0 ? (
-          <Card className="text-center py-16 bg-white/10 backdrop-blur-xl border-white/20 shadow-2xl">
+          <Card className="text-center py-12 border-0 shadow-md">
             <CardContent>
-              <CheckCircle2 className="h-20 w-20 text-green-400 mx-auto mb-6" />
-              <h2 className="text-2xl font-bold text-white mb-3">
+              <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">
                 Tidak Ada Pengiriman Tertunda
               </h2>
-              <p className="text-slate-300 text-lg">
-                Semua pengiriman Anda sudah selesai. Selamat beristirahat!
+              <p className="text-gray-600">
+                Semua pengiriman sudah selesai. Selamat beristirahat!
               </p>
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-8">
+          <div className="space-y-4">
             {shipments.map((shipment) => (
-              <Card key={shipment.id} className="bg-white/10 backdrop-blur-xl border-white/20 shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:-translate-y-1">
-                <CardHeader className="pb-4">
+              <Card key={shipment.id} className="border-0 shadow-md hover:shadow-lg transition-shadow">
+                <CardHeader className="pb-3">
                   <div className="flex justify-between items-start">
-                    <div className="space-y-2">
-                      <CardTitle className="text-2xl text-white flex items-center gap-3">
-                        <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-lg">
-                          <MapPin className="h-6 w-6 text-white" />
-                        </div>
+                    <div className="space-y-1">
+                      <CardTitle className="text-xl text-gray-900 flex items-center gap-2">
+                        <MapPin className="h-5 w-5 text-blue-600" />
                         {shipment.tujuan}
                       </CardTitle>
-                      <div className="space-y-1 text-slate-300">
-                        <p className="flex items-center gap-2">
-                          <span className="font-medium">No. Surat Jalan:</span>
-                          <span className="font-bold text-blue-300">{shipment.noSuratJalan}</span>
-                        </p>
-                        <p className="flex items-center gap-2">
-                          <span className="font-medium">Perusahaan:</span>
-                          <span className="font-bold text-indigo-300">{shipment.perusahaan}</span>
-                        </p>
-                      </div>
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">No. Surat:</span> {shipment.noSuratJalan}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">Perusahaan:</span> {shipment.perusahaan}
+                      </p>
                     </div>
-                    <Badge className="bg-yellow-500/20 text-yellow-300 border-yellow-500/50 px-3 py-1">
+                    <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
                       {shipment.status.toUpperCase()}
                     </Badge>
                   </div>
                 </CardHeader>
                 
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4 p-4 bg-black/20 rounded-xl">
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-2">
-                      <Package className="h-5 w-5 text-blue-400" />
+                      <Package className="h-4 w-4 text-gray-600" />
                       <div>
-                        <p className="text-xs text-slate-400">Qty</p>
-                        <p className="font-bold text-white">{shipment.qty}</p>
+                        <p className="text-xs text-gray-500">Qty</p>
+                        <p className="font-semibold">{shipment.qty}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Clock className="h-5 w-5 text-indigo-400" />
+                      <Clock className="h-4 w-4 text-gray-600" />
                       <div>
-                        <p className="text-xs text-slate-400">Tanggal Kirim</p>
-                        <p className="font-bold text-white">{shipment.tanggalKirim}</p>
+                        <p className="text-xs text-gray-500">Tanggal Kirim</p>
+                        <p className="font-semibold">{shipment.tanggalKirim}</p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <Button
                       onClick={() => handleDelivered(shipment.id)}
-                      className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white h-16 text-lg font-bold flex items-center justify-center gap-3 rounded-2xl shadow-2xl transform transition-all duration-300 hover:scale-105"
+                      className="bg-green-600 hover:bg-green-700 text-white h-12 font-semibold"
                     >
-                      <CheckCircle2 className="h-8 w-8" />
-                      ✅ SAMPAI TUJUAN
+                      <CheckCircle2 className="h-5 w-5 mr-2" />
+                      Selesai Kirim
                     </Button>
                     
                     <Button
                       onClick={() => handleForumKendala(shipment.id)}
-                      className="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white h-16 text-lg font-bold flex items-center justify-center gap-3 rounded-2xl shadow-2xl transform transition-all duration-300 hover:scale-105"
+                      variant="outline"
+                      className="border-red-200 text-red-600 hover:bg-red-50 h-12 font-semibold"
                     >
-                      <AlertTriangle className="h-8 w-8" />
-                      ⚠️ LAPOR KENDALA
+                      <AlertTriangle className="h-5 w-5 mr-2" />
+                      Lapor Kendala
                     </Button>
                   </div>
                 </CardContent>

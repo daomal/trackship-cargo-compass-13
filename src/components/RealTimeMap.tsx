@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -6,8 +5,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MapPin, Truck, Users, RefreshCw, Maximize2, Minimize2, AlertTriangle } from 'lucide-react';
-import { getMapboxToken } from '@/utils/mapboxSettings';
+import { Input } from '@/components/ui/input';
+import { MapPin, Truck, Users, RefreshCw, Maximize2, Minimize2, AlertTriangle, Settings } from 'lucide-react';
+import { getMapboxToken, saveMapboxToken } from '@/utils/mapboxSettings';
+import { toast } from 'sonner';
 
 interface DriverLocation {
   driver_id: string;
@@ -27,14 +28,15 @@ const RealTimeMap = () => {
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mapboxToken, setMapboxToken] = useState<string>('');
-  const [mapError, setMapError] = useState<string>('');
+  const [showTokenInput, setShowTokenInput] = useState(false);
+  const [tokenInput, setTokenInput] = useState('');
 
   useEffect(() => {
     const initMapbox = async () => {
       try {
         const token = await getMapboxToken();
         if (!token) {
-          setMapError('Token Mapbox tidak tersedia. Silakan hubungi admin untuk mengkonfigurasi token.');
+          setShowTokenInput(true);
           setIsLoading(false);
           return;
         }
@@ -45,7 +47,7 @@ const RealTimeMap = () => {
         }
       } catch (error) {
         console.error('Error getting Mapbox token:', error);
-        setMapError('Gagal memuat konfigurasi peta.');
+        setShowTokenInput(true);
         setIsLoading(false);
       }
     };
@@ -76,6 +78,22 @@ const RealTimeMap = () => {
     }
   }, [mapboxToken]);
 
+  const handleTokenSave = async () => {
+    if (!tokenInput.trim()) {
+      toast.error('Masukkan token Mapbox yang valid');
+      return;
+    }
+
+    const success = await saveMapboxToken(tokenInput.trim());
+    if (success) {
+      setMapboxToken(tokenInput.trim());
+      setShowTokenInput(false);
+      if (mapContainer.current) {
+        initializeMap(tokenInput.trim());
+      }
+    }
+  };
+
   const initializeMap = (token: string) => {
     if (!mapContainer.current) return;
 
@@ -92,9 +110,13 @@ const RealTimeMap = () => {
 
       map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
       map.current.addControl(new mapboxgl.FullscreenControl(), 'top-right');
+      
+      setIsLoading(false);
     } catch (error) {
       console.error('Error initializing map:', error);
-      setMapError('Gagal menginisialisasi peta.');
+      toast.error('Token Mapbox tidak valid. Silakan coba lagi.');
+      setShowTokenInput(true);
+      setIsLoading(false);
     }
   };
 
@@ -117,95 +139,115 @@ const RealTimeMap = () => {
         .not('current_lng', 'is', null)
         .gte('updated_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
 
-      if (error) {
-        console.error('Error fetching driver locations:', error);
-        return;
-      }
-
-      const locations: DriverLocation[] = data?.map((item: any) => ({
-        driver_id: item.driver_id,
-        latitude: item.current_lat,
-        longitude: item.current_lng,
-        updated_at: item.updated_at,
-        driver_name: item.drivers?.name,
-        license_plate: item.drivers?.license_plate
-      })) || [];
-
-      setDriverLocations(locations);
-      setLastUpdate(new Date());
-      updateMarkers(locations);
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setIsLoading(false);
+    if (error) {
+      console.error('Error fetching driver locations:', error);
+      return;
     }
-  };
 
-  const updateMarkers = (locations: DriverLocation[]) => {
-    if (!map.current) return;
+    const locations: DriverLocation[] = data?.map((item: any) => ({
+      driver_id: item.driver_id,
+      latitude: item.current_lat,
+      longitude: item.current_lng,
+      updated_at: item.updated_at,
+      driver_name: item.drivers?.name,
+      license_plate: item.drivers?.license_plate
+    })) || [];
 
-    Object.values(markers.current).forEach(marker => marker.remove());
-    markers.current = {};
+    setDriverLocations(locations);
+    setLastUpdate(new Date());
+    updateMarkers(locations);
+  } catch (error) {
+    console.error('Error:', error);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
-    locations.forEach((location) => {
-      const driverName = location.driver_name || `Driver ${location.driver_id}`;
-      
-      const carMarker = document.createElement('div');
-      carMarker.innerHTML = `
-        <div class="flex flex-col items-center">
-          <div class="bg-blue-600 rounded-full p-1.5 shadow-lg border-2 border-white">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="white">
-              <path d="M5 11l1.5-4.5h11L19 11m-1.5 5a1.5 1.5 0 0 1-3 0 1.5 1.5 0 0 1-3 0m-7 0a1.5 1.5 0 0 1-3 0 1.5 1.5 0 0 1-3 0m0 0V11a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v5"/>
-            </svg>
-          </div>
-          <div class="bg-white text-gray-800 text-xs px-2 py-1 rounded shadow mt-1 max-w-16 truncate border">
-            ${driverName}
-          </div>
+const updateMarkers = (locations: DriverLocation[]) => {
+  if (!map.current) return;
+
+  Object.values(markers.current).forEach(marker => marker.remove());
+  markers.current = {};
+
+  locations.forEach((location) => {
+    const driverName = location.driver_name || `Driver ${location.driver_id}`;
+    
+    const carMarker = document.createElement('div');
+    carMarker.innerHTML = `
+      <div class="flex flex-col items-center">
+        <div class="bg-blue-600 rounded-full p-1.5 shadow-lg border-2 border-white">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="white">
+            <path d="M5 11l1.5-4.5h11L19 11m-1.5 5a1.5 1.5 0 0 1-3 0 1.5 1.5 0 0 1-3 0m-7 0a1.5 1.5 0 0 1-3 0 1.5 1.5 0 0 1-3 0m0 0V11a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v5"/>
+          </svg>
         </div>
-      `;
+        <div class="bg-white text-gray-800 text-xs px-2 py-1 rounded shadow mt-1 max-w-16 truncate border">
+          ${driverName}
+        </div>
+      </div>
+    `;
 
-      const marker = new mapboxgl.Marker(carMarker)
-        .setLngLat([location.longitude, location.latitude])
-        .addTo(map.current!);
+    const marker = new mapboxgl.Marker(carMarker)
+      .setLngLat([location.longitude, location.latitude])
+      .addTo(map.current!);
 
-      const popup = new mapboxgl.Popup({ offset: 25 })
-        .setHTML(`
-          <div class="p-3">
-            <h3 class="font-semibold text-sm">${driverName}</h3>
-            ${location.license_plate ? `<p class="text-xs text-gray-600">${location.license_plate}</p>` : ''}
-            <p class="text-xs text-gray-600">
-              Update: ${new Date(location.updated_at).toLocaleTimeString('id-ID')}
-            </p>
-          </div>
-        `);
+    const popup = new mapboxgl.Popup({ offset: 25 })
+      .setHTML(`
+        <div class="p-3">
+          <h3 class="font-semibold text-sm">${driverName}</h3>
+          ${location.license_plate ? `<p class="text-xs text-gray-600">${location.license_plate}</p>` : ''}
+          <p class="text-xs text-gray-600">
+            Update: ${new Date(location.updated_at).toLocaleTimeString('id-ID')}
+          </p>
+        </div>
+      `);
 
-      marker.setPopup(popup);
-      markers.current[location.driver_id] = marker;
-    });
-  };
+    marker.setPopup(popup);
+    markers.current[location.driver_id] = marker;
+  });
+};
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
 
-  if (mapError) {
+  if (showTokenInput) {
     return (
-      <Card className="border border-red-200 bg-red-50">
-        <CardContent className="p-6 text-center">
-          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h3 className="font-semibold text-red-800 mb-2">Error Peta</h3>
-          <p className="text-red-600 text-sm">{mapError}</p>
+      <Card className="border border-yellow-200 bg-yellow-50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-yellow-800">
+            <Settings className="h-5 w-5" />
+            Konfigurasi Token Mapbox
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-yellow-700">
+            Token Mapbox diperlukan untuk menampilkan peta. Dapatkan token gratis di{' '}
+            <a href="https://mapbox.com/" target="_blank" rel="noopener noreferrer" className="underline">
+              mapbox.com
+            </a>
+          </p>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Masukkan token Mapbox..."
+              value={tokenInput}
+              onChange={(e) => setTokenInput(e.target.value)}
+              className="flex-1"
+            />
+            <Button onClick={handleTokenSave} className="bg-blue-600 hover:bg-blue-700">
+              Simpan
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
   }
 
-  if (!mapboxToken || isLoading) {
+  if (isLoading) {
     return (
       <Card className="border-0 shadow-sm">
         <CardContent className="p-8 text-center">
           <div className="animate-spin h-8 w-8 border-2 border-blue-500 rounded-full border-t-transparent mx-auto mb-4"></div>
-          <p className="text-gray-600">Memuat konfigurasi peta...</p>
+          <p className="text-gray-600">Memuat peta...</p>
         </CardContent>
       </Card>
     );
