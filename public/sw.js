@@ -1,158 +1,93 @@
 
-// Enhanced service worker untuk mendukung background GPS tracking
+// Service Worker untuk pelacakan GPS latar belakang
+let watchId = null;
+let currentShipmentId = null;
+const SUPABASE_URL = 'https://adxgzitxnqytdgcdmejt.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkeGd6aXR4bnF5dGRnY2RtZWp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY1MjI3NjYsImV4cCI6MjA2MjA5ODc2Nn0.vPWGqeHWK7QwFxxv1iL49YOqym3jLydNXN2m9hXkrXk';
 
-const CACHE_NAME = 'cargo-compass-v2';
-const urlsToCache = [
-  '/',
-  '/index.html',
-  '/favicon.ico',
-  '/logo192.png',
-  '/logo512.png',
-  '/manifest.json'
-];
+const startTracking = (shipmentId) => {
+  if (watchId) return; // Hindari memulai jika sudah berjalan
+  currentShipmentId = shipmentId;
+  
+  self.registration.showNotification('TrackShip Sedang Aktif', {
+    body: 'Pelacakan lokasi Anda sedang berjalan...',
+    tag: 'gps-notification',
+    icon: '/logo192.png',
+    renotify: true,
+    requireInteraction: true,
+  });
 
-let gpsTrackingData = {
-  isActive: false,
-  driverId: null,
-  lastPosition: null
+  watchId = navigator.geolocation.watchPosition(
+    (position) => {
+      const { latitude, longitude } = position.coords;
+      fetch(`${SUPABASE_URL}/functions/v1/update-location`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({ 
+          shipmentId: currentShipmentId, 
+          lat: latitude, 
+          lng: longitude 
+        }),
+      }).catch(error => {
+        console.error('Error updating location:', error);
+      });
+    },
+    (error) => {
+      console.error('SW Geolocation Error:', error);
+    },
+    { 
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 5000
+    }
+  );
 };
 
-// Install service worker
+const stopTracking = () => {
+  if (watchId) {
+    navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+  }
+  
+  self.registration.getNotifications({ tag: 'gps-notification' }).then(notifications => {
+    notifications.forEach(notification => notification.close());
+  });
+  
+  currentShipmentId = null;
+};
+
+self.addEventListener('message', (event) => {
+  if (event.data.command === 'startTracking') {
+    startTracking(event.data.shipmentId);
+  } else if (event.data.command === 'stopTracking') {
+    stopTracking();
+  }
+});
+
 self.addEventListener('install', (event) => {
-  console.log('📱 Service Worker installing...');
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('✅ Service Worker cache opened');
-        return cache.addAll(urlsToCache);
-      })
-  );
-  // Force activation of new service worker
+  console.log('Service Worker installing...');
   self.skipWaiting();
 });
 
-// Activate service worker
 self.addEventListener('activate', (event) => {
-  console.log('📱 Service Worker activating...');
-  const cacheWhitelist = [CACHE_NAME];
+  console.log('Service Worker activating...');
+  event.waitUntil(self.clients.claim());
+});
+
+// Handle notification clicks
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            console.log('🗑️ Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    }).then(() => {
-      // Claim all clients to ensure immediate control
-      return self.clients.claim();
+    self.clients.matchAll().then(clients => {
+      if (clients.length > 0) {
+        clients[0].focus();
+      } else {
+        self.clients.openWindow('/dashboard-supir');
+      }
     })
   );
 });
-
-// Fetch event - serve from cache if available, otherwise fetch from network
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Cache hit - return response
-        if (response) {
-          return response;
-        }
-        return fetch(event.request);
-      })
-  );
-});
-
-// Handle messages from main thread
-self.addEventListener('message', (event) => {
-  console.log('📨 Service Worker received message:', event.data);
-  
-  if (event.data.type === 'GPS_TRACKING_INIT') {
-    gpsTrackingData.isActive = true;
-    gpsTrackingData.driverId = event.data.driverId;
-    console.log('🔧 GPS tracking initialized in service worker for driver:', event.data.driverId);
-  }
-  
-  if (event.data.type === 'GPS_TRACKING_STOP') {
-    gpsTrackingData.isActive = false;
-    gpsTrackingData.driverId = null;
-    gpsTrackingData.lastPosition = null;
-    console.log('⏹️ GPS tracking stopped in service worker');
-  }
-  
-  if (event.data.type === 'GPS_POSITION_UPDATE') {
-    gpsTrackingData.lastPosition = event.data.position;
-    console.log('📍 GPS position updated in service worker:', event.data.position);
-  }
-});
-
-// Background sync for GPS data when network is available
-self.addEventListener('sync', (event) => {
-  console.log('🔄 Background sync triggered:', event.tag);
-  
-  if (event.tag === 'gps-sync') {
-    event.waitUntil(syncGPSData());
-  }
-});
-
-// Function to sync GPS data in background
-async function syncGPSData() {
-  if (!gpsTrackingData.isActive || !gpsTrackingData.driverId || !gpsTrackingData.lastPosition) {
-    console.log('⚠️ No GPS data to sync');
-    return;
-  }
-  
-  try {
-    console.log('📡 Syncing GPS data in background...');
-    
-    // Here you would typically make a request to your API
-    // For now, we'll just log the data that would be synced
-    console.log('📊 GPS data to sync:', {
-      driverId: gpsTrackingData.driverId,
-      position: gpsTrackingData.lastPosition,
-      timestamp: new Date().toISOString()
-    });
-    
-    // In a real implementation, you would make an API call here
-    // const response = await fetch('/api/gps-update', { ... });
-    
-  } catch (error) {
-    console.error('❌ Error syncing GPS data:', error);
-  }
-}
-
-// Periodic background task (when supported)
-self.addEventListener('periodicsync', (event) => {
-  if (event.tag === 'gps-periodic-sync') {
-    console.log('⏰ Periodic GPS sync triggered');
-    event.waitUntil(syncGPSData());
-  }
-});
-
-// Handle push notifications for GPS alerts (future feature)
-self.addEventListener('push', (event) => {
-  console.log('📬 Push notification received');
-  
-  if (event.data) {
-    const data = event.data.json();
-    
-    if (data.type === 'gps-alert') {
-      const options = {
-        body: data.message,
-        icon: '/logo192.png',
-        badge: '/logo192.png',
-        tag: 'gps-alert',
-        requireInteraction: true
-      };
-      
-      event.waitUntil(
-        self.registration.showNotification('GPS Alert', options)
-      );
-    }
-  }
-});
-
-console.log('✅ Enhanced Service Worker loaded with GPS background support');
