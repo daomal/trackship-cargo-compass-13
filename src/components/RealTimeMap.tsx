@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -333,14 +332,14 @@ const RealTimeMap = () => {
   };
 
   const create3DTruckIcon = (color: string, driverName: string) => {
-    console.log('🚗 Creating improved car icon for:', driverName, 'with color:', color);
+    console.log('🚗 Creating compact car icon for:', driverName, 'with color:', color);
     
-    // Create a clearer, more realistic car SVG icon
+    // Create a smaller, more compact car SVG icon
     const svgContent = `
-      <svg width="80" height="60" viewBox="0 0 80 60" xmlns="http://www.w3.org/2000/svg">
+      <svg width="48" height="36" viewBox="0 0 48 36" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <filter id="shadow-${driverName.replace(/\s+/g, '')}" x="-50%" y="-50%" width="200%" height="200%">
-            <feDropShadow dx="2" dy="3" stdDeviation="3" flood-color="rgba(0,0,0,0.5)"/>
+            <feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.4)"/>
           </filter>
           <linearGradient id="carGradient-${driverName.replace(/\s+/g, '')}" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
@@ -349,75 +348,53 @@ const RealTimeMap = () => {
         </defs>
         
         <!-- Car shadow -->
-        <ellipse cx="40" cy="52" rx="30" ry="5" fill="rgba(0,0,0,0.2)"/>
+        <ellipse cx="24" cy="32" rx="18" ry="3" fill="rgba(0,0,0,0.15)"/>
         
         <!-- Car main body -->
-        <rect x="10" y="25" width="60" height="20" rx="8" ry="8" 
+        <rect x="6" y="16" width="36" height="12" rx="5" ry="5" 
               fill="url(#carGradient-${driverName.replace(/\s+/g, '')})" 
-              stroke="#333" stroke-width="2" 
+              stroke="#333" stroke-width="1.5" 
               filter="url(#shadow-${driverName.replace(/\s+/g, '')})"/>
         
         <!-- Car roof/cabin -->
-        <rect x="20" y="15" width="40" height="15" rx="6" ry="6" 
+        <rect x="12" y="9" width="24" height="9" rx="4" ry="4" 
               fill="url(#carGradient-${driverName.replace(/\s+/g, '')})" 
-              stroke="#333" stroke-width="2" opacity="0.9"/>
+              stroke="#333" stroke-width="1.5" opacity="0.9"/>
         
         <!-- Front windshield -->
-        <rect x="22" y="17" width="12" height="10" rx="2" ry="2" 
-              fill="rgba(135, 206, 250, 0.8)" stroke="#333" stroke-width="1"/>
+        <rect x="14" y="11" width="7" height="6" rx="1" ry="1" 
+              fill="rgba(135, 206, 250, 0.8)" stroke="#333" stroke-width="0.8"/>
         
         <!-- Rear windshield -->
-        <rect x="46" y="17" width="12" height="10" rx="2" ry="2" 
-              fill="rgba(135, 206, 250, 0.8)" stroke="#333" stroke-width="1"/>
-        
-        <!-- Side windows -->
-        <rect x="35" y="17" width="10" height="10" rx="1" ry="1" 
-              fill="rgba(135, 206, 250, 0.6)" stroke="#333" stroke-width="1"/>
+        <rect x="27" y="11" width="7" height="6" rx="1" ry="1" 
+              fill="rgba(135, 206, 250, 0.8)" stroke="#333" stroke-width="0.8"/>
         
         <!-- Front wheels -->
-        <circle cx="20" cy="45" r="6" fill="#2C2C2C" stroke="#000" stroke-width="2"/>
-        <circle cx="20" cy="45" r="4" fill="#444" stroke="#666" stroke-width="1"/>
-        <circle cx="20" cy="45" r="2" fill="#888"/>
+        <circle cx="12" cy="28" r="3.5" fill="#2C2C2C" stroke="#000" stroke-width="1"/>
+        <circle cx="12" cy="28" r="2.5" fill="#444"/>
         
         <!-- Rear wheels -->
-        <circle cx="60" cy="45" r="6" fill="#2C2C2C" stroke="#000" stroke-width="2"/>
-        <circle cx="60" cy="45" r="4" fill="#444" stroke="#666" stroke-width="1"/>
-        <circle cx="60" cy="45" r="2" fill="#888"/>
+        <circle cx="36" cy="28" r="3.5" fill="#2C2C2C" stroke="#000" stroke-width="1"/>
+        <circle cx="36" cy="28" r="2.5" fill="#444"/>
         
         <!-- Headlights -->
-        <circle cx="72" cy="30" r="3" fill="#FFFF99" stroke="#FFD700" stroke-width="1.5"/>
-        <circle cx="72" cy="40" r="3" fill="#FFFF99" stroke="#FFD700" stroke-width="1.5"/>
-        
-        <!-- Tail lights -->
-        <circle cx="8" cy="30" r="2" fill="#FF4444" stroke="#CC0000" stroke-width="1"/>
-        <circle cx="8" cy="40" r="2" fill="#FF4444" stroke="#CC0000" stroke-width="1"/>
-        
-        <!-- Car grille -->
-        <rect x="70" y="32" width="4" height="6" fill="#333" rx="1"/>
-        <line x1="71" y1="33" x2="71" y2="37" stroke="#666" stroke-width="0.5"/>
-        <line x1="73" y1="33" x2="73" y2="37" stroke="#666" stroke-width="0.5"/>
+        <circle cx="43" cy="19" r="1.5" fill="#FFFF99" stroke="#FFD700" stroke-width="1"/>
+        <circle cx="43" cy="25" r="1.5" fill="#FFFF99" stroke="#FFD700" stroke-width="1"/>
         
         <!-- Direction indicator -->
-        <polygon points="75,25 78,30 78,40 75,45" fill="#32CD32" stroke="#228B22" stroke-width="1"/>
+        <polygon points="45,14 47,18 47,26 45,30" fill="#32CD32" stroke="#228B22" stroke-width="0.8"/>
         
-        <!-- Driver name label with better styling -->
-        <rect x="5" y="2" width="${Math.max(driverName.length * 6 + 10, 70)}" height="12" 
-              fill="rgba(255,255,255,0.95)" stroke="${color}" stroke-width="2" rx="6" ry="6"
+        <!-- Driver name label with compact styling -->
+        <rect x="3" y="1" width="${Math.min(driverName.length * 3.5 + 6, 42)}" height="8" 
+              fill="rgba(255,255,255,0.95)" stroke="${color}" stroke-width="1.5" rx="4" ry="4"
               filter="url(#shadow-${driverName.replace(/\s+/g, '')})"/>
-        <text x="${5 + Math.max(driverName.length * 3 + 5, 35)}" y="10" 
-              text-anchor="middle" font-family="Arial, sans-serif" font-size="10" 
+        <text x="${3 + Math.min(driverName.length * 1.75 + 3, 21)}" y="6.5" 
+              text-anchor="middle" font-family="Arial, sans-serif" font-size="7" 
               font-weight="bold" fill="#333">${driverName}</text>
-        
-        <!-- Car door lines for detail -->
-        <line x1="35" y1="25" x2="35" y2="42" stroke="#333" stroke-width="1" opacity="0.5"/>
-        <line x1="45" y1="25" x2="45" y2="42" stroke="#333" stroke-width="1" opacity="0.5"/>
-        
-        <!-- Car hood line -->
-        <line x1="62" y1="28" x2="62" y2="42" stroke="#333" stroke-width="1" opacity="0.5"/>
       </svg>
     `;
 
-    // Create DOM element from SVG
+    // Create DOM element from SVG with fixed positioning
     const div = document.createElement('div');
     div.innerHTML = svgContent;
     div.style.cursor = 'pointer';
@@ -425,9 +402,11 @@ const RealTimeMap = () => {
     div.style.pointerEvents = 'auto';
     div.style.zIndex = '1000';
     div.style.transform = 'translate(-50%, -100%)'; // Center on GPS point
-    div.style.transition = 'none'; // Remove any transitions to prevent movement
+    div.style.transformOrigin = 'center bottom'; // Anchor point at bottom center
+    div.style.transition = 'none'; // Remove transitions to prevent movement
+    div.style.willChange = 'auto'; // Prevent unnecessary GPU compositing
     
-    console.log('✅ Improved car icon created successfully');
+    console.log('✅ Compact car icon created successfully');
     return div;
   };
 
@@ -457,31 +436,28 @@ const RealTimeMap = () => {
       const newPosition: [number, number] = [driver.current_lng, driver.current_lat];
       
       console.log('📍 Processing driver:', driver.driver_name, 'at position:', newPosition);
-      console.log('🎨 Driver color:', driverColor);
       
       // Validate coordinates
       if (!driver.current_lat || !driver.current_lng || isNaN(driver.current_lat) || isNaN(driver.current_lng)) {
-        console.error('❌ Invalid coordinates for driver:', driver.driver_name, 'lat:', driver.current_lat, 'lng:', driver.current_lng);
+        console.error('❌ Invalid coordinates for driver:', driver.driver_name);
         return;
       }
       
       // Update or create trail
       const existingTrail = driver_trails.get(driverId);
       if (existingTrail) {
-        // Add new position if it's different from the last one
         const lastPos = existingTrail.coordinates[existingTrail.coordinates.length - 1];
         if (!lastPos || lastPos[0] !== newPosition[0] || lastPos[1] !== newPosition[1]) {
           existingTrail.coordinates.push(newPosition);
           
-          // Keep only last 50 points to prevent memory issues
-          if (existingTrail.coordinates.length > 50) {
-            existingTrail.coordinates = existingTrail.coordinates.slice(-50);
+          // Keep only last 30 points for performance
+          if (existingTrail.coordinates.length > 30) {
+            existingTrail.coordinates = existingTrail.coordinates.slice(-30);
           }
           
           updateTrailOnMap(existingTrail);
         }
       } else {
-        // Create new trail
         const newTrail: DriverTrail = {
           driver_id: driverId,
           coordinates: [newPosition],
@@ -492,19 +468,17 @@ const RealTimeMap = () => {
         updateTrailOnMap(newTrail);
       }
       
-      // Update or create driver marker
+      // Update or create driver marker with fixed positioning
       const existingMarker = drivers_markers.get(driverId);
       if (existingMarker) {
         console.log('🔄 Updating existing marker position for:', driver.driver_name);
-        // Update position without animation to prevent floating
+        // Update position smoothly without animation to prevent floating
         existingMarker.setLngLat(newPosition);
       } else {
-        console.log('✨ Creating new marker for:', driver.driver_name);
+        console.log('✨ Creating new fixed marker for:', driver.driver_name);
         
         try {
-          // Create new marker with 3D truck icon
           const truckElement = create3DTruckIcon(driverColor, driver.driver_name);
-          console.log('🚛 Truck element created, adding to map...');
           
           truckElement.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -517,70 +491,66 @@ const RealTimeMap = () => {
             });
           });
 
-          console.log('🔧 Event listeners added to marker element');
-
-          // Create enhanced popup
+          // Enhanced popup with better styling
           const timeAgo = Math.floor((new Date().getTime() - new Date(driver.updated_at).getTime()) / 60000);
           const popup = new mapboxgl.Popup({ 
-            offset: [0, -60], // Offset to account for truck height
+            offset: [0, -40], // Adjusted offset for smaller marker
             closeButton: true,
             closeOnClick: false,
             anchor: 'bottom'
           }).setHTML(
-            `<div style="padding: 16px; font-family: 'Segoe UI', sans-serif; min-width: 280px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.15);">
-              <div style="text-align: center; margin-bottom: 12px;">
-                <h3 style="margin: 0; font-size: 18px; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">
+            `<div style="padding: 12px; font-family: 'Segoe UI', sans-serif; min-width: 260px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.15);">
+              <div style="text-align: center; margin-bottom: 10px;">
+                <h3 style="margin: 0; font-size: 16px; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">
                   🚛 ${driver.driver_name}
                 </h3>
-                <div style="width: 30px; height: 3px; background: ${driverColor}; margin: 8px auto; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.3);"></div>
+                <div style="width: 25px; height: 2px; background: ${driverColor}; margin: 6px auto; border-radius: 1px; box-shadow: 0 1px 2px rgba(0,0,0,0.3);"></div>
               </div>
-              <div style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; margin-bottom: 12px; backdrop-filter: blur(10px);">
-                <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                  <span style="font-size: 16px; margin-right: 8px;">📋</span>
-                  <span style="font-size: 14px; font-weight: 500;">${driver.license_plate}</span>
+              <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 6px; margin-bottom: 10px; backdrop-filter: blur(8px);">
+                <div style="display: flex; align-items: center; margin-bottom: 6px;">
+                  <span style="font-size: 14px; margin-right: 6px;">📋</span>
+                  <span style="font-size: 13px; font-weight: 500;">${driver.license_plate}</span>
                 </div>
-                <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                  <span style="font-size: 16px; margin-right: 8px;">📦</span>
-                  <span style="font-size: 14px;">${driver.shipment_count} pengiriman aktif</span>
+                <div style="display: flex; align-items: center; margin-bottom: 6px;">
+                  <span style="font-size: 14px; margin-right: 6px;">📦</span>
+                  <span style="font-size: 13px;">${driver.shipment_count} pengiriman aktif</span>
                 </div>
-                <div style="display: flex; align-items: flex-start; margin-bottom: 8px;">
-                  <span style="font-size: 16px; margin-right: 8px;">📍</span>
-                  <span style="font-size: 13px; line-height: 1.4;">${driver.destinations.join(', ')}</span>
+                <div style="display: flex; align-items: flex-start; margin-bottom: 6px;">
+                  <span style="font-size: 14px; margin-right: 6px;">📍</span>
+                  <span style="font-size: 12px; line-height: 1.3;">${driver.destinations.join(', ')}</span>
                 </div>
                 ${driver.delivered_destinations.length > 0 ? 
-                  `<div style="display: flex; align-items: flex-start; margin-bottom: 8px;">
-                    <span style="font-size: 16px; margin-right: 8px; margin-top: 2px;">✅</span>
-                    <span style="font-size: 13px; color: #90EE90; line-height: 1.4;">${driver.delivered_destinations.join(', ')}</span>
+                  `<div style="display: flex; align-items: flex-start; margin-bottom: 6px;">
+                    <span style="font-size: 14px; margin-right: 6px;">✅</span>
+                    <span style="font-size: 12px; color: #90EE90; line-height: 1.3;">${driver.delivered_destinations.join(', ')}</span>
                   </div>` : ''
                 }
               </div>
-              <div style="text-align: center; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 6px;">
-                <div style="color: ${timeAgo < 1 ? '#90EE90' : timeAgo < 5 ? '#FFD700' : '#FF6B6B'}; font-size: 14px; font-weight: bold; margin-bottom: 4px;">
+              <div style="text-align: center; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 5px;">
+                <div style="color: ${timeAgo < 1 ? '#90EE90' : timeAgo < 5 ? '#FFD700' : '#FF6B6B'}; font-size: 13px; font-weight: bold; margin-bottom: 3px;">
                   ${timeAgo < 1 ? '🟢 LIVE TRACKING' : `⏰ ${timeAgo} menit yang lalu`}
                 </div>
-                <div style="font-size: 11px; color: rgba(255,255,255,0.8);">
+                <div style="font-size: 10px; color: rgba(255,255,255,0.8);">
                   ${driver.current_lat.toFixed(6)}, ${driver.current_lng.toFixed(6)}
                 </div>
               </div>
             </div>`
           );
 
-          console.log('💬 Popup created for marker');
-
-          console.log('🗺️ Creating marker at exact GPS position:', newPosition);
+          // Create marker with fixed positioning and no dragging
           const marker = new mapboxgl.Marker({
             element: truckElement,
-            anchor: 'bottom' // Anchor at bottom to align with GPS point
+            anchor: 'bottom', // Anchor at bottom to align with GPS point
+            draggable: false // Prevent marker from being draggable
           })
             .setLngLat(newPosition)
             .setPopup(popup)
             .addTo(map.current);
 
-          console.log('✅ Marker created and added to map for:', driver.driver_name);
+          console.log('✅ Fixed marker created and added to map for:', driver.driver_name);
           drivers_markers.set(driverId, marker);
           setDriverMarkers(new Map(drivers_markers));
           
-          console.log('📊 Current markers count:', drivers_markers.size);
         } catch (markerError) {
           console.error('❌ Error creating marker for', driver.driver_name, ':', markerError);
         }

@@ -1,3 +1,4 @@
+
 import { Geolocation } from '@capacitor/geolocation';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -20,6 +21,8 @@ class LocationTracker {
   private currentDriverId: string | null = null;
   private isCapacitorAvailable = false;
   private updateInterval: NodeJS.Timeout | null = null;
+  private backgroundUpdateInterval: NodeJS.Timeout | null = null;
+  private lastKnownPosition: { lat: number; lng: number } | null = null;
 
   constructor() {
     // Check if we're in a Capacitor environment
@@ -29,6 +32,103 @@ class LocationTracker {
       window.Capacitor.isNativePlatform();
     
     console.log('LocationTracker initialized, Capacitor available:', this.isCapacitorAvailable);
+    
+    // Setup background tracking handlers
+    this.setupBackgroundTracking();
+  }
+
+  private setupBackgroundTracking(): void {
+    // Handle page visibility changes
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden' && this.isTracking) {
+          console.log('🌙 App went to background, starting background GPS tracking...');
+          this.startBackgroundTracking();
+        } else if (document.visibilityState === 'visible' && this.isTracking) {
+          console.log('☀️ App came to foreground, resuming normal GPS tracking...');
+          this.stopBackgroundTracking();
+        }
+      });
+
+      // Handle page unload/beforeunload
+      window.addEventListener('beforeunload', () => {
+        if (this.isTracking) {
+          console.log('📱 App closing, enabling background GPS...');
+          this.startBackgroundTracking();
+          
+          // Store tracking state in localStorage for persistence
+          localStorage.setItem('gps_tracking_active', 'true');
+          localStorage.setItem('gps_driver_id', this.currentDriverId || '');
+          if (this.lastKnownPosition) {
+            localStorage.setItem('last_gps_position', JSON.stringify(this.lastKnownPosition));
+          }
+        }
+      });
+
+      // Restore tracking state when page loads
+      window.addEventListener('load', () => {
+        const wasTracking = localStorage.getItem('gps_tracking_active') === 'true';
+        const savedDriverId = localStorage.getItem('gps_driver_id');
+        
+        if (wasTracking && savedDriverId) {
+          console.log('🔄 Restoring GPS tracking for driver:', savedDriverId);
+          setTimeout(() => {
+            this.startTrackingForDriver(savedDriverId, this.statusCallback);
+          }, 1000);
+        }
+      });
+    }
+
+    // Register service worker for background processing
+    this.registerServiceWorker();
+  }
+
+  private async registerServiceWorker(): Promise<void> {
+    if ('serviceWorker' in navigator) {
+      try {
+        const registration = await navigator.serviceWorker.register('/sw.js');
+        console.log('✅ Service Worker registered for background GPS');
+        
+        // Send GPS data to service worker
+        if (registration.active) {
+          registration.active.postMessage({
+            type: 'GPS_TRACKING_INIT',
+            driverId: this.currentDriverId
+          });
+        }
+      } catch (error) {
+        console.error('❌ Service Worker registration failed:', error);
+      }
+    }
+  }
+
+  private startBackgroundTracking(): void {
+    if (this.backgroundUpdateInterval) return;
+    
+    console.log('🔧 Starting background GPS updates...');
+    
+    // More frequent updates when in background to ensure continuity
+    this.backgroundUpdateInterval = setInterval(async () => {
+      if (this.currentDriverId) {
+        const position = await this.getCurrentPosition();
+        if (position) {
+          this.lastKnownPosition = position;
+          await this.updateDriverLocation(this.currentDriverId, position.lat, position.lng);
+          console.log('📡 Background GPS update sent:', position);
+          
+          // Update localStorage with latest position
+          localStorage.setItem('last_gps_position', JSON.stringify(position));
+        }
+      }
+    }, 3000); // Every 3 seconds for background tracking
+  }
+
+  private stopBackgroundTracking(): void {
+    if (this.backgroundUpdateInterval) {
+      clearInterval(this.backgroundUpdateInterval);
+      this.backgroundUpdateInterval = null;
+      console.log('⏹️ Background GPS tracking stopped');
+    }
   }
 
   async requestPermissions(): Promise<boolean> {
@@ -42,24 +142,20 @@ class LocationTracker {
           return permissions.location === 'granted';
         } catch (error) {
           console.log('Capacitor permissions failed, falling back to browser API:', error);
-          // Fall back to browser API if Capacitor fails
         }
       }
       
-      // Use browser geolocation API (fallback or primary)
       if (!navigator.geolocation) {
         console.error('Geolocation is not supported by this browser');
         return false;
       }
       
-      // Check if permission is already granted
       if ('permissions' in navigator) {
         const permission = await navigator.permissions.query({ name: 'geolocation' });
         console.log('Browser geolocation permission:', permission.state);
         return permission.state === 'granted' || permission.state === 'prompt';
       }
       
-      // If permissions API is not available, assume we can request it
       return true;
     } catch (error) {
       console.error('Error requesting location permissions:', error);
@@ -75,7 +171,6 @@ class LocationTracker {
       return;
     }
 
-    // Stop any existing tracking
     if (this.isTracking) {
       await this.stopTracking();
     }
@@ -97,12 +192,11 @@ class LocationTracker {
 
       if (this.isCapacitorAvailable) {
         try {
-          // Use Capacitor Geolocation
           this.watchId = await Geolocation.watchPosition(
             {
               enableHighAccuracy: true,
               timeout: 10000,
-              maximumAge: 5000,
+              maximumAge: 2000, // Reduce cache time for more accurate tracking
             },
             (position, err) => {
               this.handleLocationUpdate(position, err);
@@ -120,16 +214,21 @@ class LocationTracker {
       console.log('GPS tracking started successfully for driver:', driverId);
       toast.success('GPS tracking berhasil dimulai');
       
-      // Set up interval to update location more frequently
+      // Store active state
+      localStorage.setItem('gps_tracking_active', 'true');
+      localStorage.setItem('gps_driver_id', driverId);
+      
+      // Set up continuous updates
       this.updateInterval = setInterval(() => {
-        if (this.isTracking) {
+        if (this.isTracking && document.visibilityState === 'visible') {
           this.getCurrentPosition().then(coords => {
             if (coords && this.currentDriverId) {
+              this.lastKnownPosition = coords;
               this.updateDriverLocation(this.currentDriverId, coords.lat, coords.lng);
             }
           });
         }
-      }, 5000); // Update every 5 seconds
+      }, 2000); // Every 2 seconds when app is active
       
     } catch (error) {
       console.error('Error starting location tracking:', error);
@@ -139,7 +238,6 @@ class LocationTracker {
   }
 
   private startBrowserTracking(): void {
-    // Use browser geolocation API
     this.watchId = navigator.geolocation.watchPosition(
       (position) => {
         console.log('Browser GPS position received:', {
@@ -150,6 +248,12 @@ class LocationTracker {
         });
         
         if (this.currentDriverId) {
+          const coords = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          this.lastKnownPosition = coords;
+          
           this.updateDriverLocation(
             this.currentDriverId, 
             position.coords.latitude, 
@@ -166,8 +270,8 @@ class LocationTracker {
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 3000, // Reduce cache time for more frequent updates
+        timeout: 8000,
+        maximumAge: 1000, // Very fresh data for continuous tracking
       }
     );
   }
@@ -188,6 +292,12 @@ class LocationTracker {
         timestamp: new Date(position.timestamp)
       });
       
+      const coords = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude
+      };
+      this.lastKnownPosition = coords;
+      
       this.updateDriverLocation(
         this.currentDriverId, 
         position.coords.latitude, 
@@ -206,6 +316,8 @@ class LocationTracker {
       this.updateInterval = null;
     }
     
+    this.stopBackgroundTracking();
+    
     if (this.watchId !== null) {
       try {
         if (this.isCapacitorAvailable) {
@@ -217,6 +329,13 @@ class LocationTracker {
         this.watchId = null;
         this.isTracking = false;
         this.currentDriverId = null;
+        this.lastKnownPosition = null;
+        
+        // Clear stored state
+        localStorage.removeItem('gps_tracking_active');
+        localStorage.removeItem('gps_driver_id');
+        localStorage.removeItem('last_gps_position');
+        
         this.updateStatus('GPS Dihentikan');
         console.log('GPS tracking stopped successfully');
         toast.success('Pelacakan GPS dihentikan');
@@ -238,7 +357,6 @@ class LocationTracker {
     try {
       console.log('Updating driver location in database:', { driverId, lat, lng });
       
-      // Update all shipments for this driver with current location
       const { error } = await supabase
         .from('shipments')
         .update({
@@ -247,7 +365,7 @@ class LocationTracker {
           updated_at: new Date().toISOString()
         })
         .eq('driver_id', driverId)
-        .eq('status', 'tertunda'); // Only update pending shipments
+        .eq('status', 'tertunda');
 
       if (error) {
         console.error('Error updating driver location:', error);
@@ -269,7 +387,7 @@ class LocationTracker {
         try {
           const position = await Geolocation.getCurrentPosition({
             enableHighAccuracy: true,
-            timeout: 10000
+            timeout: 8000
           });
 
           const coords = {
@@ -284,7 +402,6 @@ class LocationTracker {
         }
       }
       
-      // Use browser geolocation API (fallback or primary)
       return new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(
           (position) => {
@@ -301,7 +418,7 @@ class LocationTracker {
           },
           {
             enableHighAccuracy: true,
-            timeout: 10000
+            timeout: 8000
           }
         );
       });
@@ -317,6 +434,10 @@ class LocationTracker {
 
   getCurrentDriverId(): string | null {
     return this.currentDriverId;
+  }
+
+  getLastKnownPosition(): { lat: number; lng: number } | null {
+    return this.lastKnownPosition;
   }
 }
 
