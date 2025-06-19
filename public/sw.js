@@ -9,6 +9,12 @@ const startTracking = (shipmentId) => {
   if (watchId) return; // Hindari memulai jika sudah berjalan
   currentShipmentId = shipmentId;
   
+  // Check if geolocation is available
+  if (!navigator.geolocation) {
+    console.error('Geolocation is not supported by this browser');
+    return;
+  }
+  
   self.registration.showNotification('TrackShip Sedang Aktif', {
     body: 'Pelacakan lokasi Anda sedang berjalan...',
     tag: 'gps-notification',
@@ -20,6 +26,8 @@ const startTracking = (shipmentId) => {
   watchId = navigator.geolocation.watchPosition(
     (position) => {
       const { latitude, longitude } = position.coords;
+      console.log('SW: Got location', { latitude, longitude });
+      
       fetch(`${SUPABASE_URL}/functions/v1/update-location`, {
         method: 'POST',
         headers: {
@@ -31,12 +39,38 @@ const startTracking = (shipmentId) => {
           lat: latitude, 
           lng: longitude 
         }),
+      }).then(response => {
+        if (!response.ok) {
+          console.error('Failed to update location:', response.status);
+        } else {
+          console.log('Location updated successfully');
+        }
       }).catch(error => {
         console.error('Error updating location:', error);
       });
     },
     (error) => {
       console.error('SW Geolocation Error:', error);
+      let errorMessage = 'Error GPS tidak diketahui';
+      
+      switch(error.code) {
+        case error.PERMISSION_DENIED:
+          errorMessage = 'Izin GPS ditolak';
+          break;
+        case error.POSITION_UNAVAILABLE:
+          errorMessage = 'Lokasi tidak tersedia';
+          break;
+        case error.TIMEOUT:
+          errorMessage = 'Timeout mendapatkan lokasi';
+          break;
+      }
+      
+      // Show error notification
+      self.registration.showNotification('GPS Error', {
+        body: errorMessage,
+        tag: 'gps-error',
+        icon: '/logo192.png',
+      });
     },
     { 
       enableHighAccuracy: true,
@@ -52,14 +86,21 @@ const stopTracking = () => {
     watchId = null;
   }
   
+  // Close all notifications
   self.registration.getNotifications({ tag: 'gps-notification' }).then(notifications => {
     notifications.forEach(notification => notification.close());
   });
   
+  self.registration.getNotifications({ tag: 'gps-error' }).then(notifications => {
+    notifications.forEach(notification => notification.close());
+  });
+  
   currentShipmentId = null;
+  console.log('SW: Tracking stopped');
 };
 
 self.addEventListener('message', (event) => {
+  console.log('SW: Received message', event.data);
   if (event.data.command === 'startTracking') {
     startTracking(event.data.shipmentId);
   } else if (event.data.command === 'stopTracking') {

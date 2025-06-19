@@ -39,6 +39,43 @@ const DriverDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isTrackingActive, setIsTrackingActive] = useState(false);
 
+  // Request GPS permissions first
+  const requestGPSPermission = async () => {
+    try {
+      if (!navigator.geolocation) {
+        toast.error("GPS tidak didukung di browser ini");
+        return false;
+      }
+
+      // Request permission using getCurrentPosition
+      return new Promise<boolean>((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            console.log("GPS permission granted:", position);
+            toast.success("Izin GPS berhasil diberikan");
+            resolve(true);
+          },
+          (error) => {
+            console.error("GPS permission denied:", error);
+            if (error.code === error.PERMISSION_DENIED) {
+              toast.error("Izin GPS ditolak. Silakan aktifkan di pengaturan browser.");
+            } else if (error.code === error.POSITION_UNAVAILABLE) {
+              toast.error("Lokasi tidak tersedia. Pastikan GPS aktif.");
+            } else {
+              toast.error("Timeout mendapatkan lokasi. Coba lagi.");
+            }
+            resolve(false);
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+        );
+      });
+    } catch (error) {
+      console.error("Error requesting GPS permission:", error);
+      toast.error("Gagal meminta izin GPS");
+      return false;
+    }
+  };
+
   useEffect(() => {
     if (isAuthLoading || !profile) return;
     
@@ -51,6 +88,15 @@ const DriverDashboard = () => {
       }
 
       try {
+        // Request GPS permission first
+        const hasGPSPermission = await requestGPSPermission();
+        if (!hasGPSPermission) {
+          toast.error("GPS diperlukan untuk pelacakan lokasi");
+          setIsLoading(false);
+          return;
+        }
+
+        // Fetch shipments
         const { data, error } = await supabase
           .from('shipments')
           .select('*')
@@ -62,7 +108,7 @@ const DriverDashboard = () => {
 
         if (error) {
           console.error('Error fetching shipments:', error);
-          toast.error("Gagal memuat pengiriman.");
+          toast.error("Gagal memuat pengiriman: " + error.message);
         } else if (data && data.length > 0) {
           setMyShipments(data);
           // Start tracking for the first shipment
@@ -72,10 +118,11 @@ const DriverDashboard = () => {
         } else {
           sendCommandToSW({ command: 'stopTracking' });
           setIsTrackingActive(false);
+          toast.info("Tidak ada pengiriman aktif");
         }
       } catch (error) {
         console.error('Error initializing:', error);
-        toast.error("Terjadi kesalahan saat memuat data");
+        toast.error("Terjadi kesalahan saat memuat data: " + (error as Error).message);
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -109,7 +156,7 @@ const DriverDashboard = () => {
 
       if (error) {
         console.error('Error completing shipment:', error);
-        toast.error("Gagal menyelesaikan pengiriman");
+        toast.error("Gagal menyelesaikan pengiriman: " + error.message);
         return;
       }
 
@@ -124,7 +171,7 @@ const DriverDashboard = () => {
       }
     } catch (error) {
       console.error('Error completing shipment:', error);
-      toast.error("Terjadi kesalahan");
+      toast.error("Terjadi kesalahan: " + (error as Error).message);
     }
   };
 
