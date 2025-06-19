@@ -6,17 +6,23 @@ const SUPABASE_URL = 'https://adxgzitxnqytdgcdmejt.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkeGd6aXR4bnF5dGRnY2RtZWp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY1MjI3NjYsImV4cCI6MjA2MjA5ODc2Nn0.vPWGqeHWK7QwFxxv1iL49YOqym3jLydNXN2m9hXkrXk';
 
 const startTracking = (shipmentId) => {
-  if (watchId) return; // Hindari memulai jika sudah berjalan
+  console.log('SW: Starting tracking for shipment:', shipmentId);
+  
+  if (watchId) {
+    console.log('SW: Tracking already active, stopping previous');
+    navigator.geolocation.clearWatch(watchId);
+  }
+  
   currentShipmentId = shipmentId;
   
   // Check if geolocation is available
   if (!navigator.geolocation) {
-    console.error('Geolocation is not supported by this browser');
+    console.error('SW: Geolocation is not supported');
     return;
   }
   
-  self.registration.showNotification('TrackShip Sedang Aktif', {
-    body: 'Pelacakan lokasi Anda sedang berjalan...',
+  self.registration.showNotification('TrackShip GPS Aktif', {
+    body: 'Pelacakan lokasi real-time sedang berjalan...',
     tag: 'gps-notification',
     icon: '/logo192.png',
     renotify: true,
@@ -25,9 +31,18 @@ const startTracking = (shipmentId) => {
 
   watchId = navigator.geolocation.watchPosition(
     (position) => {
-      const { latitude, longitude } = position.coords;
-      console.log('SW: Got location', { latitude, longitude });
+      const { latitude, longitude, accuracy } = position.coords;
+      const timestamp = new Date(position.timestamp);
       
+      console.log('SW: Got location update:', { 
+        latitude, 
+        longitude, 
+        accuracy, 
+        timestamp: timestamp.toISOString(),
+        shipmentId: currentShipmentId 
+      });
+      
+      // Send location to Edge Function
       fetch(`${SUPABASE_URL}/functions/v1/update-location`, {
         method: 'POST',
         headers: {
@@ -39,29 +54,40 @@ const startTracking = (shipmentId) => {
           lat: latitude, 
           lng: longitude 
         }),
-      }).then(response => {
+      })
+      .then(response => {
         if (!response.ok) {
-          console.error('Failed to update location:', response.status);
+          console.error('SW: Failed to update location:', response.status, response.statusText);
+          return response.text().then(text => {
+            console.error('SW: Error response:', text);
+          });
         } else {
-          console.log('Location updated successfully');
+          console.log('SW: Location updated successfully');
+          return response.json();
         }
-      }).catch(error => {
-        console.error('Error updating location:', error);
+      })
+      .then(data => {
+        if (data) {
+          console.log('SW: Update response:', data);
+        }
+      })
+      .catch(error => {
+        console.error('SW: Network error updating location:', error);
       });
     },
     (error) => {
-      console.error('SW Geolocation Error:', error);
+      console.error('SW: Geolocation Error:', error);
       let errorMessage = 'Error GPS tidak diketahui';
       
       switch(error.code) {
         case error.PERMISSION_DENIED:
-          errorMessage = 'Izin GPS ditolak';
+          errorMessage = 'Izin GPS ditolak. Silakan aktifkan di pengaturan browser.';
           break;
         case error.POSITION_UNAVAILABLE:
-          errorMessage = 'Lokasi tidak tersedia';
+          errorMessage = 'Lokasi tidak tersedia. Pastikan GPS aktif.';
           break;
         case error.TIMEOUT:
-          errorMessage = 'Timeout mendapatkan lokasi';
+          errorMessage = 'Timeout mendapatkan lokasi. Coba lagi.';
           break;
       }
       
@@ -74,13 +100,15 @@ const startTracking = (shipmentId) => {
     },
     { 
       enableHighAccuracy: true,
-      timeout: 10000,
+      timeout: 15000,
       maximumAge: 5000
     }
   );
 };
 
 const stopTracking = () => {
+  console.log('SW: Stopping tracking');
+  
   if (watchId) {
     navigator.geolocation.clearWatch(watchId);
     watchId = null;
@@ -109,12 +137,12 @@ self.addEventListener('message', (event) => {
 });
 
 self.addEventListener('install', (event) => {
-  console.log('Service Worker installing...');
+  console.log('SW: Service Worker installing...');
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker activating...');
+  console.log('SW: Service Worker activating...');
   event.waitUntil(self.clients.claim());
 });
 

@@ -22,7 +22,10 @@ Deno.serve(async (req) => {
   try {
     const { shipmentId, lat, lng } = await req.json();
     
+    console.log('Received location update:', { shipmentId, lat, lng });
+    
     if (!shipmentId || lat === undefined || lng === undefined) {
+      console.error('Missing required data:', { shipmentId, lat, lng });
       return new Response('Data tidak lengkap', { 
         status: 400, 
         headers: corsHeaders 
@@ -34,6 +37,7 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
+    // Update location with current timestamp
     const { error } = await supabaseAdmin
       .from('shipments')
       .update({ 
@@ -48,10 +52,14 @@ Deno.serve(async (req) => {
       throw error;
     }
 
-    console.log(`Location updated for shipment ${shipmentId}: ${lat}, ${lng}`);
+    console.log(`Location updated successfully for shipment ${shipmentId}: ${lat}, ${lng}`);
 
     return new Response(
-      JSON.stringify({ message: 'Lokasi diperbarui', timestamp: new Date().toISOString() }), 
+      JSON.stringify({ 
+        message: 'Lokasi diperbarui berhasil', 
+        timestamp: new Date().toISOString(),
+        location: { lat, lng }
+      }), 
       { 
         status: 200,
         headers: {
