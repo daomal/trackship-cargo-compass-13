@@ -1,6 +1,7 @@
+
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { LogIn, User, UserCog, BarChart2, Truck, Menu, X, Home, FileText, MessageSquare } from "lucide-react";
+import { LogIn, User, UserCog, BarChart2, Truck, Menu, X, Home, FileText, MessageSquare, PanelLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import ShipmentTable from "./ShipmentTable";
 import DataFilters from "./DataFilters";
@@ -23,6 +24,7 @@ const DashboardLayout = () => {
   const isMobile = useIsMobile();
   const [activeView, setActiveView] = useState<DashboardView>("dashboard");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     dateRange: [null, null],
@@ -55,13 +57,11 @@ const DashboardLayout = () => {
     }
   };
 
-  // Function to handle filtering
   const handleFilter = (filters: FilterOptions) => {
     setFilterOptions(filters);
     
     let filtered = [...shipments];
     
-    // Filter by date range
     if (filters.dateRange[0] && filters.dateRange[1]) {
       const startDate = filters.dateRange[0];
       const endDate = filters.dateRange[1];
@@ -72,22 +72,18 @@ const DashboardLayout = () => {
       });
     }
     
-    // Filter by status
     if (filters.status !== "all") {
       filtered = filtered.filter(shipment => shipment.status === filters.status);
     }
     
-    // Filter by driver
     if (filters.driver !== "all") {
       filtered = filtered.filter(shipment => shipment.drivers?.name === filters.driver);
     }
 
-    // Filter by company
     if (filters.company && filters.company !== "all") {
       filtered = filtered.filter(shipment => shipment.perusahaan === filters.company);
     }
     
-    // Filter by search query
     if (filters.searchQuery && filters.searchQuery.trim() !== "") {
       const query = filters.searchQuery.toLowerCase().trim();
       filtered = filtered.filter(shipment => 
@@ -101,7 +97,6 @@ const DashboardLayout = () => {
     setFilteredShipments(filtered);
   };
 
-  // Handle real-time search changes
   useEffect(() => {
     handleFilter({
       ...filterOptions,
@@ -109,13 +104,9 @@ const DashboardLayout = () => {
     });
   }, [searchQuery]);
 
-  // Extract all drivers for filter
   const drivers = Array.from(new Set(shipments.map(s => s.drivers?.name).filter(Boolean))) as string[];
-  
-  // Extract all companies for filter
   const companies = Array.from(new Set(shipments.map(s => s.perusahaan))).filter(Boolean);
 
-  // Render active view
   const renderView = () => {
     switch (activeView) {
       case "dashboard":
@@ -236,12 +227,26 @@ const DashboardLayout = () => {
   return (
     <div className="min-h-screen flex w-full animate-fade-in">
       {/* Sidebar */}
-      <div className="w-80 glass-sidebar flex-shrink-0">
+      <div className={`${isSidebarCollapsed ? 'w-20' : 'w-80'} glass-sidebar flex-shrink-0 transition-all duration-300`}>
         <div className="p-8 h-full flex flex-col">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-slate-800 mb-2">Dashboard Pengiriman</h1>
-            <p className="text-slate-600 text-sm">Pantau dan kelola data pengiriman</p>
+            <div className="flex items-center justify-between mb-2">
+              <h1 className={`text-2xl font-bold text-slate-800 ${isSidebarCollapsed ? 'hidden' : 'inline'}`}>
+                Dashboard Pengiriman
+              </h1>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                className="hover:bg-white/50"
+              >
+                <PanelLeft className="h-5 w-5" />
+              </Button>
+            </div>
+            <p className={`text-slate-600 text-sm ${isSidebarCollapsed ? 'hidden' : 'inline'}`}>
+              Pantau dan kelola data pengiriman
+            </p>
           </div>
 
           {/* Navigation */}
@@ -257,46 +262,56 @@ const DashboardLayout = () => {
                 }`}
               >
                 <item.icon className="h-5 w-5" />
-                {item.label}
+                <span className={isSidebarCollapsed ? 'hidden' : 'inline'}>
+                  {item.label}
+                </span>
               </button>
             ))}
           </div>
 
           {/* Quick Actions */}
           <div className="space-y-3 mt-8 pt-6 border-t border-white/30">
-            <Button variant="outline" asChild className="w-full justify-start text-sm">
+            <Button variant="outline" asChild className={`w-full ${isSidebarCollapsed ? 'px-2' : 'justify-start'} text-sm`}>
               <Link to="/public-data">
-                <BarChart2 className="mr-2 h-4 w-4" />
-                Data Publik
+                <BarChart2 className="h-4 w-4" />
+                <span className={`ml-2 ${isSidebarCollapsed ? 'hidden' : 'inline'}`}>
+                  Data Publik
+                </span>
               </Link>
             </Button>
             
-            <Button variant="outline" asChild className="w-full justify-start text-sm">
+            <Button variant="outline" asChild className={`w-full ${isSidebarCollapsed ? 'px-2' : 'justify-start'} text-sm`}>
               <a href="https://trayekbaru.netlify.app/" target="_blank" rel="noopener noreferrer">
-                <Truck className="mr-2 h-4 w-4" />
-                Trayek Driver
+                <Truck className="h-4 w-4" />
+                <span className={`ml-2 ${isSidebarCollapsed ? 'hidden' : 'inline'}`}>
+                  Trayek Driver
+                </span>
               </a>
             </Button>
             
             {user ? (
               <>
                 {isAdmin && (
-                  <Button variant="default" asChild className="w-full justify-start text-sm">
+                  <Button variant="default" asChild className={`w-full ${isSidebarCollapsed ? 'px-2' : 'justify-start'} text-sm`}>
                     <Link to="/admin">
-                      <UserCog className="mr-2 h-4 w-4" />
-                      Panel Admin
+                      <UserCog className="h-4 w-4" />
+                      <span className={`ml-2 ${isSidebarCollapsed ? 'hidden' : 'inline'}`}>
+                        Panel Admin
+                      </span>
                     </Link>
                   </Button>
                 )}
-                <Button variant="outline" onClick={() => signOut()} className="w-full justify-start text-sm">
-                  Logout
+                <Button variant="outline" onClick={() => signOut()} className={`w-full ${isSidebarCollapsed ? 'px-2' : 'justify-start'} text-sm`}>
+                  <span className={isSidebarCollapsed ? 'hidden' : 'inline'}>Logout</span>
                 </Button>
               </>
             ) : (
-              <Button variant="default" asChild className="w-full justify-start text-sm">
+              <Button variant="default" asChild className={`w-full ${isSidebarCollapsed ? 'px-2' : 'justify-start'} text-sm`}>
                 <Link to="/auth">
-                  <LogIn className="mr-2 h-4 w-4" />
-                  Login
+                  <LogIn className="h-4 w-4" />
+                  <span className={`ml-2 ${isSidebarCollapsed ? 'hidden' : 'inline'}`}>
+                    Login
+                  </span>
                 </Link>
               </Button>
             )}
