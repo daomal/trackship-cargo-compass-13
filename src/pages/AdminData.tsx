@@ -51,7 +51,8 @@ const AdminData = () => {
     status: "all",
     driver: "all",
     company: "all",
-    searchQuery: ""
+    searchQuery: "",
+    kendalaFilter: "all"
   });
 
   useEffect(() => {
@@ -170,6 +171,13 @@ const AdminData = () => {
     
     if (filters.company && filters.company !== "all") {
       filtered = filtered.filter(shipment => shipment.perusahaan === filters.company);
+    }
+
+    // Apply kendala filter
+    if (filters.kendalaFilter === "with-kendala") {
+      filtered = filtered.filter(shipment => shipment.kendala && shipment.kendala.trim() !== "");
+    } else if (filters.kendalaFilter === "without-kendala") {
+      filtered = filtered.filter(shipment => !shipment.kendala || shipment.kendala.trim() === "");
     }
     
     setFilteredShipments(filtered);

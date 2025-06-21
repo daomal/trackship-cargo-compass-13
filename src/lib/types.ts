@@ -32,6 +32,7 @@ export interface FilterOptions {
   driver: string | "all";
   company?: string | "all";
   searchQuery?: string;
+  kendalaFilter?: string;
 }
 
 export interface ConstraintItem {

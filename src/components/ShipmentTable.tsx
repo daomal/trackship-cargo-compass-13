@@ -34,6 +34,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "@/components/ui/sonner";
 import { MoreHorizontal, Calendar, Edit, Trash2, FileText, Clock, Link, MapPin, Map } from "lucide-react";
 import { format } from "date-fns";
@@ -49,6 +50,12 @@ interface ShipmentTableProps {
 const ITEMS_PER_PAGE = 10;
 const DEFAULT_TRACKING_URL = "https://www.google.com/maps";
 
+const KENDALA_OPTIONS = [
+  "COA Lama",
+  "Invoice Lama", 
+  "DN Tambahan / Dadakan"
+];
+
 const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpdated }) => {
   const { isAdmin } = useAuth();
   const [currentPage, setCurrentPage] = useState(1);
@@ -59,9 +66,11 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
   const [isEditDriverDialogOpen, setIsEditDriverDialogOpen] = useState(false);
   const [isTrackingDialogOpen, setIsTrackingDialogOpen] = useState(false);
   const [isEditTrackingUrlDialogOpen, setIsEditTrackingUrlDialogOpen] = useState(false);
+  const [isEditKendalaDialogOpen, setIsEditKendalaDialogOpen] = useState(false);
   const [currentShipment, setCurrentShipment] = useState<Shipment | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [kendala, setKendala] = useState("");
+  const [kendalaType, setKendalaType] = useState<string>("custom");
   const [selectedDriverId, setSelectedDriverId] = useState("");
   const [newStatus, setNewStatus] = useState<ShipmentStatus>("tertunda");
   const [statusHistory, setStatusHistory] = useState<any[]>([]);
@@ -126,6 +135,52 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
     };
 
     return <span className={statusClasses[status]}>{statusText[status]}</span>;
+  };
+
+  const handleOpenEditKendalaDialog = (shipment: Shipment) => {
+    setCurrentShipment(shipment);
+    setKendala(shipment.kendala || "");
+    // Check if current kendala matches one of the predefined options
+    if (KENDALA_OPTIONS.includes(shipment.kendala || "")) {
+      setKendalaType(shipment.kendala || "");
+    } else {
+      setKendalaType("custom");
+    }
+    setIsEditKendalaDialogOpen(true);
+  };
+
+  const handleUpdateKendala = async () => {
+    if (!currentShipment) return;
+    
+    setIsLoading(true);
+    
+    try {
+      const finalKendala = kendalaType === "custom" ? kendala : kendalaType;
+      
+      await updateShipment(currentShipment.id, {
+        kendala: finalKendala || null
+      });
+      
+      toast("Berhasil", {
+        description: "Kendala berhasil diperbarui",
+      });
+      setIsEditKendalaDialogOpen(false);
+      
+      if (onShipmentUpdated) {
+        onShipmentUpdated();
+      } else {
+        setLocalShipments(prev => 
+          prev.map(s => s.id === currentShipment.id ? {...s, kendala: finalKendala} : s)
+        );
+      }
+    } catch (error) {
+      console.error("Error updating kendala:", error);
+      toast("Error", {
+        description: "Gagal memperbarui kendala",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleStartQtyEdit = (shipment: Shipment, e: React.MouseEvent) => {
@@ -483,12 +538,11 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                 <TableRow>
                   <TableHead className="w-[150px]">Track Lokasi</TableHead>
                   <TableHead>Perusahaan</TableHead>
-                  <TableHead>Tujuan</TableHead>
+                  <TableHead>Kendala</TableHead>
                   <TableHead>Supir</TableHead>
                   <TableHead>Tanggal Kirim</TableHead>
                   <TableHead>Tanggal & Waktu Tiba</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Kendala</TableHead>
                   <TableHead className="text-right">Qty</TableHead>
                   {isAdmin && <TableHead className="w-[60px]">Aksi</TableHead>}
                 </TableRow>
@@ -496,7 +550,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
               <TableBody>
                 {paginatedShipments.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={isAdmin ? 10 : 9} className="text-center h-32">
+                    <TableCell colSpan={isAdmin ? 9 : 8} className="text-center h-32">
                       Tidak ada data pengiriman
                     </TableCell>
                   </TableRow>
@@ -527,7 +581,19 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                         </div>
                       </TableCell>
                       <TableCell>{shipment.perusahaan}</TableCell>
-                      <TableCell>{shipment.tujuan}</TableCell>
+                      <TableCell>
+                        {isAdmin ? (
+                          <Button 
+                            variant="ghost" 
+                            className="p-0 h-auto text-blue-600 hover:text-blue-800 hover:underline"
+                            onClick={() => handleOpenEditKendalaDialog(shipment)}
+                          >
+                            {shipment.kendala || "Belum ada kendala"}
+                          </Button>
+                        ) : (
+                          shipment.kendala || "-"
+                        )}
+                      </TableCell>
                       <TableCell>
                         {isAdmin ? (
                           driverEditId === shipment.id ? (
@@ -578,9 +644,6 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                       <TableCell>
                         {renderStatusBadge(shipment.status)}
                       </TableCell>
-                      <TableCell>
-                        {shipment.kendala || "-"}
-                      </TableCell>
                       <TableCell className="text-right">
                         {isAdmin ? (
                           qtyEditId === shipment.id ? (
@@ -629,6 +692,10 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit Keterangan
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleOpenEditKendalaDialog(shipment)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit Kendala
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={(e) => {e.preventDefault(); handleStartDriverEdit(shipment, e);}}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit Supir
@@ -655,7 +722,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
               </TableBody>
               <TableFooter>
                 <TableRow>
-                  <TableCell colSpan={isAdmin ? 8 : 8} className="text-right font-medium">
+                  <TableCell colSpan={isAdmin ? 7 : 7} className="text-right font-medium">
                     Total Qty:
                   </TableCell>
                   <TableCell className="text-right font-medium">{totalQuantity}</TableCell>
@@ -709,6 +776,53 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Kendala Dialog */}
+      <Dialog open={isEditKendalaDialogOpen} onOpenChange={setIsEditKendalaDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Kendala</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label>Pilih Jenis Kendala</Label>
+              <RadioGroup value={kendalaType} onValueChange={setKendalaType}>
+                {KENDALA_OPTIONS.map((option) => (
+                  <div key={option} className="flex items-center space-x-2">
+                    <RadioGroupItem value={option} id={option} />
+                    <Label htmlFor={option}>{option}</Label>
+                  </div>
+                ))}
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="custom" id="custom" />
+                  <Label htmlFor="custom">Lainnya (tulis sendiri)</Label>
+                </div>
+              </RadioGroup>
+            </div>
+            
+            {kendalaType === "custom" && (
+              <div className="grid gap-2">
+                <Label htmlFor="kendala-custom">Kendala Khusus</Label>
+                <Textarea
+                  id="kendala-custom"
+                  value={kendala}
+                  onChange={(e) => setKendala(e.target.value)}
+                  placeholder="Tulis kendala..."
+                  rows={3}
+                />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditKendalaDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={handleUpdateKendala} disabled={isLoading}>
+              {isLoading ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isTrackingDialogOpen} onOpenChange={setIsTrackingDialogOpen}>
         <DialogContent>

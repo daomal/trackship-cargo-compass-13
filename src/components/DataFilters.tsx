@@ -36,6 +36,7 @@ const DataFilters: React.FC<DataFiltersProps> = ({
   const [driver, setDriver] = useState<string>("all");
   const [company, setCompany] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [kendalaFilter, setKendalaFilter] = useState<string>("all");
   const [date, setDate] = useState<Date | undefined>(undefined);
 
   // Apply filters whenever any filter changes
@@ -45,11 +46,12 @@ const DataFilters: React.FC<DataFiltersProps> = ({
       status,
       driver,
       company,
-      searchQuery
+      searchQuery,
+      kendalaFilter
     };
     
     onFilter(filterOptions);
-  }, [dateRange, status, driver, company, searchQuery, onFilter]);
+  }, [dateRange, status, driver, company, searchQuery, kendalaFilter, onFilter]);
 
   // Handle search input with instant filtering
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,6 +65,7 @@ const DataFilters: React.FC<DataFiltersProps> = ({
     setDriver("all");
     setCompany("all");
     setSearchQuery("");
+    setKendalaFilter("all");
     setDate(undefined);
   };
   
@@ -74,7 +77,7 @@ const DataFilters: React.FC<DataFiltersProps> = ({
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Cari berdasarkan No. SJ, perusahaan, tujuan..."
+              placeholder="Cari berdasarkan No. SJ, perusahaan, kendala..."
               value={searchQuery}
               onChange={handleSearchChange}
               className="pl-8"
@@ -96,6 +99,23 @@ const DataFilters: React.FC<DataFiltersProps> = ({
               <SelectItem value="terkirim">Terkirim</SelectItem>
               <SelectItem value="tertunda">Tertunda</SelectItem>
               <SelectItem value="gagal">Gagal</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label className="mb-1 block">Kendala</Label>
+          <Select 
+            value={kendalaFilter} 
+            onValueChange={setKendalaFilter}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Semua Kendala" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua</SelectItem>
+              <SelectItem value="with-kendala">Ada Kendala</SelectItem>
+              <SelectItem value="without-kendala">Tidak Ada Kendala</SelectItem>
             </SelectContent>
           </Select>
         </div>
