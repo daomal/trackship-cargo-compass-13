@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,15 +31,11 @@ const Auth = () => {
 
   useEffect(() => {
     if (user && profile) {
-      // Redirect based on user role and driver status
       if (profile.driver_id) {
-        // User is a driver, redirect to driver dashboard
         navigate('/dashboard-supir');
       } else if (profile.role === 'admin') {
-        // User is admin, redirect to main dashboard
         navigate('/');
       } else {
-        // Regular user, redirect to main dashboard
         navigate('/');
       }
     }
@@ -82,59 +77,61 @@ const Auth = () => {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="flex h-screen w-full items-center justify-center">
         <div className="animate-spin h-12 w-12 border-4 border-blue-500 rounded-full border-t-transparent"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 animate-fade-in">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <Truck className="h-12 w-12 text-blue-600" />
+        <div className="text-center mb-8 animate-slide-in">
+          <div className="flex items-center justify-center mb-6">
+            <div className="glass-card p-4 rounded-full">
+              <Truck className="h-12 w-12 text-blue-600" />
+            </div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-800">Sistem Pengiriman</h1>
-          <p className="text-gray-600 mt-2">Masuk atau daftar untuk melanjutkan</p>
+          <h1 className="text-4xl font-bold text-slate-800 mb-2">Sistem Pengiriman</h1>
+          <p className="text-slate-600">Masuk atau daftar untuk melanjutkan</p>
         </div>
 
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-center text-2xl">Selamat Datang</CardTitle>
-            <CardDescription className="text-center">
+        <Card className="shadow-2xl border-white/50 hover-lift">
+          <CardHeader className="text-center pb-4">
+            <CardTitle className="text-2xl text-slate-800">Selamat Datang</CardTitle>
+            <CardDescription className="text-slate-600">
               Akses dashboard pengiriman Anda
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="signin" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin" className="flex items-center gap-2">
+            <Tabs defaultValue="signin" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-2 glass-card p-1">
+                <TabsTrigger value="signin" className="flex items-center gap-2 data-[state=active]:bg-white/70 data-[state=active]:shadow-md rounded-lg transition-all duration-300">
                   <LogIn className="h-4 w-4" />
                   Masuk
                 </TabsTrigger>
-                <TabsTrigger value="signup" className="flex items-center gap-2">
+                <TabsTrigger value="signup" className="flex items-center gap-2 data-[state=active]:bg-white/70 data-[state=active]:shadow-md rounded-lg transition-all duration-300">
                   <UserPlus className="h-4 w-4" />
                   Daftar
                 </TabsTrigger>
               </TabsList>
 
               {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
+                <Alert variant="destructive" className="glass-card border-red-200/50 bg-red-50/70">
+                  <AlertDescription className="text-red-800">{error}</AlertDescription>
                 </Alert>
               )}
 
               {success && (
-                <Alert className="border-green-200 bg-green-50 text-green-800">
-                  <AlertDescription>{success}</AlertDescription>
+                <Alert className="glass-card border-green-200/50 bg-green-50/70">
+                  <AlertDescription className="text-green-800">{success}</AlertDescription>
                 </Alert>
               )}
 
-              <TabsContent value="signin">
-                <form onSubmit={handleSignIn} className="space-y-4">
+              <TabsContent value="signin" className="space-y-4">
+                <form onSubmit={handleSignIn} className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
+                    <Label htmlFor="signin-email" className="text-slate-700 font-medium">Email</Label>
                     <Input
                       id="signin-email"
                       type="email"
@@ -148,7 +145,7 @@ const Auth = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
+                    <Label htmlFor="signin-password" className="text-slate-700 font-medium">Password</Label>
                     <Input
                       id="signin-password"
                       type="password"
@@ -163,7 +160,7 @@ const Auth = () => {
                   </div>
                   <Button
                     type="submit"
-                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    className="w-full"
                     disabled={isSigningIn}
                   >
                     {isSigningIn ? 'Memproses...' : 'Masuk'}
@@ -171,10 +168,10 @@ const Auth = () => {
                 </form>
               </TabsContent>
 
-              <TabsContent value="signup">
-                <form onSubmit={handleSignUp} className="space-y-4">
+              <TabsContent value="signup" className="space-y-4">
+                <form onSubmit={handleSignUp} className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name">Nama Lengkap</Label>
+                    <Label htmlFor="signup-name" className="text-slate-700 font-medium">Nama Lengkap</Label>
                     <Input
                       id="signup-name"
                       type="text"
@@ -188,7 +185,7 @@ const Auth = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
+                    <Label htmlFor="signup-email" className="text-slate-700 font-medium">Email</Label>
                     <Input
                       id="signup-email"
                       type="email"
@@ -202,7 +199,7 @@ const Auth = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
+                    <Label htmlFor="signup-password" className="text-slate-700 font-medium">Password</Label>
                     <Input
                       id="signup-password"
                       type="password"
@@ -218,7 +215,7 @@ const Auth = () => {
                   </div>
                   <Button
                     type="submit"
-                    className="w-full bg-green-600 hover:bg-green-700"
+                    className="w-full"
                     disabled={isSigningUp}
                   >
                     {isSigningUp ? 'Memproses...' : 'Daftar'}
@@ -229,9 +226,9 @@ const Auth = () => {
           </CardContent>
         </Card>
 
-        <div className="text-center mt-6 text-sm text-gray-600">
-          <p>Sistem Manajemen Pengiriman</p>
-          <p className="mt-1">Untuk supir dan admin</p>
+        <div className="text-center mt-8 text-sm text-slate-600 animate-fade-in" style={{animationDelay: "0.3s"}}>
+          <p className="glass-card px-4 py-2 inline-block">Sistem Manajemen Pengiriman</p>
+          <p className="mt-2 opacity-75">Untuk supir dan admin</p>
         </div>
       </div>
     </div>

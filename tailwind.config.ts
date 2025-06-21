@@ -26,32 +26,32 @@ export default {
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
 				primary: {
-					DEFAULT: 'hsl(var(--primary))',
-					foreground: 'hsl(var(--primary-foreground))'
+					DEFAULT: 'hsl(240 5.9% 10%)',
+					foreground: 'hsl(210 40% 98%)'
 				},
 				secondary: {
-					DEFAULT: 'hsl(var(--secondary))',
-					foreground: 'hsl(var(--secondary-foreground))'
+					DEFAULT: 'hsl(210 40% 96%)',
+					foreground: 'hsl(222.2 84% 4.9%)'
 				},
 				destructive: {
-					DEFAULT: 'hsl(var(--destructive))',
-					foreground: 'hsl(var(--destructive-foreground))'
+					DEFAULT: 'hsl(0 84.2% 60.2%)',
+					foreground: 'hsl(210 40% 98%)'
 				},
 				muted: {
-					DEFAULT: 'hsl(var(--muted))',
-					foreground: 'hsl(var(--muted-foreground))'
+					DEFAULT: 'hsl(210 40% 96%)',
+					foreground: 'hsl(215.4 16.3% 46.9%)'
 				},
 				accent: {
-					DEFAULT: 'hsl(var(--accent))',
-					foreground: 'hsl(var(--accent-foreground))'
+					DEFAULT: 'hsl(210 40% 96%)',
+					foreground: 'hsl(222.2 47.4% 11.2%)'
 				},
 				popover: {
-					DEFAULT: 'hsl(var(--popover))',
-					foreground: 'hsl(var(--popover-foreground))'
+					DEFAULT: 'hsl(0 0% 100%)',
+					foreground: 'hsl(222.2 84% 4.9%)'
 				},
 				card: {
-					DEFAULT: 'hsl(var(--card))',
-					foreground: 'hsl(var(--card-foreground))'
+					DEFAULT: 'hsl(0 0% 100%)',
+					foreground: 'hsl(222.2 84% 4.9%)'
 				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
@@ -63,51 +63,41 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-        success: "#22C55E",
-        warning: "#F59E0B",
-        error: "#EF4444",
-        info: "#3B82F6",
+        success: "#16a34a",
+        warning: "#f59e0b",
+        error: "#dc2626",
+        info: "#3b82f6",
         navy: {
-          50: "#E6EBF4",
-          100: "#B3C2DE",
-          200: "#809AC8",
-          300: "#4D72B1",
-          400: "#1A4A9B",
-          500: "#1A365D",
-          600: "#162F54",
-          700: "#13284A",
-          800: "#0F2141",
-          900: "#0C1A37"
+          50: "#f8fafc",
+          100: "#f1f5f9",
+          200: "#e2e8f0",
+          300: "#cbd5e1",
+          400: "#94a3b8",
+          500: "#64748b",
+          600: "#475569",
+          700: "#334155",
+          800: "#1e293b",
+          900: "#0f172a"
         },
-        teal: {
-          50: "#E6F6F6",
-          100: "#B3E6E6",
-          200: "#80D6D6",
-          300: "#4DC6C6",
-          400: "#2C7A7B",
-          500: "#1D5252",
-          600: "#1A4A4A",
-          700: "#164040",
-          800: "#133535",
-          900: "#0F2B2B"
-        },
-        orange: {
-          50: "#FDF2E9",
-          100: "#FADCBF",
-          200: "#F7C594",
-          300: "#F4AE69",
-          400: "#F1973E",
-          500: "#DD6B20",
-          600: "#C96118",
-          700: "#AE5513",
-          800: "#934810",
-          900: "#783B0D"
+        glass: {
+          primary: "rgba(255, 255, 255, 0.6)",
+          secondary: "rgba(255, 255, 255, 0.4)",
+          accent: "rgba(59, 130, 246, 0.1)"
         }
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'
+			},
+			backdropBlur: {
+				xs: '2px',
+        sm: '4px',
+        md: '8px',
+        lg: '12px',
+        xl: '16px',
+        '2xl': '24px',
+        '3xl': '40px'
 			},
 			keyframes: {
 				'accordion-down': {
@@ -125,11 +115,42 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'fade-in': {
+					'0%': {
+						opacity: '0',
+						transform: 'translateY(10px)'
+					},
+					'100%': {
+						opacity: '1',
+						transform: 'translateY(0)'
+					}
+				},
+				'slide-in': {
+					'0%': {
+						transform: 'translateX(-20px)',
+						opacity: '0'
+					},
+					'100%': {
+						transform: 'translateX(0)',
+						opacity: '1'
+					}
+				},
+				'glass-shine': {
+					'0%': {
+						transform: 'translateX(-100%)'
+					},
+					'100%': {
+						transform: 'translateX(100%)'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'fade-in': 'fade-in 0.5s ease-out',
+				'slide-in': 'slide-in 0.5s ease-out',
+				'glass-shine': 'glass-shine 2s ease-in-out infinite'
 			}
 		}
 	},
