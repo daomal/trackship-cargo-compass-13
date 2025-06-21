@@ -123,9 +123,9 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
 
   const renderStatusBadge = (status: ShipmentStatus) => {
     const statusClasses = {
-      terkirim: "bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium",
-      tertunda: "bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium",
-      gagal: "bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium",
+      terkirim: "bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold shadow-sm",
+      tertunda: "bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-semibold shadow-sm",
+      gagal: "bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-semibold shadow-sm",
     };
 
     const statusText = {
@@ -514,16 +514,16 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
 
   return (
     <>
-      <Card>
-        <CardHeader>
+      <Card className="shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
           <div className="flex justify-between items-center">
-            <CardTitle>Daftar Pengiriman</CardTitle>
+            <CardTitle className="text-xl font-bold text-gray-800">Daftar Pengiriman</CardTitle>
             {isAdmin && (
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={handleOpenTrackingDialog}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 shadow-sm hover:shadow-md transition-shadow"
               >
                 <Map className="h-4 w-4" />
                 Konfigurasi URL Tracking Default
@@ -531,38 +531,42 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
             )}
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
+        <CardContent className="p-0">
+          <div className="rounded-lg overflow-hidden border border-gray-200">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[150px]">Track Lokasi</TableHead>
-                  <TableHead>Perusahaan</TableHead>
-                  <TableHead>Kendala</TableHead>
-                  <TableHead>Supir</TableHead>
-                  <TableHead>Tanggal Kirim</TableHead>
-                  <TableHead>Tanggal & Waktu Tiba</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Qty</TableHead>
-                  {isAdmin && <TableHead className="w-[60px]">Aksi</TableHead>}
+                <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100">
+                  <TableHead className="w-[180px] font-semibold text-gray-700">Track Lokasi</TableHead>
+                  <TableHead className="w-[140px] font-semibold text-gray-700">No. Surat Jalan</TableHead>
+                  <TableHead className="w-[150px] font-semibold text-gray-700">Perusahaan</TableHead>
+                  <TableHead className="w-[160px] font-semibold text-gray-700">Kendala</TableHead>
+                  <TableHead className="w-[140px] font-semibold text-gray-700">Supir</TableHead>
+                  <TableHead className="w-[110px] font-semibold text-gray-700">Tanggal Kirim</TableHead>
+                  <TableHead className="w-[140px] font-semibold text-gray-700">Tanggal & Waktu Tiba</TableHead>
+                  <TableHead className="w-[100px] font-semibold text-gray-700">Status</TableHead>
+                  <TableHead className="w-[80px] text-right font-semibold text-gray-700">Qty</TableHead>
+                  {isAdmin && <TableHead className="w-[60px] font-semibold text-gray-700">Aksi</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedShipments.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={isAdmin ? 9 : 8} className="text-center h-32">
-                      Tidak ada data pengiriman
+                    <TableCell colSpan={isAdmin ? 10 : 9} className="text-center h-32 text-gray-500">
+                      <div className="flex flex-col items-center gap-2">
+                        <FileText className="h-8 w-8 text-gray-300" />
+                        <span>Tidak ada data pengiriman</span>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedShipments.map((shipment) => (
-                    <TableRow key={shipment.id}>
+                  paginatedShipments.map((shipment, index) => (
+                    <TableRow key={shipment.id} className={index % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            className="flex items-center gap-2"
+                            className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700 shadow-sm"
                             onClick={() => navigateToTracking(shipment)}
                           >
                             <MapPin className="h-4 w-4" />
@@ -571,27 +575,41 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                           {isAdmin && (
                             <Button
                               variant="ghost"
-                              size="icon"
+                              size="sm"
                               onClick={() => handleOpenEditTrackingUrlDialog(shipment)}
                               title="Edit URL Tracking"
+                              className="p-2 hover:bg-gray-100"
                             >
-                              <Edit className="h-4 w-4" />
+                              <Edit className="h-3 w-3" />
                             </Button>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>{shipment.perusahaan}</TableCell>
+                      <TableCell>
+                        <div className="font-medium text-gray-900 truncate" title={shipment.noSuratJalan}>
+                          {shipment.noSuratJalan}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium text-gray-700 truncate" title={shipment.perusahaan}>
+                          {shipment.perusahaan}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         {isAdmin ? (
                           <Button 
                             variant="ghost" 
-                            className="p-0 h-auto text-blue-600 hover:text-blue-800 hover:underline"
+                            className="p-0 h-auto text-blue-600 hover:text-blue-800 hover:underline justify-start font-normal max-w-full"
                             onClick={() => handleOpenEditKendalaDialog(shipment)}
                           >
-                            {shipment.kendala || "Belum ada kendala"}
+                            <span className="truncate block max-w-[140px]" title={shipment.kendala || "Belum ada kendala"}>
+                              {shipment.kendala || "Belum ada kendala"}
+                            </span>
                           </Button>
                         ) : (
-                          shipment.kendala || "-"
+                          <div className="text-gray-600 truncate" title={shipment.kendala || "-"}> 
+                            {shipment.kendala || "-"}
+                          </div>
                         )}
                       </TableCell>
                       <TableCell>
@@ -602,10 +620,10 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                                 value={editableDriverId}
                                 onValueChange={handleDriverIdChange}
                               >
-                                <SelectTrigger className="py-1 h-8">
+                                <SelectTrigger className="py-1 h-8 text-xs">
                                   <SelectValue placeholder="Pilih Supir" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-white border shadow-lg">
                                   {drivers.map((driver) => (
                                     <SelectItem key={driver.id} value={driver.id}>
                                       {driver.name} - {driver.licensePlate}
@@ -616,6 +634,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                               <Button 
                                 size="sm"
                                 onClick={handleDriverIdSave}
+                                className="h-8 px-2 text-xs"
                               >
                                 Simpan
                               </Button>
@@ -623,23 +642,33 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                           ) : (
                             <Button 
                               variant="ghost" 
-                              className="p-0 h-auto text-blue-600 hover:text-blue-800 hover:underline"
+                              className="p-0 h-auto text-blue-600 hover:text-blue-800 hover:underline justify-start font-normal"
                               onClick={(e) => handleStartDriverEdit(shipment, e)}
                             >
-                              {shipment.drivers?.name || "Belum dipilih"}
+                              <span className="truncate block max-w-[120px]" title={shipment.drivers?.name || "Belum dipilih"}>
+                                {shipment.drivers?.name || "Belum dipilih"}
+                              </span>
                             </Button>
                           )
                         ) : (
-                          shipment.drivers?.name || "Belum dipilih"
+                          <div className="text-gray-600 truncate" title={shipment.drivers?.name || "Belum dipilih"}>
+                            {shipment.drivers?.name || "Belum dipilih"}
+                          </div>
                         )}
                       </TableCell>
-                      <TableCell>{shipment.tanggalKirim}</TableCell>
                       <TableCell>
-                        {shipment.tanggalTiba 
-                          ? (shipment.waktuTiba 
-                            ? `${shipment.tanggalTiba} ${shipment.waktuTiba}` 
-                            : shipment.tanggalTiba) 
-                          : "-"}
+                        <div className="text-sm text-gray-600">
+                          {shipment.tanggalKirim}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm text-gray-600">
+                          {shipment.tanggalTiba 
+                            ? (shipment.waktuTiba 
+                              ? `${shipment.tanggalTiba} ${shipment.waktuTiba}` 
+                              : shipment.tanggalTiba) 
+                            : "-"}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {renderStatusBadge(shipment.status)}
@@ -655,31 +684,31 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                                 onKeyDown={handleQtyKeyDown}
                                 onBlur={handleQtySave}
                                 autoFocus
-                                className="py-1 h-8 w-20 text-right"
+                                className="py-1 h-8 w-16 text-right text-sm"
                               />
                             </div>
                           ) : (
                             <Button 
                               variant="ghost" 
-                              className="p-0 h-auto text-blue-600 hover:text-blue-800 hover:underline"
+                              className="p-0 h-auto text-blue-600 hover:text-blue-800 hover:underline font-medium"
                               onClick={(e) => handleStartQtyEdit(shipment, e)}
                             >
                               {shipment.qty}
                             </Button>
                           )
                         ) : (
-                          shipment.qty
+                          <div className="font-medium text-gray-700">{shipment.qty}</div>
                         )}
                       </TableCell>
                       {isAdmin && (
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                            <DropdownMenuContent align="end" className="bg-white border shadow-lg">
                               <DropdownMenuItem onClick={() => handleOpenStatusDialog(shipment)}>
                                 <Calendar className="mr-2 h-4 w-4" />
                                 Update Status
@@ -721,11 +750,11 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                 )}
               </TableBody>
               <TableFooter>
-                <TableRow>
-                  <TableCell colSpan={isAdmin ? 7 : 7} className="text-right font-medium">
+                <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100">
+                  <TableCell colSpan={isAdmin ? 8 : 8} className="text-right font-semibold text-gray-700">
                     Total Qty:
                   </TableCell>
-                  <TableCell className="text-right font-medium">{totalQuantity}</TableCell>
+                  <TableCell className="text-right font-bold text-gray-900 text-lg">{totalQuantity}</TableCell>
                   {isAdmin && <TableCell></TableCell>}
                 </TableRow>
               </TableFooter>
@@ -733,13 +762,13 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
           </div>
 
           {totalPages > 1 && (
-            <div className="mt-4 flex justify-center">
+            <div className="mt-6 flex justify-center">
               <Pagination>
                 <PaginationContent>
                   <PaginationItem>
                     <PaginationPrevious
                       onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer hover:bg-gray-100"}
                     />
                   </PaginationItem>
                   
@@ -757,6 +786,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                         <PaginationLink
                           onClick={() => setCurrentPage(pageNumber)}
                           isActive={currentPage === pageNumber}
+                          className="hover:bg-gray-100"
                         >
                           {pageNumber}
                         </PaginationLink>
@@ -767,7 +797,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
                   <PaginationItem>
                     <PaginationNext
                       onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer hover:bg-gray-100"}
                     />
                   </PaginationItem>
                 </PaginationContent>
