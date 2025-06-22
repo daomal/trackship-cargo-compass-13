@@ -24,12 +24,14 @@ interface DataFiltersProps {
   onFilter: (filters: FilterOptions) => void;
   drivers: string[];
   companies: string[];
+  kendalaOptions: string[];
 }
 
 const DataFilters: React.FC<DataFiltersProps> = ({
   onFilter,
   drivers,
   companies,
+  kendalaOptions,
 }) => {
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
   const [status, setStatus] = useState<ShipmentStatus | "all">("all");
@@ -120,8 +122,13 @@ const DataFilters: React.FC<DataFiltersProps> = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Semua</SelectItem>
-              <SelectItem value="with-kendala">Ada Kendala</SelectItem>
+              <SelectItem value="with-kendala">Semua Kendala</SelectItem>
               <SelectItem value="without-kendala">Tidak Ada Kendala</SelectItem>
+              {kendalaOptions.map((kendala) => (
+                <SelectItem key={kendala} value={kendala}>
+                  {kendala}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

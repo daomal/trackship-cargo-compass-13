@@ -177,9 +177,9 @@ const AdminData = () => {
       filtered = filtered.filter(shipment => shipment.perusahaan === filters.company);
     }
 
-    // Apply kendala filter with detailed logging
+    // Apply kendala filter with specific kendala matching
     if (filters.kendalaFilter === "with-kendala") {
-      console.log('🔍 Filtering for shipments WITH kendala');
+      console.log('🔍 Filtering for shipments WITH any kendala');
       const beforeKendalaFilter = filtered.length;
       filtered = filtered.filter(shipment => {
         const hasKendala = shipment.kendala && shipment.kendala.trim() !== "";
@@ -188,7 +188,7 @@ const AdminData = () => {
         }
         return hasKendala;
       });
-      console.log(`📊 Kendala filter: ${beforeKendalaFilter} -> ${filtered.length} shipments`);
+      console.log(`📊 With-kendala filter: ${beforeKendalaFilter} -> ${filtered.length} shipments`);
     } else if (filters.kendalaFilter === "without-kendala") {
       console.log('🔍 Filtering for shipments WITHOUT kendala');
       const beforeKendalaFilter = filtered.length;
@@ -197,6 +197,18 @@ const AdminData = () => {
         return hasNoKendala;
       });
       console.log(`📊 No-kendala filter: ${beforeKendalaFilter} -> ${filtered.length} shipments`);
+    } else if (filters.kendalaFilter !== "all") {
+      // Filter by specific kendala value
+      console.log('🔍 Filtering for specific kendala:', filters.kendalaFilter);
+      const beforeKendalaFilter = filtered.length;
+      filtered = filtered.filter(shipment => {
+        const matchesKendala = shipment.kendala === filters.kendalaFilter;
+        if (matchesKendala) {
+          console.log('✅ Shipment matches kendala:', shipment.noSuratJalan, 'Kendala:', shipment.kendala);
+        }
+        return matchesKendala;
+      });
+      console.log(`📊 Specific-kendala filter: ${beforeKendalaFilter} -> ${filtered.length} shipments`);
     }
     
     console.log('📊 Final filtered shipments:', filtered.length);
@@ -211,6 +223,13 @@ const AdminData = () => {
 
   const drivers = Array.from(new Set(shipments.map(s => s.drivers?.name).filter(Boolean)));
   const companies = Array.from(new Set(shipments.map(s => s.perusahaan))).filter(Boolean);
+  
+  // Get unique kendala options from shipments
+  const kendalaOptions = Array.from(new Set(
+    shipments
+      .map(s => s.kendala)
+      .filter(kendala => kendala && kendala.trim() !== "")
+  )).sort();
 
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleString('id-ID', {
@@ -281,6 +300,7 @@ const AdminData = () => {
                           onFilter={handleFilter} 
                           drivers={drivers}
                           companies={companies}
+                          kendalaOptions={kendalaOptions}
                         />
                         <div className="flex gap-4">
                           <FileUploader onUploadSuccess={fetchShipments} />
