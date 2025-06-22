@@ -37,10 +37,18 @@ const DataFilters: React.FC<DataFiltersProps> = ({
   const [company, setCompany] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [kendalaFilter, setKendalaFilter] = useState<string>("all");
-  const [date, setDate] = useState<Date | undefined>(undefined);
 
   // Apply filters whenever any filter changes
   useEffect(() => {
+    console.log('🔍 Filter changed:', { 
+      kendalaFilter, 
+      status, 
+      driver, 
+      company, 
+      searchQuery,
+      dateRange 
+    });
+    
     const filterOptions: FilterOptions = {
       dateRange,
       status,
@@ -56,7 +64,6 @@ const DataFilters: React.FC<DataFiltersProps> = ({
   // Handle search input with instant filtering
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
-    // No need to manually trigger filter as the useEffect will handle it
   };
 
   const resetFilters = () => {
@@ -66,7 +73,6 @@ const DataFilters: React.FC<DataFiltersProps> = ({
     setCompany("all");
     setSearchQuery("");
     setKendalaFilter("all");
-    setDate(undefined);
   };
   
   return (
@@ -80,7 +86,7 @@ const DataFilters: React.FC<DataFiltersProps> = ({
               placeholder="Cari berdasarkan No. SJ, perusahaan, kendala..."
               value={searchQuery}
               onChange={handleSearchChange}
-              className="pl-8"
+              className="pl-8 glass-input"
             />
           </div>
         </div>
@@ -91,7 +97,7 @@ const DataFilters: React.FC<DataFiltersProps> = ({
             value={status}
             onValueChange={(value) => setStatus(value as ShipmentStatus | "all")}
           >
-            <SelectTrigger className="w-full">
+            <SelectTrigger className="w-full glass-input">
               <SelectValue placeholder="Semua Status" />
             </SelectTrigger>
             <SelectContent>
@@ -109,7 +115,7 @@ const DataFilters: React.FC<DataFiltersProps> = ({
             value={kendalaFilter} 
             onValueChange={setKendalaFilter}
           >
-            <SelectTrigger className="w-full">
+            <SelectTrigger className="w-full glass-input">
               <SelectValue placeholder="Semua Kendala" />
             </SelectTrigger>
             <SelectContent>
@@ -126,7 +132,7 @@ const DataFilters: React.FC<DataFiltersProps> = ({
             value={driver} 
             onValueChange={setDriver}
           >
-            <SelectTrigger className="w-full">
+            <SelectTrigger className="w-full glass-input">
               <SelectValue placeholder="Semua Supir" />
             </SelectTrigger>
             <SelectContent>
@@ -152,7 +158,7 @@ const DataFilters: React.FC<DataFiltersProps> = ({
             value={company} 
             onValueChange={setCompany}
           >
-            <SelectTrigger className="w-full">
+            <SelectTrigger className="w-full glass-input">
               <SelectValue placeholder="Semua Perusahaan" />
             </SelectTrigger>
             <SelectContent>
@@ -179,7 +185,7 @@ const DataFilters: React.FC<DataFiltersProps> = ({
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="w-full justify-start text-left font-normal"
+                  className="w-full justify-start text-left font-normal glass-button"
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {dateRange[0] ? format(dateRange[0], "dd/MM/yyyy") : <span>Dari Tanggal</span>}
@@ -200,7 +206,7 @@ const DataFilters: React.FC<DataFiltersProps> = ({
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="w-full justify-start text-left font-normal"
+                  className="w-full justify-start text-left font-normal glass-button"
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {dateRange[1] ? format(dateRange[1], "dd/MM/yyyy") : <span>Sampai Tanggal</span>}
@@ -221,7 +227,7 @@ const DataFilters: React.FC<DataFiltersProps> = ({
         </div>
 
         <div className="flex items-end">
-          <Button variant="outline" onClick={resetFilters} className="w-full">
+          <Button variant="outline" onClick={resetFilters} className="w-full glass-button">
             Reset Filter
           </Button>
         </div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -138,6 +139,9 @@ const AdminData = () => {
   };
 
   const applyFilters = (data: Shipment[], filters: FilterOptions) => {
+    console.log('🔧 Applying filters:', filters);
+    console.log('📊 Total shipments before filter:', data.length);
+    
     let filtered = [...data];
     
     if (filters.searchQuery && filters.searchQuery.trim() !== '') {
@@ -173,17 +177,34 @@ const AdminData = () => {
       filtered = filtered.filter(shipment => shipment.perusahaan === filters.company);
     }
 
-    // Apply kendala filter
+    // Apply kendala filter with detailed logging
     if (filters.kendalaFilter === "with-kendala") {
-      filtered = filtered.filter(shipment => shipment.kendala && shipment.kendala.trim() !== "");
+      console.log('🔍 Filtering for shipments WITH kendala');
+      const beforeKendalaFilter = filtered.length;
+      filtered = filtered.filter(shipment => {
+        const hasKendala = shipment.kendala && shipment.kendala.trim() !== "";
+        if (hasKendala) {
+          console.log('✅ Shipment has kendala:', shipment.noSuratJalan, 'Kendala:', shipment.kendala);
+        }
+        return hasKendala;
+      });
+      console.log(`📊 Kendala filter: ${beforeKendalaFilter} -> ${filtered.length} shipments`);
     } else if (filters.kendalaFilter === "without-kendala") {
-      filtered = filtered.filter(shipment => !shipment.kendala || shipment.kendala.trim() === "");
+      console.log('🔍 Filtering for shipments WITHOUT kendala');
+      const beforeKendalaFilter = filtered.length;
+      filtered = filtered.filter(shipment => {
+        const hasNoKendala = !shipment.kendala || shipment.kendala.trim() === "";
+        return hasNoKendala;
+      });
+      console.log(`📊 No-kendala filter: ${beforeKendalaFilter} -> ${filtered.length} shipments`);
     }
     
+    console.log('📊 Final filtered shipments:', filtered.length);
     setFilteredShipments(filtered);
   };
 
   const handleFilter = (filters: FilterOptions) => {
+    console.log('🎯 Handle filter called with:', filters);
     setFilterOptions(filters);
     applyFilters(shipments, filters);
   };
@@ -212,7 +233,7 @@ const AdminData = () => {
                   <Button 
                     variant="outline" 
                     onClick={() => navigate('/admin')}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 glass-button"
                   >
                     <ArrowLeft className="h-4 w-4" />
                     Kembali ke Peta
@@ -225,7 +246,7 @@ const AdminData = () => {
                   </div>
                 </div>
               </div>
-              <Button variant="outline" onClick={() => signOut()}>Logout</Button>
+              <Button variant="outline" onClick={() => signOut()} className="glass-button">Logout</Button>
             </div>
             
             <Tabs defaultValue="manage">
@@ -238,7 +259,7 @@ const AdminData = () => {
               
               <TabsContent value="manage">
                 <div className="grid gap-6">
-                  <Card>
+                  <Card className="glass-card">
                     <CardHeader>
                       <div className="flex flex-row justify-between items-center">
                         <CardTitle>Filter dan Ekspor Data</CardTitle>
@@ -247,6 +268,7 @@ const AdminData = () => {
                           variant="outline" 
                           onClick={fetchShipments}
                           disabled={isLoading}
+                          className="glass-button"
                         >
                           <RefreshCw className="mr-2 h-4 w-4" />
                           Refresh
@@ -266,6 +288,7 @@ const AdminData = () => {
                           <Button 
                             variant="default" 
                             onClick={() => setIsAddDialogOpen(true)}
+                            className="glass-button-primary"
                           >
                             <Plus className="mr-2 h-4 w-4" />
                             Tambah
@@ -283,7 +306,7 @@ const AdminData = () => {
               </TabsContent>
               
               <TabsContent value="add">
-                <Card>
+                <Card className="glass-card">
                   <CardHeader>
                     <CardTitle>Tambah Data Pengiriman</CardTitle>
                     <CardDescription>
@@ -303,7 +326,7 @@ const AdminData = () => {
               </TabsContent>
 
               <TabsContent value="kendala">
-                <Card>
+                <Card className="glass-card">
                   <CardHeader>
                     <CardTitle>Laporan Kendala</CardTitle>
                     <CardDescription>
@@ -318,7 +341,7 @@ const AdminData = () => {
                         </div>
                       ) : (
                         kendalaReports.map((report) => (
-                          <Card key={report.id} className="bg-gray-50">
+                          <Card key={report.id} className="bg-gray-50/80 glass-effect">
                             <CardContent className="pt-4">
                               <div className="flex justify-between items-start mb-2">
                                 <div>
@@ -353,7 +376,7 @@ const AdminData = () => {
       </div>
       
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg glass-card">
           <DialogHeader>
             <DialogTitle>Tambah Data Pengiriman</DialogTitle>
           </DialogHeader>
