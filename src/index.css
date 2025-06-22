@@ -53,50 +53,122 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
     color: #1e293b;
-    background: linear-gradient(135deg, #f5f7fa 0%, #e0e7ff 100%);
+    background: linear-gradient(135deg, #fafcff 0%, #f1f5f9 30%, #e2e8f0 100%);
     min-height: 100vh;
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior-y: none;
   }
 
-  /* Glassmorphism utility classes */
+  /* Perfect Glassmorphism Effects */
   .glass-effect {
-    background: rgba(255, 255, 255, 0.55);
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-  }
-
-  .glass {
-    @apply bg-white/60 backdrop-blur-xl border border-white/30 shadow-lg;
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
   }
 
   .glass-card {
-    @apply bg-white/60 backdrop-blur-xl border border-white/30 rounded-2xl shadow-lg transition-all duration-300;
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    transition: all 0.3s ease;
   }
 
   .glass-card:hover {
-    @apply bg-white/70 shadow-xl;
+    background: rgba(255, 255, 255, 0.35);
+    box-shadow: 0 16px 40px 0 rgba(31, 38, 135, 0.25);
+    transform: translateY(-2px);
   }
 
   .glass-sidebar {
-    @apply bg-white/60 backdrop-blur-xl border-r border-white/30 shadow-lg;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 4px 0 24px 0 rgba(31, 38, 135, 0.1);
+  }
+
+  .glass-table {
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
   }
 
   .glass-input {
-    @apply bg-white/70 border border-slate-300/50 backdrop-blur-sm rounded-xl transition-all duration-300;
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 12px;
+    transition: all 0.3s ease;
   }
 
   .glass-input:focus {
-    @apply ring-2 ring-blue-500/50 border-blue-400/50 bg-white/80;
+    background: rgba(255, 255, 255, 0.4);
+    border-color: rgba(99, 102, 241, 0.5);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
   }
 
   .glass-button {
-    @apply bg-white/70 backdrop-blur-sm border border-white/40 rounded-xl transition-all duration-300 hover:bg-white/80 hover:shadow-lg;
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+  }
+
+  .glass-button:hover {
+    background: rgba(255, 255, 255, 0.35);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px 0 rgba(31, 38, 135, 0.2);
   }
 
   .glass-button-primary {
-    @apply bg-gradient-to-r from-blue-500/80 to-indigo-600/80 backdrop-blur-sm text-white border border-white/30 rounded-xl transition-all duration-300 hover:from-blue-600/90 hover:to-indigo-700/90 hover:shadow-lg;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.8), rgba(139, 92, 246, 0.8));
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 12px;
+    color: white;
+    transition: all 0.3s ease;
+  }
+
+  .glass-button-primary:hover {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(139, 92, 246, 0.9));
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px 0 rgba(99, 102, 241, 0.4);
+  }
+
+  /* Sidebar icon animations */
+  .sidebar-icon-only {
+    width: 60px;
+    transition: width 0.3s ease;
+  }
+
+  .sidebar-icon-only:hover {
+    width: 240px;
+  }
+
+  .sidebar-text {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .sidebar-icon-only:hover .sidebar-text {
+    opacity: 1;
+    width: auto;
+    margin-left: 12px;
   }
 
   /* Animation utilities */
@@ -127,40 +199,45 @@
     animation: scaleIn 0.3s ease forwards;
   }
 
-  /* Hover effects */
-  .hover-lift {
-    @apply transition-transform duration-300 hover:-translate-y-1;
-  }
-
-  /* Table styles */
-  .glass-table {
-    @apply bg-white/60 backdrop-blur-xl border border-white/30 rounded-2xl overflow-hidden shadow-lg;
-  }
-
+  /* Table enhancements */
   .glass-table th {
-    @apply bg-gradient-to-r from-slate-50/80 to-slate-100/80 backdrop-blur-sm font-bold text-slate-800 border-b-2 border-slate-300/50;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    font-weight: 600;
+    color: #334155;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 16px 24px;
   }
 
   .glass-table tr:hover {
-    @apply bg-blue-500/10;
+    background: rgba(99, 102, 241, 0.05);
   }
 
   .glass-table td {
-    @apply border-b border-slate-200/70;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 12px 24px;
+    color: #475569;
   }
 
   /* Mobile optimizations */
   @media (max-width: 768px) {
     .mobile-glass {
-      @apply bg-white/80 backdrop-blur-lg;
+      background: rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(15px);
     }
     
     .container {
-      @apply px-4;
+      padding: 16px;
     }
     
     .glass-card {
-      @apply mx-2 my-3;
+      margin: 8px 12px;
+    }
+
+    .sidebar-icon-only {
+      position: fixed;
+      z-index: 50;
+      height: 100vh;
     }
   }
 
@@ -172,7 +249,7 @@
       print-color-adjust: exact !important;
     }
 
-    .glass, .glass-card, .glass-table {
+    .glass-effect, .glass-card, .glass-table {
       background: white !important;
       backdrop-filter: none !important;
       border: 1px solid #e2e8f0 !important;
