@@ -92,6 +92,17 @@ const DashboardLayout = () => {
         (shipment.drivers?.name && shipment.drivers.name.toLowerCase().includes(query))
       );
     }
+
+    // Handle kendala filter
+    if (filters.kendalaFilter && filters.kendalaFilter !== "all") {
+      if (filters.kendalaFilter === "with-kendala") {
+        filtered = filtered.filter(shipment => shipment.kendala && shipment.kendala.trim() !== "");
+      } else if (filters.kendalaFilter === "without-kendala") {
+        filtered = filtered.filter(shipment => !shipment.kendala || shipment.kendala.trim() === "");
+      } else {
+        filtered = filtered.filter(shipment => shipment.kendala === filters.kendalaFilter);
+      }
+    }
     
     setFilteredShipments(filtered);
   };
@@ -105,6 +116,7 @@ const DashboardLayout = () => {
 
   const drivers = Array.from(new Set(shipments.map(s => s.drivers?.name).filter(Boolean))) as string[];
   const companies = Array.from(new Set(shipments.map(s => s.perusahaan))).filter(Boolean);
+  const kendalaOptions = Array.from(new Set(shipments.map(s => s.kendala).filter(Boolean))) as string[];
 
   const renderView = () => {
     switch (activeView) {
@@ -117,6 +129,7 @@ const DashboardLayout = () => {
               onFilter={handleFilter} 
               drivers={drivers}
               companies={companies}
+              kendalaOptions={kendalaOptions}
             />
             <ShipmentTable 
               shipments={filteredShipments} 

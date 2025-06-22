@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -103,6 +102,17 @@ const PublicData = () => {
       );
     }
     
+    // Handle kendala filter
+    if (filters.kendalaFilter && filters.kendalaFilter !== "all") {
+      if (filters.kendalaFilter === "with-kendala") {
+        filtered = filtered.filter(shipment => shipment.kendala && shipment.kendala.trim() !== "");
+      } else if (filters.kendalaFilter === "without-kendala") {
+        filtered = filtered.filter(shipment => !shipment.kendala || shipment.kendala.trim() === "");
+      } else {
+        filtered = filtered.filter(shipment => shipment.kendala === filters.kendalaFilter);
+      }
+    }
+    
     setFilteredShipments(filtered);
   };
 
@@ -111,6 +121,9 @@ const PublicData = () => {
   
   // Extract all companies for filter
   const companies = Array.from(new Set(shipments.map(s => s.perusahaan))).filter(Boolean);
+
+  // Extract all kendala options for filter
+  const kendalaOptions = Array.from(new Set(shipments.map(s => s.kendala).filter(Boolean))) as string[];
 
   // Count summary data
   const summary = {
@@ -181,6 +194,7 @@ const PublicData = () => {
                     onFilter={handleFilter} 
                     drivers={drivers}
                     companies={companies}
+                    kendalaOptions={kendalaOptions}
                   />
                 </div>
               </div>
