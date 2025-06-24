@@ -148,6 +148,32 @@
     box-shadow: 0 6px 20px 0 rgba(99, 102, 241, 0.4);
   }
 
+  /* Enhanced 3D Card Effects */
+  .shadow-3xl {
+    box-shadow: 0 35px 60px -12px rgba(0, 0, 0, 0.3), 
+                0 0 0 1px rgba(255, 255, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  /* Light glow effects */
+  .light-glow {
+    position: relative;
+  }
+
+  .light-glow::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, rgba(168, 85, 247, 0.1), rgba(59, 130, 246, 0.1), rgba(236, 72, 153, 0.1));
+    border-radius: inherit;
+    filter: blur(10px);
+    z-index: -1;
+    opacity: 0.7;
+  }
+
   /* Sidebar icon animations */
   .sidebar-icon-only {
     width: 60px;

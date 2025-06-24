@@ -14,7 +14,6 @@ import SummaryCards from "./SummaryCards";
 import DataCharts from "./DataCharts";
 import DriverStatistics from "./DriverStatistics";
 import ConstraintAnalysis from "./ConstraintAnalysis";
-import CompanyAnalytics from "./CompanyAnalytics";
 import AppDownloadInfo from "./AppDownloadInfo";
 
 interface DashboardHomeProps {
@@ -157,11 +156,6 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ shipments }) => {
       {/* Driver Statistics */}
       <div className="w-full shadow-xl hover:shadow-2xl transition-all duration-500 rounded-xl overflow-hidden animate-slide-in">
         <DriverStatistics shipments={filteredShipments} />
-      </div>
-
-      {/* Company Analytics */}
-      <div className="w-full shadow-xl hover:shadow-2xl transition-all duration-500 rounded-xl overflow-hidden animate-scale-in">
-        <CompanyAnalytics shipments={filteredShipments} />
       </div>
     </div>
   );

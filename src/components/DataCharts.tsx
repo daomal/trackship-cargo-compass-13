@@ -20,6 +20,8 @@ import {
   Cell,
   LineChart,
   Line,
+  AreaChart,
+  Area,
 } from "recharts";
 import { Shipment } from "@/lib/types";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
@@ -53,17 +55,6 @@ const DataCharts: React.FC<DataChartsProps> = ({ shipments, dateFrom, dateTo }) 
       });
     }
 
-    // Company data for bar chart
-    const companyData = filteredShipments.reduce((acc, shipment) => {
-      const company = shipment.perusahaan;
-      if (!acc[company]) {
-        acc[company] = { name: company, count: 0, qty: 0 };
-      }
-      acc[company].count += 1;
-      acc[company].qty += shipment.qty;
-      return acc;
-    }, {} as Record<string, { name: string; count: number; qty: number }>);
-
     // Status data for pie chart
     const statusData = filteredShipments.reduce((acc, shipment) => {
       const status = shipment.status;
@@ -86,10 +77,40 @@ const DataCharts: React.FC<DataChartsProps> = ({ shipments, dateFrom, dateTo }) 
       };
     });
 
+    // Driver performance data
+    const driverData = filteredShipments.reduce((acc, shipment) => {
+      const driverName = shipment.drivers?.name || 'Unknown';
+      if (!acc[driverName]) {
+        acc[driverName] = { 
+          name: driverName, 
+          total: 0, 
+          terkirim: 0, 
+          tertunda: 0, 
+          gagal: 0 
+        };
+      }
+      acc[driverName].total += 1;
+      acc[driverName][shipment.status] += 1;
+      return acc;
+    }, {} as Record<string, any>);
+
+    // Kendala analysis
+    const kendalaData = filteredShipments.reduce((acc, shipment) => {
+      if (shipment.kendala && shipment.kendala.trim() !== '') {
+        const kendala = shipment.kendala;
+        if (!acc[kendala]) {
+          acc[kendala] = { name: kendala, value: 0 };
+        }
+        acc[kendala].value += 1;
+      }
+      return acc;
+    }, {} as Record<string, { name: string; value: number }>);
+
     return {
-      companyData: Object.values(companyData).slice(0, 10), // Limit to top 10
       statusData: Object.values(statusData),
       trendData: last7Days,
+      driverData: Object.values(driverData).slice(0, 8), // Top 8 drivers
+      kendalaData: Object.values(kendalaData).slice(0, 6), // Top 6 kendala
       totalShipments: filteredShipments.length,
       totalQty: filteredShipments.reduce((sum, s) => sum + s.qty, 0)
     };
@@ -114,34 +135,6 @@ const DataCharts: React.FC<DataChartsProps> = ({ shipments, dateFrom, dateTo }) 
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
-      {/* Company Distribution Chart */}
-      <Card className="shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Distribusi per Perusahaan</CardTitle>
-          <CardDescription>
-            Jumlah pengiriman per perusahaan (Top 10)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData.companyData} margin={{ top: 5, right: 5, left: 5, bottom: 25 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis 
-                dataKey="name" 
-                angle={-45}
-                textAnchor="end"
-                height={80}
-                fontSize={12}
-                interval={0}
-              />
-              <YAxis fontSize={12} />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="count" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
       {/* Status Distribution Chart */}
       <Card className="shadow-sm">
         <CardHeader className="pb-3">
@@ -188,7 +181,35 @@ const DataCharts: React.FC<DataChartsProps> = ({ shipments, dateFrom, dateTo }) 
         </CardContent>
       </Card>
 
-      {/* Trend Analysis Chart */}
+      {/* Driver Performance Chart */}
+      <Card className="shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Performa Driver</CardTitle>
+          <CardDescription>
+            Total pengiriman per driver
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={chartData.driverData} margin={{ top: 5, right: 5, left: 5, bottom: 25 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis 
+                dataKey="name" 
+                angle={-45}
+                textAnchor="end"
+                height={80}
+                fontSize={12}
+                interval={0}
+              />
+              <YAxis fontSize={12} />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar dataKey="total" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Trend Analysis Chart - Restored to simple line chart */}
       <Card className="shadow-sm md:col-span-2">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">Tren Pengiriman (7 Hari Terakhir)</CardTitle>

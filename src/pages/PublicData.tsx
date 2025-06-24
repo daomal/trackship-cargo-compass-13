@@ -218,11 +218,27 @@ const PublicData = () => {
             </div>
             
             <div className="lg:col-span-4">
-              <Card className="bg-gradient-sunset shadow-lg border-none">
-                <CardHeader>
+              <Card 
+                className="bg-gradient-sunset border-none relative"
+                style={{
+                  background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                  boxShadow: `
+                    0 25px 50px -12px rgba(0, 0, 0, 0.25),
+                    0 0 0 1px rgba(255, 255, 255, 0.05),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                    0 0 100px rgba(168, 85, 247, 0.1)
+                  `,
+                  borderRadius: '16px',
+                }}
+              >
+                {/* Light glow effect around the table */}
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-purple-100/30 via-blue-100/20 to-pink-100/30 pointer-events-none" />
+                <div className="absolute inset-0 rounded-2xl shadow-[0_0_50px_rgba(168,85,247,0.15)] pointer-events-none" />
+                
+                <CardHeader className="relative z-10">
                   <CardTitle className="text-black">Daftar Pengiriman</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="relative z-10">
                   <div className="rounded-md border border-purple-200 bg-white/90 overflow-hidden table-container">
                     <div className="overflow-x-auto">
                       <Table>
