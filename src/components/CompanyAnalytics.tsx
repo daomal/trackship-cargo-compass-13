@@ -1,255 +1,164 @@
+
 import React, { useMemo } from "react";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
-import { Shipment, CompanyShipmentSummary, CommonConstraint, DelayAnalytics } from "@/lib/types";
-import { differenceInDays, parseISO } from "date-fns";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Shipment } from "@/lib/types";
+import { startOfDay, endOfDay } from "date-fns";
 
 interface CompanyAnalyticsProps {
   shipments: Shipment[];
+  dateFrom?: Date;
+  dateTo?: Date;
 }
 
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
+const CompanyAnalytics: React.FC<CompanyAnalyticsProps> = ({ 
+  shipments, 
+  dateFrom, 
+  dateTo 
+}) => {
+  // Optimized company analytics calculation
+  const companyAnalytics = useMemo(() => {
+    let filteredShipments = shipments;
 
-const CompanyAnalytics: React.FC<CompanyAnalyticsProps> = ({ shipments }) => {
-  // Generate company summary data
-  const companySummaries = useMemo(() => {
-    const companyMap = new Map<string, CompanyShipmentSummary>();
-    
-    shipments.forEach(shipment => {
+    // Apply date filtering
+    if (dateFrom || dateTo) {
+      filteredShipments = shipments.filter(shipment => {
+        const shipmentDate = new Date(shipment.tanggalKirim);
+        const from = dateFrom ? startOfDay(dateFrom) : new Date('1900-01-01');
+        const to = dateTo ? endOfDay(dateTo) : new Date();
+        return shipmentDate >= from && shipmentDate <= to;
+      });
+    }
+
+    const analytics = filteredShipments.reduce((acc, shipment) => {
       const company = shipment.perusahaan;
-      
-      if (!companyMap.has(company)) {
-        companyMap.set(company, {
-          company,
+      if (!acc[company]) {
+        acc[company] = {
+          name: company,
           total: 0,
-          delivered: 0,
-          pending: 0,
-          failed: 0
-        });
+          terkirim: 0,
+          tertunda: 0,
+          gagal: 0,
+          totalQty: 0,
+          deliveryRate: 0,
+        };
       }
-      
-      const summary = companyMap.get(company)!;
-      summary.total++;
+
+      acc[company].total += 1;
+      acc[company].totalQty += shipment.qty;
       
       if (shipment.status === "terkirim") {
-        summary.delivered++;
+        acc[company].terkirim += 1;
       } else if (shipment.status === "tertunda") {
-        summary.pending++;
+        acc[company].tertunda += 1;
       } else if (shipment.status === "gagal") {
-        summary.failed++;
+        acc[company].gagal += 1;
       }
-    });
-    
-    return Array.from(companyMap.values())
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 10); // Top 10 companies
-  }, [shipments]);
 
-  // Generate common constraints (issues)
-  const commonConstraints = useMemo(() => {
-    const issuesMap = new Map<string, number>();
-    
-    shipments.forEach(shipment => {
-      if (shipment.kendala) {
-        // Normalize issue text (lowercase, trim)
-        const issue = shipment.kendala.trim();
-        
-        if (issue) {
-          issuesMap.set(issue, (issuesMap.get(issue) || 0) + 1);
-        }
-      }
-    });
-    
-    return Array.from(issuesMap.entries())
-      .map(([issue, count]) => ({ issue, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10); // Top 10 issues
-  }, [shipments]);
+      return acc;
+    }, {} as Record<string, any>);
 
-  // Calculate average delay for each company
-  const delayAnalytics = useMemo(() => {
-    const companyDelaysMap = new Map<string, { totalDays: number; shipmentCount: number }>();
-    
-    shipments.forEach(shipment => {
-      // Only count delivered shipments with both dates
-      if (shipment.status === "terkirim" && shipment.tanggalKirim && shipment.tanggalTiba) {
-        const company = shipment.perusahaan;
-        const sendDate = new Date(shipment.tanggalKirim);
-        const arriveDate = new Date(shipment.tanggalTiba);
-        
-        // Calculate delay in days
-        const delay = differenceInDays(arriveDate, sendDate);
-        
-        if (!companyDelaysMap.has(company)) {
-          companyDelaysMap.set(company, { totalDays: 0, shipmentCount: 0 });
-        }
-        
-        const data = companyDelaysMap.get(company)!;
-        data.totalDays += delay;
-        data.shipmentCount++;
-      }
-    });
-    
-    return Array.from(companyDelaysMap.entries())
-      .map(([company, { totalDays, shipmentCount }]) => ({
-        company,
-        averageDelay: shipmentCount > 0 ? totalDays / shipmentCount : 0,
-        totalShipments: shipmentCount
+    // Calculate delivery rates and sort
+    return Object.values(analytics)
+      .map((company: any) => ({
+        ...company,
+        deliveryRate: company.total > 0 ? Math.round((company.terkirim / company.total) * 100) : 0,
       }))
-      .filter(item => item.totalShipments >= 3) // Only show companies with at least 3 shipments
-      .sort((a, b) => b.averageDelay - a.averageDelay);
-  }, [shipments]);
+      .sort((a, b) => b.total - a.total) // Sort by total shipments
+      .slice(0, 20); // Limit to top 20 companies
+  }, [shipments, dateFrom, dateTo]);
+
+  const getDeliveryRateBadge = (rate: number) => {
+    if (rate >= 90) return <Badge className="bg-green-100 text-green-800">Excellent</Badge>;
+    if (rate >= 75) return <Badge className="bg-blue-100 text-blue-800">Good</Badge>;
+    if (rate >= 50) return <Badge className="bg-yellow-100 text-yellow-800">Average</Badge>;
+    return <Badge className="bg-red-100 text-red-800">Poor</Badge>;
+  };
 
   return (
-    <div className="grid gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Analisis Data Pengiriman</CardTitle>
-          <CardDescription>
-            Statistik dan analisis pengiriman berdasarkan perusahaan
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="company-summary">
-            <TabsList className="mb-4">
-              <TabsTrigger value="company-summary">Jumlah Kiriman per Perusahaan</TabsTrigger>
-              <TabsTrigger value="issues">Kendala Terbanyak</TabsTrigger>
-              <TabsTrigger value="delays">Rata-rata Keterlambatan</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="company-summary" className="pt-4">
-              <div className="h-[400px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={companySummaries}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="company" 
-                      angle={-45} 
-                      textAnchor="end"
-                      tick={{ fontSize: 12 }}
-                    />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="delivered" name="Terkirim" fill="#10b981" />
-                    <Bar dataKey="pending" name="Tertunda" fill="#f59e0b" />
-                    <Bar dataKey="failed" name="Gagal" fill="#ef4444" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="issues" className="pt-4">
-              {commonConstraints.length > 0 ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <div className="h-[400px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={commonConstraints}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                          outerRadius={120}
-                          fill="#8884d8"
-                          dataKey="count"
-                          nameKey="issue"
-                        >
-                          {commonConstraints.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  
-                  <div>
-                    <h3 className="font-medium mb-2">Daftar Kendala Terbanyak</h3>
-                    <div className="space-y-2">
-                      {commonConstraints.map((item, index) => (
-                        <div key={index} className="flex justify-between items-center border-b pb-2">
-                          <span className="font-medium">{item.issue}</span>
-                          <span className="bg-gray-100 px-2 py-1 rounded">{item.count} kali</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+    <Card className="shadow-sm">
+      <CardHeader>
+        <CardTitle className="text-lg">Analisis Performa Perusahaan</CardTitle>
+        <CardDescription>
+          Statistik pengiriman dan tingkat keberhasilan per perusahaan
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="font-semibold">Perusahaan</TableHead>
+                <TableHead className="text-center font-semibold">Total</TableHead>
+                <TableHead className="text-center font-semibold">Terkirim</TableHead>
+                <TableHead className="text-center font-semibold">Tertunda</TableHead>
+                <TableHead className="text-center font-semibold">Gagal</TableHead>
+                <TableHead className="text-center font-semibold">Total Qty</TableHead>
+                <TableHead className="text-center font-semibold">Success Rate</TableHead>
+                <TableHead className="text-center font-semibold">Rating</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {companyAnalytics.length > 0 ? (
+                companyAnalytics.map((company, index) => (
+                  <TableRow key={company.name} className={index % 2 === 0 ? "bg-gray-50/50" : ""}>
+                    <TableCell className="font-medium max-w-[200px] truncate" title={company.name}>
+                      {company.name}
+                    </TableCell>
+                    <TableCell className="text-center">{company.total}</TableCell>
+                    <TableCell className="text-center text-green-600 font-medium">
+                      {company.terkirim}
+                    </TableCell>
+                    <TableCell className="text-center text-yellow-600 font-medium">
+                      {company.tertunda}
+                    </TableCell>
+                    <TableCell className="text-center text-red-600 font-medium">
+                      {company.gagal}
+                    </TableCell>
+                    <TableCell className="text-center font-medium">
+                      {company.totalQty}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span className={`font-semibold ${
+                        company.deliveryRate >= 90 ? 'text-green-600' :
+                        company.deliveryRate >= 75 ? 'text-blue-600' :
+                        company.deliveryRate >= 50 ? 'text-yellow-600' : 'text-red-600'
+                      }`}>
+                        {company.deliveryRate}%
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {getDeliveryRateBadge(company.deliveryRate)}
+                    </TableCell>
+                  </TableRow>
+                ))
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  Tidak ada data kendala yang tersedia
-                </div>
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                    Tidak ada data untuk ditampilkan
+                  </TableCell>
+                </TableRow>
               )}
-            </TabsContent>
-            
-            <TabsContent value="delays" className="pt-4">
-              {delayAnalytics.length > 0 ? (
-                <div className="h-[400px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={delayAnalytics}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis 
-                        dataKey="company" 
-                        angle={-45} 
-                        textAnchor="end" 
-                        tick={{ fontSize: 12 }}
-                      />
-                      <YAxis 
-                        label={{ 
-                          value: 'Rata-rata Keterlambatan (hari)', 
-                          angle: -90, 
-                          position: 'insideLeft',
-                          style: { textAnchor: 'middle' }
-                        }}
-                      />
-                      {/* FIX: Ensure number formatting is properly handled with a type check */}
-                      <Tooltip formatter={(value) => {
-                        // Check if value is a number before calling toFixed
-                        const numValue = typeof value === 'number' ? value.toFixed(1) : value;
-                        return [`${numValue} hari`, 'Rata-rata'];
-                      }} />
-                      <Bar dataKey="averageDelay" name="Rata-rata Keterlambatan" fill="#8884d8" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  Tidak ada data keterlambatan yang tersedia
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-    </div>
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
-export default CompanyAnalytics;
+export default React.memo(CompanyAnalytics);

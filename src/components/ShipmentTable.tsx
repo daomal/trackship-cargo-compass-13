@@ -48,9 +48,9 @@ interface ShipmentTableProps {
   onShipmentUpdated?: () => void;
 }
 
-// Reduce items per page on mobile for better performance
+// Increased mobile items per page to 15 as requested
 const ITEMS_PER_PAGE_DESKTOP = 10;
-const ITEMS_PER_PAGE_MOBILE = 5;
+const ITEMS_PER_PAGE_MOBILE = 15;
 const DEFAULT_TRACKING_URL = "https://www.google.com/maps";
 
 const KENDALA_OPTIONS = [
@@ -93,7 +93,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
   const [rowTrackingUrl, setRowTrackingUrl] = useState<string>("");
   const [drivers, setDrivers] = useState<Driver[]>([]);
 
-  // Memoize heavy calculations
+  // Optimized memoization with better dependencies
   const { totalPages, paginatedShipments, totalQuantity } = useMemo(() => {
     const totalPages = Math.ceil(localShipments.length / ITEMS_PER_PAGE);
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -104,37 +104,40 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
     return { totalPages, paginatedShipments, totalQuantity };
   }, [localShipments, currentPage, ITEMS_PER_PAGE]);
 
+  // Throttled state updates for better performance
   useEffect(() => {
-    setLocalShipments(shipments);
+    const timeoutId = setTimeout(() => {
+      setLocalShipments(shipments);
+    }, 50);
+    return () => clearTimeout(timeoutId);
   }, [shipments]);
 
+  // Optimized subscription setup with longer debounce
   useEffect(() => {
-    // Debounce subscription for better performance
     let timeoutId: NodeJS.Timeout;
+    let unsubscribe: (() => void) | null = null;
     
     const setupSubscription = () => {
-      const unsubscribe = subscribeToShipments((updatedShipments) => {
-        setLocalShipments(updatedShipments);
+      unsubscribe = subscribeToShipments((updatedShipments) => {
+        // Batch updates to prevent excessive re-renders
+        requestAnimationFrame(() => {
+          setLocalShipments(updatedShipments);
+        });
       });
 
-      return unsubscribe;
-    };
-
-    timeoutId = setTimeout(() => {
-      const unsubscribe = setupSubscription();
-      
       const savedTrackingUrl = localStorage.getItem("trackingUrl");
       if (savedTrackingUrl) {
         setTrackingUrl(savedTrackingUrl);
       }
 
       fetchDrivers();
+    };
 
-      return () => unsubscribe();
-    }, 100);
+    timeoutId = setTimeout(setupSubscription, 200);
 
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
+      if (unsubscribe) unsubscribe();
     };
   }, []);
 
@@ -147,21 +150,20 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
     }
   }, []);
 
-  // Memoize status badge rendering
+  // Memoized status badge with reduced re-renders
   const renderStatusBadge = useCallback((status: ShipmentStatus) => {
-    const statusClasses = {
-      terkirim: "bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold shadow-sm",
-      tertunda: "bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-semibold shadow-sm",
-      gagal: "bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-semibold shadow-sm",
+    const statusConfig = {
+      terkirim: { class: "bg-green-100 text-green-800", text: "Terkirim" },
+      tertunda: { class: "bg-yellow-100 text-yellow-800", text: "Tertunda" },
+      gagal: { class: "bg-red-100 text-red-800", text: "Gagal" },
     };
 
-    const statusText = {
-      terkirim: "Terkirim",
-      tertunda: "Tertunda",
-      gagal: "Gagal",
-    };
-
-    return <span className={statusClasses[status]}>{statusText[status]}</span>;
+    const config = statusConfig[status];
+    return (
+      <span className={`${config.class} px-3 py-1 rounded-full text-xs font-semibold shadow-sm`}>
+        {config.text}
+      </span>
+    );
   }, []);
 
   const handleOpenEditKendalaDialog = useCallback((shipment: Shipment) => {

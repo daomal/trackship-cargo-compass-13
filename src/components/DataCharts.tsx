@@ -1,302 +1,222 @@
-import React, { useState, useEffect } from "react";
-import { Shipment } from "@/lib/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+
+import React, { useMemo } from "react";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { format } from "date-fns";
-import { CalendarIcon, RotateCcw } from "lucide-react";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   BarChart,
-  PieChart,
-  LineChart,
   Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
+  PieChart,
   Pie,
   Cell,
+  LineChart,
   Line,
 } from "recharts";
+import { Shipment } from "@/lib/types";
+import { format, subDays, startOfDay, endOfDay } from "date-fns";
 
 interface DataChartsProps {
   shipments: Shipment[];
-  hideFilter?: boolean;
+  dateFrom?: Date;
+  dateTo?: Date;
 }
 
-const DataCharts: React.FC<DataChartsProps> = ({ shipments, hideFilter = false }) => {
-  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
-  const [filteredShipments, setFilteredShipments] = useState<Shipment[]>(shipments);
+// Optimized color constants
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+const STATUS_COLORS = {
+  terkirim: '#22C55E',
+  tertunda: '#F59E0B',
+  gagal: '#EF4444'
+};
 
-  useEffect(() => {
-    if (!hideFilter) {
-      applyDateFilter();
-    } else {
-      setFilteredShipments(shipments);
+const DataCharts: React.FC<DataChartsProps> = ({ shipments, dateFrom, dateTo }) => {
+  // Optimized data processing with useMemo
+  const chartData = useMemo(() => {
+    let filteredShipments = shipments;
+
+    // Apply date filtering
+    if (dateFrom || dateTo) {
+      filteredShipments = shipments.filter(shipment => {
+        const shipmentDate = new Date(shipment.tanggalKirim);
+        const from = dateFrom ? startOfDay(dateFrom) : new Date('1900-01-01');
+        const to = dateTo ? endOfDay(dateTo) : new Date();
+        return shipmentDate >= from && shipmentDate <= to;
+      });
     }
-  }, [dateRange, shipments, hideFilter]);
 
-  const applyDateFilter = () => {
-    if (!dateRange[0] || !dateRange[1]) {
-      setFilteredShipments(shipments);
-      return;
-    }
+    // Company data for bar chart
+    const companyData = filteredShipments.reduce((acc, shipment) => {
+      const company = shipment.perusahaan;
+      if (!acc[company]) {
+        acc[company] = { name: company, count: 0, qty: 0 };
+      }
+      acc[company].count += 1;
+      acc[company].qty += shipment.qty;
+      return acc;
+    }, {} as Record<string, { name: string; count: number; qty: number }>);
 
-    const filtered = shipments.filter(shipment => {
-      const shipmentDate = new Date(shipment.tanggalKirim);
-      return shipmentDate >= dateRange[0]! && shipmentDate <= dateRange[1]!;
+    // Status data for pie chart
+    const statusData = filteredShipments.reduce((acc, shipment) => {
+      const status = shipment.status;
+      if (!acc[status]) {
+        acc[status] = { name: status, value: 0 };
+      }
+      acc[status].value += 1;
+      return acc;
+    }, {} as Record<string, { name: string; value: number }>);
+
+    // Daily trend data for line chart (last 7 days)
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const date = subDays(new Date(), 6 - i);
+      const dateStr = format(date, 'yyyy-MM-dd');
+      const count = filteredShipments.filter(s => s.tanggalKirim === dateStr).length;
+      return {
+        date: format(date, 'dd/MM'),
+        count,
+        fullDate: dateStr
+      };
     });
 
-    setFilteredShipments(filtered);
-  };
-
-  const resetDateFilter = () => {
-    setDateRange([null, null]);
-  };
-
-  // Prepare data for bar chart (shipments per day)
-  const prepareBarChartData = () => {
-    const dateMap = new Map<string, number>();
-    
-    filteredShipments.forEach((shipment) => {
-      const date = shipment.tanggalKirim;
-      dateMap.set(date, (dateMap.get(date) || 0) + 1);
-    });
-    
-    return Array.from(dateMap).map(([date, count]) => ({
-      date,
-      count,
-    })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  };
-  
-  // Prepare data for pie chart (shipment status distribution)
-  const preparePieChartData = () => {
-    const statusCount = {
-      terkirim: 0,
-      tertunda: 0,
-      gagal: 0,
+    return {
+      companyData: Object.values(companyData).slice(0, 10), // Limit to top 10
+      statusData: Object.values(statusData),
+      trendData: last7Days,
+      totalShipments: filteredShipments.length,
+      totalQty: filteredShipments.reduce((sum, s) => sum + s.qty, 0)
     };
-    
-    filteredShipments.forEach((shipment) => {
-      statusCount[shipment.status]++;
-    });
-    
-    return [
-      { name: "Terkirim", value: statusCount.terkirim, color: "#10b981" },
-      { name: "Tertunda", value: statusCount.tertunda, color: "#3b82f6" },
-      { name: "Gagal", value: statusCount.gagal, color: "#f43f5e" },
-    ];
-  };
-  
-  // Prepare data for line chart (shipments trend)
-  const prepareLineChartData = () => {
-    const dateMap = new Map<string, number>();
-    
-    filteredShipments.forEach((shipment) => {
-      const date = shipment.tanggalKirim;
-      dateMap.set(date, (dateMap.get(date) || 0) + 1);
-    });
-    
-    return Array.from(dateMap).map(([date, count]) => ({
-      date,
-      count,
-    })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  };
+  }, [shipments, dateFrom, dateTo]);
 
-  const barChartData = prepareBarChartData();
-  const pieChartData = preparePieChartData();
-  const lineChartData = prepareLineChartData();
-
-  // Colors for alternating bars
-  const barColors = ["#6366f1", "#10b981", "#3b82f6", "#f43f5e"];
+  // Optimized custom tooltip components
+  const CustomTooltip = React.memo(({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 border rounded-lg shadow-lg">
+          <p className="font-medium">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} style={{ color: entry.color }}>
+              {entry.dataKey}: {entry.value}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  });
 
   return (
-    <Card className="glass-card">
-      <CardHeader className="border-b border-white/20">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <CardTitle className="text-slate-800">Visualisasi Data</CardTitle>
-          
-          {!hideFilter && (
-            <div className="flex flex-col md:flex-row gap-2">
-              <div className="flex gap-2">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="justify-start text-left font-normal glass-button"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dateRange[0] ? format(dateRange[0], "dd/MM/yyyy") : "Dari Tanggal"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={dateRange[0] || undefined}
-                      onSelect={(date) => setDateRange([date, dateRange[1]])}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+      {/* Company Distribution Chart */}
+      <Card className="shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Distribusi per Perusahaan</CardTitle>
+          <CardDescription>
+            Jumlah pengiriman per perusahaan (Top 10)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={chartData.companyData} margin={{ top: 5, right: 5, left: 5, bottom: 25 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis 
+                dataKey="name" 
+                angle={-45}
+                textAnchor="end"
+                height={80}
+                fontSize={12}
+                interval={0}
+              />
+              <YAxis fontSize={12} />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar dataKey="count" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
 
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="justify-start text-left font-normal glass-button"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dateRange[1] ? format(dateRange[1], "dd/MM/yyyy") : "Sampai Tanggal"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={dateRange[1] || undefined}
-                      onSelect={(date) => setDateRange([dateRange[0], date])}
-                      initialFocus
-                      disabled={(date) => (dateRange[0] ? date < dateRange[0] : false)}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <Button 
-                variant="outline" 
-                onClick={resetDateFilter}
-                className="glass-button"
+      {/* Status Distribution Chart */}
+      <Card className="shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Status Pengiriman</CardTitle>
+          <CardDescription>
+            Distribusi status pengiriman
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={chartData.statusData}
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={100}
+                paddingAngle={2}
+                dataKey="value"
               >
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Reset
-              </Button>
-            </div>
-          )}
-        </div>
-        
-        {!hideFilter && (
-          <div className="text-sm text-slate-600">
-            Menampilkan {filteredShipments.length} dari {shipments.length} pengiriman
-            {dateRange[0] && dateRange[1] && (
-              <span className="ml-2 px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs">
-                {format(dateRange[0], "dd/MM/yyyy")} - {format(dateRange[1], "dd/MM/yyyy")}
-              </span>
-            )}
-          </div>
-        )}
-      </CardHeader>
-      <CardContent className="pt-6 space-y-8">
-        {/* Bar Chart */}
-        <div className="glass-effect rounded-lg p-4">
-          <h3 className="text-lg font-medium text-slate-800 mb-4">Pengiriman per Tanggal</h3>
-          <div className="w-full h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={barChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="date" tick={{ fill: '#475569' }} />
-                <YAxis tick={{ fill: '#475569' }} />
-                <Tooltip
-                  formatter={(value: number) => [`${value} pengiriman`, "Jumlah"]}
-                  labelFormatter={(label) => `Tanggal: ${label}`}
-                  contentStyle={{ 
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                    borderRadius: '8px', 
-                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)'
+                {chartData.statusData.map((entry, index) => (
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={STATUS_COLORS[entry.name as keyof typeof STATUS_COLORS] || COLORS[index % COLORS.length]} 
+                  />
+                ))}
+              </Pie>
+              <Tooltip content={<CustomTooltip />} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="flex flex-wrap justify-center gap-4 mt-4">
+            {chartData.statusData.map((entry, index) => (
+              <div key={entry.name} className="flex items-center gap-2">
+                <div 
+                  className="w-3 h-3 rounded-full" 
+                  style={{ 
+                    backgroundColor: STATUS_COLORS[entry.name as keyof typeof STATUS_COLORS] || COLORS[index % COLORS.length] 
                   }}
                 />
-                <Bar
-                  dataKey="count"
-                  name="Jumlah Pengiriman"
-                  radius={[4, 4, 0, 0]}
-                >
-                  {barChartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={barColors[index % barColors.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+                <span className="text-sm capitalize">{entry.name}</span>
+              </div>
+            ))}
           </div>
-        </div>
-        
-        {/* Pie Chart */}
-        <div className="glass-effect rounded-lg p-4">
-          <h3 className="text-lg font-medium text-slate-800 mb-4">Status Pengiriman</h3>
-          <div className="w-full h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={pieChartData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={90}
-                  innerRadius={30}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                >
-                  {pieChartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  formatter={(value: number) => [`${value} pengiriman`, "Jumlah"]}
-                  contentStyle={{ 
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                    borderRadius: '8px', 
-                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)'
-                  }}
-                />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-        
-        {/* Line Chart */}
-        <div className="glass-effect rounded-lg p-4">
-          <h3 className="text-lg font-medium text-slate-800 mb-4">Trend Pengiriman</h3>
-          <div className="w-full h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={lineChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="date" tick={{ fill: '#475569' }} />
-                <YAxis tick={{ fill: '#475569' }} />
-                <Tooltip
-                  formatter={(value: number) => [`${value} pengiriman`, "Jumlah"]}
-                  labelFormatter={(label) => `Tanggal: ${label}`}
-                  contentStyle={{ 
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                    borderRadius: '8px', 
-                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)'
-                  }}
-                />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="count"
-                  name="Jumlah Pengiriman"
-                  stroke="#6366f1"
-                  strokeWidth={2}
-                  dot={{ r: 4, strokeWidth: 2, fill: "#fff" }}
-                  activeDot={{ r: 6 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      {/* Trend Analysis Chart */}
+      <Card className="shadow-sm md:col-span-2">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Tren Pengiriman (7 Hari Terakhir)</CardTitle>
+          <CardDescription>
+            Jumlah pengiriman per hari dalam seminggu terakhir
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={chartData.trendData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="date" fontSize={12} />
+              <YAxis fontSize={12} />
+              <Tooltip content={<CustomTooltip />} />
+              <Line 
+                type="monotone" 
+                dataKey="count" 
+                stroke="#3B82F6" 
+                strokeWidth={3}
+                dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
+                activeDot={{ r: 6 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
-export default DataCharts;
+export default React.memo(DataCharts);
