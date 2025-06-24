@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Table,
   TableBody,
@@ -41,13 +41,16 @@ import { format } from "date-fns";
 import { Shipment, ShipmentStatus, Driver } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { updateShipment, deleteShipment, getShipmentStatusHistory, subscribeToShipments, getDrivers } from "@/lib/shipmentService";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ShipmentTableProps {
   shipments: Shipment[];
   onShipmentUpdated?: () => void;
 }
 
-const ITEMS_PER_PAGE = 10;
+// Reduce items per page on mobile for better performance
+const ITEMS_PER_PAGE_DESKTOP = 10;
+const ITEMS_PER_PAGE_MOBILE = 5;
 const DEFAULT_TRACKING_URL = "https://www.google.com/maps";
 
 const KENDALA_OPTIONS = [
@@ -58,6 +61,9 @@ const KENDALA_OPTIONS = [
 
 const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpdated }) => {
   const { isAdmin } = useAuth();
+  const isMobile = useIsMobile();
+  const ITEMS_PER_PAGE = isMobile ? ITEMS_PER_PAGE_MOBILE : ITEMS_PER_PAGE_DESKTOP;
+  
   const [currentPage, setCurrentPage] = useState(1);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -87,41 +93,62 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
   const [rowTrackingUrl, setRowTrackingUrl] = useState<string>("");
   const [drivers, setDrivers] = useState<Driver[]>([]);
 
+  // Memoize heavy calculations
+  const { totalPages, paginatedShipments, totalQuantity } = useMemo(() => {
+    const totalPages = Math.ceil(localShipments.length / ITEMS_PER_PAGE);
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, localShipments.length);
+    const paginatedShipments = localShipments.slice(startIndex, endIndex);
+    const totalQuantity = localShipments.reduce((total, shipment) => total + shipment.qty, 0);
+    
+    return { totalPages, paginatedShipments, totalQuantity };
+  }, [localShipments, currentPage, ITEMS_PER_PAGE]);
+
   useEffect(() => {
     setLocalShipments(shipments);
   }, [shipments]);
 
   useEffect(() => {
-    const unsubscribe = subscribeToShipments((updatedShipments) => {
-      setLocalShipments(updatedShipments);
-    });
+    // Debounce subscription for better performance
+    let timeoutId: NodeJS.Timeout;
+    
+    const setupSubscription = () => {
+      const unsubscribe = subscribeToShipments((updatedShipments) => {
+        setLocalShipments(updatedShipments);
+      });
 
-    const savedTrackingUrl = localStorage.getItem("trackingUrl");
-    if (savedTrackingUrl) {
-      setTrackingUrl(savedTrackingUrl);
-    }
+      return unsubscribe;
+    };
 
-    fetchDrivers();
+    timeoutId = setTimeout(() => {
+      const unsubscribe = setupSubscription();
+      
+      const savedTrackingUrl = localStorage.getItem("trackingUrl");
+      if (savedTrackingUrl) {
+        setTrackingUrl(savedTrackingUrl);
+      }
 
-    return () => unsubscribe();
+      fetchDrivers();
+
+      return () => unsubscribe();
+    }, 100);
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, []);
 
-  const fetchDrivers = async () => {
+  const fetchDrivers = useCallback(async () => {
     try {
       const driversData = await getDrivers();
       setDrivers(driversData);
     } catch (error) {
       console.error("Error fetching drivers:", error);
     }
-  };
+  }, []);
 
-  const totalPages = Math.ceil(localShipments.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, localShipments.length);
-  const paginatedShipments = localShipments.slice(startIndex, endIndex);
-  const totalQuantity = localShipments.reduce((total, shipment) => total + shipment.qty, 0);
-
-  const renderStatusBadge = (status: ShipmentStatus) => {
+  // Memoize status badge rendering
+  const renderStatusBadge = useCallback((status: ShipmentStatus) => {
     const statusClasses = {
       terkirim: "bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold shadow-sm",
       tertunda: "bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-semibold shadow-sm",
@@ -135,9 +162,9 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
     };
 
     return <span className={statusClasses[status]}>{statusText[status]}</span>;
-  };
+  }, []);
 
-  const handleOpenEditKendalaDialog = (shipment: Shipment) => {
+  const handleOpenEditKendalaDialog = useCallback((shipment: Shipment) => {
     setCurrentShipment(shipment);
     setKendala(shipment.kendala || "");
     // Check if current kendala matches one of the predefined options
@@ -147,7 +174,7 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
       setKendalaType("custom");
     }
     setIsEditKendalaDialogOpen(true);
-  };
+  }, []);
 
   const handleUpdateKendala = async () => {
     if (!currentShipment) return;
@@ -183,19 +210,19 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
     }
   };
 
-  const handleStartQtyEdit = (shipment: Shipment, e: React.MouseEvent) => {
+  const handleStartQtyEdit = useCallback((shipment: Shipment, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setQtyEditId(shipment.id);
     setEditableQty(shipment.qty);
-  };
+  }, []);
 
-  const handleQtyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleQtyChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
     if (!isNaN(value) && value >= 0) {
       setEditableQty(value);
     }
-  };
+  }, []);
 
   const handleQtySave = async () => {
     if (!qtyEditId) {
@@ -227,31 +254,31 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
     }
   };
 
-  const handleQtyKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleQtyKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handleQtySave();
     } else if (e.key === 'Escape') {
       setQtyEditId(null);
     }
-  };
+  }, [handleQtySave]);
 
-  const handleOpenTrackingDialog = () => {
+  const handleOpenTrackingDialog = useCallback(() => {
     setIsTrackingDialogOpen(true);
-  };
+  }, []);
 
-  const handleSaveTrackingUrl = () => {
+  const handleSaveTrackingUrl = useCallback(() => {
     localStorage.setItem("trackingUrl", trackingUrl);
     toast("Berhasil", {
       description: "URL tracking berhasil disimpan",
     });
     setIsTrackingDialogOpen(false);
-  };
+  }, [trackingUrl]);
 
-  const handleOpenEditTrackingUrlDialog = (shipment: Shipment) => {
+  const handleOpenEditTrackingUrlDialog = useCallback((shipment: Shipment) => {
     setCurrentShipment(shipment);
     setRowTrackingUrl(shipment.trackingUrl || trackingUrl);
     setIsEditTrackingUrlDialogOpen(true);
-  };
+  }, [trackingUrl]);
 
   const handleSaveRowTrackingUrl = async () => {
     if (!currentShipment) return;
@@ -286,30 +313,30 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
     }
   };
 
-  const handleOpenEditDialog = (shipment: Shipment) => {
+  const handleOpenEditDialog = useCallback((shipment: Shipment) => {
     setCurrentShipment(shipment);
     setKendala(shipment.kendala || "");
     setIsEditDialogOpen(true);
-  };
+  }, []);
 
-  const handleOpenDeleteDialog = (shipment: Shipment) => {
+  const handleOpenDeleteDialog = useCallback((shipment: Shipment) => {
     setCurrentShipment(shipment);
     setIsDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const handleOpenStatusDialog = (shipment: Shipment) => {
+  const handleOpenStatusDialog = useCallback((shipment: Shipment) => {
     setCurrentShipment(shipment);
     setNewStatus(shipment.status);
     setKendala(shipment.kendala || "");
     setCurrentTime(new Date().toTimeString().substring(0, 5));
     setIsStatusDialogOpen(true);
-  };
+  }, []);
 
-  const handleOpenEditDriverDialog = (shipment: Shipment) => {
+  const handleOpenEditDriverDialog = useCallback((shipment: Shipment) => {
     setCurrentShipment(shipment);
     setSelectedDriverId(shipment.driverId || "");
     setIsEditDriverDialogOpen(true);
-  };
+  }, []);
   
   const handleOpenHistoryDialog = async (shipment: Shipment) => {
     setCurrentShipment(shipment);
@@ -466,16 +493,16 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
     }
   };
 
-  const handleStartDriverEdit = (shipment: Shipment, e: React.MouseEvent) => {
+  const handleStartDriverEdit = useCallback((shipment: Shipment, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDriverEditId(shipment.id);
     setEditableDriverId(shipment.driverId || "");
-  };
+  }, []);
 
-  const handleDriverIdChange = (value: string) => {
+  const handleDriverIdChange = useCallback((value: string) => {
     setEditableDriverId(value);
-  };
+  }, []);
 
   const handleDriverIdSave = async () => {
     if (!driverEditId || !editableDriverId.trim()) {
@@ -504,13 +531,13 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
   };
 
   // Modified function to handle tracking URL correctly
-  const navigateToTracking = (shipment: Shipment) => {
+  const navigateToTracking = useCallback((shipment: Shipment) => {
     const shipmentTrackingUrl = shipment.trackingUrl || trackingUrl;
     
     // Don't append any parameters to the URL, just open it as is
     console.log("Navigating to tracking URL:", shipmentTrackingUrl);
     window.open(shipmentTrackingUrl, '_blank');
-  };
+  }, [trackingUrl]);
 
   return (
     <>
