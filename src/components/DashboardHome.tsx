@@ -133,13 +133,21 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ shipments }) => {
 
       {/* Summary Cards */}
       <div className="w-full">
-        <SummaryCards summary={summary} />
+        <SummaryCards 
+          shipments={filteredShipments} 
+          dateFrom={dateRange[0] || undefined} 
+          dateTo={dateRange[1] || undefined} 
+        />
       </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 w-full">
         <div className="h-full shadow-xl hover:shadow-2xl transition-all duration-500 rounded-xl overflow-hidden">
-          <DataCharts shipments={filteredShipments} hideFilter={true} />
+          <DataCharts 
+            shipments={filteredShipments} 
+            dateFrom={dateRange[0] || undefined} 
+            dateTo={dateRange[1] || undefined} 
+          />
         </div>
         <div className="h-full shadow-xl hover:shadow-2xl transition-all duration-500 rounded-xl overflow-hidden">
           <ConstraintAnalysis shipments={filteredShipments} />

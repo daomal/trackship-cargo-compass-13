@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -184,7 +185,11 @@ const PublicData = () => {
           
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 animate-fade-in">
             <div className="lg:col-span-4">
-              <SummaryCards summary={summary} />
+              <SummaryCards 
+                shipments={filteredShipments}
+                dateFrom={filterOptions.dateRange[0] || undefined}
+                dateTo={filterOptions.dateRange[1] || undefined}
+              />
             </div>
             
             <div className="lg:col-span-4 animate-fade-in">
@@ -201,7 +206,11 @@ const PublicData = () => {
             </div>
             
             <div className="lg:col-span-4 animate-fade-in">
-              <DataCharts shipments={filteredShipments} />
+              <DataCharts 
+                shipments={filteredShipments}
+                dateFrom={filterOptions.dateRange[0] || undefined}
+                dateTo={filterOptions.dateRange[1] || undefined}
+              />
             </div>
             
             <div className="lg:col-span-4 animate-fade-in">
