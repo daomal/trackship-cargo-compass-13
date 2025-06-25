@@ -14,6 +14,7 @@ import SummaryCards from "./SummaryCards";
 import DataCharts from "./DataCharts";
 import DriverStatistics from "./DriverStatistics";
 import ConstraintAnalysis from "./ConstraintAnalysis";
+import CompanyAnalytics from "./CompanyAnalytics";
 import AppDownloadInfo from "./AppDownloadInfo";
 
 interface DashboardHomeProps {
@@ -132,21 +133,13 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ shipments }) => {
 
       {/* Summary Cards */}
       <div className="w-full">
-        <SummaryCards 
-          shipments={filteredShipments} 
-          dateFrom={dateRange[0] || undefined} 
-          dateTo={dateRange[1] || undefined} 
-        />
+        <SummaryCards summary={summary} />
       </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 w-full">
         <div className="h-full shadow-xl hover:shadow-2xl transition-all duration-500 rounded-xl overflow-hidden">
-          <DataCharts 
-            shipments={filteredShipments} 
-            dateFrom={dateRange[0] || undefined} 
-            dateTo={dateRange[1] || undefined} 
-          />
+          <DataCharts shipments={filteredShipments} hideFilter={true} />
         </div>
         <div className="h-full shadow-xl hover:shadow-2xl transition-all duration-500 rounded-xl overflow-hidden">
           <ConstraintAnalysis shipments={filteredShipments} />
@@ -156,6 +149,11 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ shipments }) => {
       {/* Driver Statistics */}
       <div className="w-full shadow-xl hover:shadow-2xl transition-all duration-500 rounded-xl overflow-hidden animate-slide-in">
         <DriverStatistics shipments={filteredShipments} />
+      </div>
+
+      {/* Company Analytics */}
+      <div className="w-full shadow-xl hover:shadow-2xl transition-all duration-500 rounded-xl overflow-hidden animate-scale-in">
+        <CompanyAnalytics shipments={filteredShipments} />
       </div>
     </div>
   );
