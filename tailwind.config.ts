@@ -26,24 +26,24 @@ export default {
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
 				primary: {
-					DEFAULT: 'hsl(240 5.9% 10%)',
-					foreground: 'hsl(210 40% 98%)'
+					DEFAULT: 'hsl(var(--primary))',
+					foreground: 'hsl(var(--primary-foreground))'
 				},
 				secondary: {
-					DEFAULT: 'hsl(210 40% 96%)',
-					foreground: 'hsl(222.2 84% 4.9%)'
+					DEFAULT: 'hsl(var(--secondary))',
+					foreground: 'hsl(var(--secondary-foreground))'
 				},
 				destructive: {
-					DEFAULT: 'hsl(0 84.2% 60.2%)',
-					foreground: 'hsl(210 40% 98%)'
+					DEFAULT: 'hsl(var(--destructive))',
+					foreground: 'hsl(var(--destructive-foreground))'
 				},
 				muted: {
-					DEFAULT: 'hsl(210 40% 96%)',
-					foreground: 'hsl(215.4 16.3% 46.9%)'
+					DEFAULT: 'hsl(var(--muted))',
+					foreground: 'hsl(var(--muted-foreground))'
 				},
 				accent: {
-					DEFAULT: 'hsl(210 40% 96%)',
-					foreground: 'hsl(222.2 47.4% 11.2%)'
+					DEFAULT: 'hsl(var(--accent))',
+					foreground: 'hsl(var(--accent-foreground))'
 				},
 				popover: {
 					DEFAULT: 'hsl(0 0% 100%)',
@@ -63,10 +63,10 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-        success: "#16a34a",
-        warning: "#f59e0b",
-        error: "#dc2626",
-        info: "#3b82f6",
+        success: "hsl(150 100% 90%)",
+        warning: "hsl(45 100% 88%)",
+        error: "hsl(0 65% 65%)",
+        info: "hsl(210 100% 92%)",
         navy: {
           50: "#f8fafc",
           100: "#f1f5f9",
