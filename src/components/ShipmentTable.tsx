@@ -47,7 +47,7 @@ interface ShipmentTableProps {
   onShipmentUpdated?: () => void;
 }
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 15;
 const DEFAULT_TRACKING_URL = "https://www.google.com/maps";
 
 const KENDALA_OPTIONS = [
@@ -514,10 +514,10 @@ const ShipmentTable: React.FC<ShipmentTableProps> = ({ shipments, onShipmentUpda
 
   return (
     <>
-      <Card className="shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
+      <Card className="glass-table">
+        <CardHeader className="bg-gradient-to-r from-soft-blue-bg/30 to-soft-blue-bg/20 border-b border-white/30">
           <div className="flex justify-between items-center">
-            <CardTitle className="text-xl font-bold text-gray-800">Daftar Pengiriman</CardTitle>
+            <CardTitle className="text-xl font-bold text-foreground">Daftar Pengiriman</CardTitle>
             {isAdmin && (
               <Button 
                 variant="outline" 

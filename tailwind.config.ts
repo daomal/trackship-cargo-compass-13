@@ -83,6 +83,24 @@ export default {
           primary: "rgba(255, 255, 255, 0.6)",
           secondary: "rgba(255, 255, 255, 0.4)",
           accent: "rgba(59, 130, 246, 0.1)"
+        },
+        soft: {
+          blue: {
+            bg: "hsl(var(--soft-blue))",
+            text: "hsl(var(--soft-blue-text))"
+          },
+          green: {
+            bg: "hsl(var(--soft-green))",
+            text: "hsl(var(--soft-green-text))"
+          },
+          amber: {
+            bg: "hsl(var(--soft-amber))",
+            text: "hsl(var(--soft-amber-text))"
+          },
+          rose: {
+            bg: "hsl(var(--soft-rose))",
+            text: "hsl(var(--soft-rose-text))"
+          }
         }
 			},
 			borderRadius: {

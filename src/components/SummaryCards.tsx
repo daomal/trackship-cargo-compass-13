@@ -21,31 +21,31 @@ interface SummaryCardsProps {
 const SummaryCards: React.FC<SummaryCardsProps> = ({ summary }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <Card className="stagger-item animate-fade-in bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-xl rounded-xl overflow-hidden border-0">
+      <Card className="card-3d bg-soft-blue-bg text-soft-blue-text border-0 overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-white">Total Pengiriman</CardTitle>
-          <div className="rounded-full bg-white/20 p-2 transition-transform duration-300 hover:scale-110">
-            <Package className="h-4 w-4 text-white" />
+          <CardTitle className="text-sm font-medium">Total Pengiriman</CardTitle>
+          <div className="rounded-full bg-white/30 p-2.5 backdrop-blur-sm">
+            <Package className="h-5 w-5" />
           </div>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-white">{summary.total}</div>
-          <p className="text-xs text-white/80">
+          <div className="text-3xl font-bold mb-1">{summary.total}</div>
+          <p className="text-sm opacity-80">
             Jumlah seluruh pengiriman
           </p>
         </CardContent>
       </Card>
       
-      <Card className="stagger-item animate-fade-in bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-xl rounded-xl overflow-hidden border-0" style={{animationDelay: "0.1s"}}>
+      <Card className="card-3d bg-soft-green-bg text-soft-green-text border-0 overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-white">Terkirim</CardTitle>
-          <div className="rounded-full bg-white/20 p-2 transition-transform duration-300 hover:scale-110">
-            <CheckCircle className="h-4 w-4 text-white" />
+          <CardTitle className="text-sm font-medium">Terkirim</CardTitle>
+          <div className="rounded-full bg-white/30 p-2.5 backdrop-blur-sm">
+            <CheckCircle className="h-5 w-5" />
           </div>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-white">{summary.delivered}</div>
-          <p className="text-xs text-white/80">
+          <div className="text-3xl font-bold mb-1">{summary.delivered}</div>
+          <p className="text-sm opacity-80">
             {summary.total > 0
               ? `${Math.round((summary.delivered / summary.total) * 100)}% dari total pengiriman`
               : "0% dari total pengiriman"}
@@ -53,16 +53,16 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({ summary }) => {
         </CardContent>
       </Card>
       
-      <Card className="stagger-item animate-fade-in bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-xl rounded-xl overflow-hidden border-0" style={{animationDelay: "0.2s"}}>
+      <Card className="card-3d bg-soft-amber-bg text-soft-amber-text border-0 overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-white">Tertunda</CardTitle>
-          <div className="rounded-full bg-white/20 p-2 transition-transform duration-300 hover:scale-110">
-            <Clock className="h-4 w-4 text-white" />
+          <CardTitle className="text-sm font-medium">Tertunda</CardTitle>
+          <div className="rounded-full bg-white/30 p-2.5 backdrop-blur-sm">
+            <Clock className="h-5 w-5" />
           </div>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-white">{summary.pending}</div>
-          <p className="text-xs text-white/80">
+          <div className="text-3xl font-bold mb-1">{summary.pending}</div>
+          <p className="text-sm opacity-80">
             {summary.total > 0
               ? `${Math.round((summary.pending / summary.total) * 100)}% dari total pengiriman`
               : "0% dari total pengiriman"}
@@ -70,16 +70,16 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({ summary }) => {
         </CardContent>
       </Card>
       
-      <Card className="stagger-item animate-fade-in bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-xl rounded-xl overflow-hidden border-0" style={{animationDelay: "0.3s"}}>
+      <Card className="card-3d bg-soft-rose-bg text-soft-rose-text border-0 overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-white">Gagal Kirim</CardTitle>
-          <div className="rounded-full bg-white/20 p-2 transition-transform duration-300 hover:scale-110">
-            <AlertCircle className="h-4 w-4 text-white" />
+          <CardTitle className="text-sm font-medium">Gagal Kirim</CardTitle>
+          <div className="rounded-full bg-white/30 p-2.5 backdrop-blur-sm">
+            <AlertCircle className="h-5 w-5" />
           </div>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-white">{summary.failed}</div>
-          <p className="text-xs text-white/80">
+          <div className="text-3xl font-bold mb-1">{summary.failed}</div>
+          <p className="text-sm opacity-80">
             {summary.total > 0
               ? `${Math.round((summary.failed / summary.total) * 100)}% dari total pengiriman`
               : "0% dari total pengiriman"}
